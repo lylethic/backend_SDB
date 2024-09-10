@@ -13,7 +13,9 @@ public partial class Account
 
     public string Email { get; set; } = null!;
 
-    public string Password { get; set; } = null!;
+    public byte[] Password { get; set; } = null!;
+
+    public byte[] PasswordSalt { get; set; } = null!;
 
     public virtual Role Role { get; set; } = null!;
 

@@ -14,6 +14,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 using System.Security.Cryptography;
+using Microsoft.Data.SqlClient;
 
 namespace server.Repositories
 {
@@ -43,19 +44,32 @@ namespace server.Repositories
         };
       }
 
-      var user = _context.Accounts.FirstOrDefault(u =>
-        (u.Email == model.Email) && (u.Password == model.Password));
-
+      // Fetch user from DB
+      var user = _context.Accounts.FirstOrDefault(u => u.Email == model.Email);
 
       if (user is null)
       {
         return new ResponseDto
         {
           IsSuccess = false,
-          Message = "Unauthorized",
+          Message = "Invalid email",
         };
       }
 
+      // Validate password
+      bool isPasswordValid = ValidateHash(model.Password, user.Password, user.PasswordSalt);
+      if (!isPasswordValid)
+      {
+        return new ResponseDto
+        {
+          IsSuccess = false,
+          Message = "Invalid password",
+        };
+      }
+
+      // Generate JWT tokens
+
+      // Information in JWT
       var claims = new List<Claim>()
       {
         new Claim(ClaimTypes.Email, model.Email),
@@ -69,7 +83,7 @@ namespace server.Repositories
       var result = new TokenStored
       {
         AccountId = user.AccountId,
-        TokenString = accessToken,
+        TokenString = refreshToken,
       };
 
       _context.TokenStoreds.AddAsync(result);
@@ -86,6 +100,7 @@ namespace server.Repositories
 
     public async Task<ResponseDto> Register(RegisterDto model)
     {
+      // request empty
       if (model == null)
       {
         return new ResponseDto
@@ -107,11 +122,16 @@ namespace server.Repositories
       }
 
       // Hash the password
-      var passwordHasher = new PasswordHasher<Account>();
+      byte[] passwordHash, passwordSalt;
+      GenerateHash(model.Password, out passwordHash, out passwordSalt);
+
       var user = new Account
       {
+        RoleId = model.RoleId,
+        SchoolId = model.SchoolId,
         Email = model.Email,
-        Password = passwordHasher.HashPassword(null, model.Password),
+        Password = passwordHash,
+        PasswordSalt = passwordSalt
       };
 
       // Save user to the database
@@ -132,7 +152,7 @@ namespace server.Repositories
       var tokenResult = new TokenStored
       {
         AccountId = user.AccountId,
-        TokenString = accessToken,
+        TokenString = refreshToken,
       };
 
       await _context.TokenStoreds.AddAsync(tokenResult);
@@ -158,7 +178,7 @@ namespace server.Repositories
 
     public bool ValidateHash(string password, byte[] passwordhash, byte[] passwordsalt)
     {
-      using (var hash = new HMACSHA512(passwordhash))
+      using (var hash = new HMACSHA512(passwordsalt))
       {
         var newPassHash = hash.ComputeHash(Encoding.UTF8.GetBytes(password));
         for (int i = 0; i < newPassHash.Length; i++)

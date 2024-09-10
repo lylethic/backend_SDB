@@ -12,7 +12,7 @@ using server.Models;
 
 namespace server.Controllers
 {
-  [Route("api/[controller]")]
+    [Route("api/[controller]")]
   [ApiController]
   [Authorize]
   public class RolesController : ControllerBase

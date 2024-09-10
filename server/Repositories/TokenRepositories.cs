@@ -86,8 +86,6 @@ namespace server.Repositories
 
     public async Task<ResponseDto> RefreshToken([FromBody] TokenApiDto model)
     {
-      var storedToken = _context.TokenStoreds
-        .FirstOrDefault(t => t.TokenString == model.RefreshToken);
 
       if (string.IsNullOrEmpty(model.RefreshToken))
       {
@@ -97,6 +95,9 @@ namespace server.Repositories
           Message = "Refresh token is required",
         };
       }
+
+
+      var storedToken = _context.TokenStoreds.FirstOrDefault(t => t.TokenString == model.AccessToken);
 
       try
       {
