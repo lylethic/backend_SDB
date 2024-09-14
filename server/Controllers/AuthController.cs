@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Azure;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -27,13 +28,14 @@ namespace server.Controllers
     }
 
     // POST: api/Auth
-    [HttpPost, Route("Login")]
+    [HttpPost, Route("login")]
+    [AllowAnonymous]
     public async Task<IActionResult> Login(AuthDto model)
     {
       var result = await _authRepo.Login(model);
       if (!result.IsSuccess)
       {
-        return Unauthorized();
+        return Unauthorized(result.Message);
       }
 
       return Ok(new
@@ -46,13 +48,14 @@ namespace server.Controllers
     }
 
     // POST: api/Register
-    [HttpPost, Route("Register")]
+    [HttpPost, Route("register")]
+    [AllowAnonymous]
     public async Task<IActionResult> Register(RegisterDto model)
     {
       var result = await _authRepo.Register(model);
       if (!result.IsSuccess)
       {
-        return Unauthorized();
+        return Unauthorized(result.Message);
       }
 
       return Ok(new
@@ -64,15 +67,17 @@ namespace server.Controllers
       });
     }
 
-    //[HttpPost, Route("RefreshToken")]
-    //public async Task<ActionResult<ResponseDto>> RefreshToken(TokenApiDto tokenApiModel)
-    //{
-    //  var result = await _tokenService.RefreshToken(tokenApiModel);
-    //  if (!result.IsSuccess)
-    //  {
-    //    return Forbid();
-    //  }
-    //  return Ok(result);
-    //}
+    [HttpPost, Route("refresh")]
+    [AllowAnonymous]
+    public async Task<ActionResult<ResponseDto>> RefreshToken(TokenApiDto tokenApiModel)
+    {
+      var result = await _tokenService.RefreshToken(tokenApiModel);
+      if (!result.IsSuccess)
+      {
+        return BadRequest(new { Message = "Có lỗi: " + result.Message });
+      }
+
+      return Ok(result);
+    }
   }
 }

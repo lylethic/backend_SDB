@@ -80,13 +80,15 @@ namespace server.Repositories
       _tokenService.SetJWTCookie(accessToken);
 
       // Save token into table TokenStored
-      var result = new TokenStored
+      var result = new Session
       {
         AccountId = user.AccountId,
-        TokenString = refreshToken,
+        Token = refreshToken,
+        ExpiresAt = DateTime.Now.AddDays(2), // Test Refresh
+        CreatedAt = DateTime.Now,
       };
 
-      _context.TokenStoreds.AddAsync(result);
+      _context.Sessions.AddAsync(result);
       await _context.SaveChangesAsync();
 
       return new ResponseDto
@@ -149,13 +151,15 @@ namespace server.Repositories
       _tokenService.SetJWTCookie(accessToken);
 
       // Save token into table TokenStored
-      var tokenResult = new TokenStored
+      var tokenResult = new Session
       {
         AccountId = user.AccountId,
-        TokenString = refreshToken,
+        Token = refreshToken,
+        ExpiresAt = DateTime.Now.AddDays(2),
+        CreatedAt = DateTime.Now,
       };
 
-      await _context.TokenStoreds.AddAsync(tokenResult);
+      await _context.Sessions.AddAsync(tokenResult);
       await _context.SaveChangesAsync();
 
       return new ResponseDto

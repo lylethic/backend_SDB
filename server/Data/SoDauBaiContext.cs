@@ -40,6 +40,8 @@ public partial class SoDauBaiContext : DbContext
 
     public virtual DbSet<Semester> Semesters { get; set; }
 
+    public virtual DbSet<Session> Sessions { get; set; }
+
     public virtual DbSet<Student> Students { get; set; }
 
     public virtual DbSet<Subject> Subjects { get; set; }
@@ -47,8 +49,6 @@ public partial class SoDauBaiContext : DbContext
     public virtual DbSet<SubjectAssignment> SubjectAssignments { get; set; }
 
     public virtual DbSet<Teacher> Teachers { get; set; }
-
-    public virtual DbSet<TokenStored> TokenStoreds { get; set; }
 
     public virtual DbSet<Week> Weeks { get; set; }
 
@@ -408,6 +408,30 @@ public partial class SoDauBaiContext : DbContext
                 .HasConstraintName("FK__Semester__academ__6A30C649");
         });
 
+        modelBuilder.Entity<Session>(entity =>
+        {
+            entity.HasKey(e => e.TokenId).HasName("PK__Session__AC16DB47DB5C1E78");
+
+            entity.ToTable("Session");
+
+            entity.Property(e => e.TokenId).HasColumnName("tokenId");
+            entity.Property(e => e.AccountId).HasColumnName("accountId");
+            entity.Property(e => e.CreatedAt)
+                .HasColumnType("datetime")
+                .HasColumnName("createdAt");
+            entity.Property(e => e.ExpiresAt)
+                .HasColumnType("datetime")
+                .HasColumnName("expiresAt");
+            entity.Property(e => e.Token)
+                .IsUnicode(false)
+                .HasColumnName("token");
+
+            entity.HasOne(d => d.Account).WithMany(p => p.Sessions)
+                .HasForeignKey(d => d.AccountId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK__Session__account__756D6ECB");
+        });
+
         modelBuilder.Entity<Student>(entity =>
         {
             entity.HasKey(e => e.StudentId).HasName("PK__Student__4D11D63C8FD22332");
@@ -532,24 +556,6 @@ public partial class SoDauBaiContext : DbContext
                 .HasForeignKey(d => d.SchoolId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK__Teacher__schoolI__656C112C");
-        });
-
-        modelBuilder.Entity<TokenStored>(entity =>
-        {
-            entity.HasKey(e => e.TokenStoredId).HasName("PK__TokenSto__639EAA858B26CD37");
-
-            entity.ToTable("TokenStored");
-
-            entity.Property(e => e.TokenStoredId).HasColumnName("tokenStoredId");
-            entity.Property(e => e.AccountId).HasColumnName("accountId");
-            entity.Property(e => e.TokenString)
-                .IsUnicode(false)
-                .HasColumnName("tokenString");
-
-            entity.HasOne(d => d.Account).WithMany(p => p.TokenStoreds)
-                .HasForeignKey(d => d.AccountId)
-                .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__TokenStor__accou__625A9A57");
         });
 
         modelBuilder.Entity<Week>(entity =>

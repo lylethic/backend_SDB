@@ -23,9 +23,9 @@ namespace server.Repositories
 
     public TokenRepositories(SoDauBaiContext context, IConfiguration config, IHttpContextAccessor httpContextAccessor)
     {
-      this._context = context;
-      this._config = config;
-      this._httpContextAccessor = httpContextAccessor;
+      this._context = context ?? throw new ArgumentException(nameof(context));
+      this._config = config ?? throw new ArgumentException(nameof(config));
+      this._httpContextAccessor = httpContextAccessor ?? throw new ArgumentException(nameof(httpContextAccessor));
     }
 
     public string GenerateAccessToken(IEnumerable<Claim> claims)
@@ -40,7 +40,7 @@ namespace server.Repositories
         audience: _config["JwtSettings:Audience"],
         claims: claims,
         signingCredentials: signinCredentials,
-        expires: DateTime.UtcNow.AddHours(3)
+        expires: DateTime.UtcNow.AddDays(1)
         );
 
       var tokenString = new JwtSecurityTokenHandler().WriteToken(tokeOptions);
@@ -65,7 +65,7 @@ namespace server.Repositories
         ValidateAudience = false,
         ValidateIssuer = false,
         ValidateIssuerSigningKey = true,
-        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["JwtSettings:SecreKey"]!)),
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["JwtSettings:SecretKey"])),
         ValidateLifetime = false
       };
 
@@ -76,70 +76,72 @@ namespace server.Repositories
       var principal = tokenHandler.ValidateToken(token, tokenValidationParameters, out securityToken);
       var jwtSecurityToken = securityToken as JwtSecurityToken;
 
-      if (jwtSecurityToken != null || !jwtSecurityToken.Header.Alg.Equals(SecurityAlgorithms.HmacSha256, StringComparison.InvariantCultureIgnoreCase))
+      if (jwtSecurityToken == null || !jwtSecurityToken.Header.Alg.Equals(SecurityAlgorithms.HmacSha256, StringComparison.InvariantCultureIgnoreCase))
       {
-        throw new SecurityTokenException("Invaid token");
+        throw new SecurityTokenException("Invalid token");
       }
 
       return principal;
     }
 
-    public async Task<ResponseDto> RefreshToken([FromBody] TokenApiDto model)
+    public async Task<ResponseDto> RefreshToken(TokenApiDto model)
     {
-
-      if (string.IsNullOrEmpty(model.RefreshToken))
+      if (model is null)
       {
         return new ResponseDto
         {
           IsSuccess = false,
-          Message = "Refresh token is required",
+          Message = "Invalid client reqest",
         };
       }
 
-
-      var storedToken = _context.TokenStoreds.FirstOrDefault(t => t.TokenString == model.AccessToken);
-
       try
       {
-        var principal = GetPrincipalFromExpiredToken(model.RefreshToken);
+        string accessToken = model.AccessToken;
+        string refreshToken = model.RefreshToken;
 
-        if (principal is null)
-        {
-          return new ResponseDto
-          {
-            IsSuccess = false,
-            Message = "Invalid refresh token",
-          };
-        }
+        // AccessToken => Sap het han chua
+        var principal = GetPrincipalFromExpiredToken(accessToken);
 
-        var userEmail = principal.Claims.FirstOrDefault(x => x.Type == ClaimTypes.NameIdentifier)?.Value;
+        var email = principal.FindFirst(ClaimTypes.Email)?.Value; // map to claims
 
-        if (string.IsNullOrEmpty(userEmail))
-        {
-          return new ResponseDto
-          {
-            IsSuccess = false,
-            Message = "User not found",
-          };
-        }
+        var user = _context.Accounts.SingleOrDefault(id => id.Email == email);
 
-        var tokenStored = _context.TokenStoreds.FirstOrDefault(x => x.TokenString == model.RefreshToken);
+        var tokenStored = _context.Sessions.FirstOrDefault(id => id.AccountId == user.AccountId);
 
         if (tokenStored is null)
         {
-          _context.TokenStoreds.Remove(tokenStored);
-          await _context.SaveChangesAsync();
+          return new ResponseDto
+          {
+            IsSuccess = false,
+            Message = "Session not found",
+          };
+        }
+        if (user is null || tokenStored.Token != refreshToken || tokenStored.ExpiresAt <= DateTime.Now)
+        {
+          return new ResponseDto
+          {
+            IsSuccess = false,
+            Message = "Invalid client request",
+          };
         }
 
-        var claims = new List<Claim>()
+        var newAccessToken = GenerateAccessToken(principal.Claims);
+        var newRefreshToken = GenerateRefreshToken();
+
+        tokenStored.Token = newRefreshToken;
+        tokenStored.ExpiresAt = DateTime.Now.AddHours(1);
+        await _context.SaveChangesAsync();
+
+        SetJWTCookie(newAccessToken);
+
+        return new ResponseDto
         {
-          new Claim(ClaimTypes.NameIdentifier, userEmail),
-          new Claim(ClaimTypes.Role, "Admin")
+          IsSuccess = true,
+          Message = "Success",
+          AccessToken = newAccessToken,
+          RefreshToken = newRefreshToken
         };
-
-        var newAccessToken = GenerateAccessToken(claims);
-
-        return new ResponseDto { IsSuccess = true, Message = "Success", AccessToken = newAccessToken };
       }
       catch (Exception ex)
       {
@@ -151,13 +153,14 @@ namespace server.Repositories
       }
     }
 
-
     public void SetJWTCookie(string token)
     {
       var cookieOptions = new CookieOptions
       {
         HttpOnly = true,
-        Expires = DateTime.UtcNow.AddHours(3),
+        Secure = true,
+        SameSite = SameSiteMode.Strict, // Prevent CSRF attacks
+        Expires = DateTime.UtcNow.AddDays(2),
       };
       _httpContextAccessor.HttpContext.Response.Cookies.Append("jwtCookie", token, cookieOptions);
     }

@@ -21,9 +21,9 @@ public partial class Account
 
     public virtual School? School { get; set; }
 
+    public virtual ICollection<Session> Sessions { get; set; } = new List<Session>();
+
     public virtual ICollection<Student> Students { get; set; } = new List<Student>();
 
     public virtual ICollection<Teacher> Teachers { get; set; } = new List<Teacher>();
-
-    public virtual ICollection<TokenStored> TokenStoreds { get; set; } = new List<TokenStored>();
 }
