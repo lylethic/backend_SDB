@@ -79,5 +79,17 @@ namespace server.Controllers
 
       return Ok(result);
     }
+
+    [HttpPost, Route("logout"), Authorize]
+    public async Task<ActionResult<ResponseDto>> Logout()
+    {
+      var result = await _authRepo.Logout();
+      if (!result.IsSuccess)
+      {
+        return BadRequest(new { Message = "Có lỗi: " + result.Message });
+      }
+
+      return Ok(result);
+    }
   }
 }

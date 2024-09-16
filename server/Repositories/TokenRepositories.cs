@@ -130,15 +130,16 @@ namespace server.Repositories
         var newRefreshToken = GenerateRefreshToken();
 
         tokenStored.Token = newRefreshToken;
-        tokenStored.ExpiresAt = DateTime.Now.AddHours(1);
+        tokenStored.ExpiresAt = DateTime.Now.AddDays(3);
         await _context.SaveChangesAsync();
 
         SetJWTCookie(newAccessToken);
+        SetRefreshTokenCookie(newRefreshToken);
 
         return new ResponseDto
         {
           IsSuccess = true,
-          Message = "Success",
+          Message = "Token refreshed successfully",
           AccessToken = newAccessToken,
           RefreshToken = newRefreshToken
         };
@@ -160,9 +161,73 @@ namespace server.Repositories
         HttpOnly = true,
         Secure = true,
         SameSite = SameSiteMode.Strict, // Prevent CSRF attacks
-        Expires = DateTime.UtcNow.AddDays(2),
+        Expires = DateTime.UtcNow.AddDays(3),
       };
-      _httpContextAccessor.HttpContext.Response.Cookies.Append("jwtCookie", token, cookieOptions);
+      try
+      {
+        _httpContextAccessor.HttpContext.Response.Cookies.Append("jwtCookie", token, cookieOptions);
+      }
+      catch (Exception ex)
+      {
+        throw new Exception("Failed to set JWT cookie", ex);
+      }
     }
+
+    public void SetRefreshTokenCookie(string refreshToken)
+    {
+      var cookieOptions = new CookieOptions
+      {
+        HttpOnly = true,
+        Secure = true,
+        SameSite = SameSiteMode.Strict,
+        Expires = DateTime.UtcNow.AddDays(5),
+      };
+      try
+      {
+        _httpContextAccessor.HttpContext.Response.Cookies.Append("refreshToken", refreshToken, cookieOptions);
+      }
+      catch (Exception ex) {
+        throw new Exception("Failed to set refresh token cookie", ex);
+      }
+    }
+
+    public void ClearJWTCookie()
+    {
+      var cookieOptions = new CookieOptions
+      {
+        HttpOnly = true,
+        Secure = true,
+        SameSite = SameSiteMode.Strict,
+        Expires = DateTime.UtcNow.AddDays(-1) // Set expiration date to the past
+      };
+      try
+      {
+        _httpContextAccessor.HttpContext.Response.Cookies.Append("jwtCookie", "", cookieOptions);
+      }
+      catch (Exception ex)
+      {
+        throw new Exception("Failed to clear JWT cookie", ex);
+      }
+    }
+
+    public void ClearRefreshTokenCookie()
+    {
+      var cookieOptions = new CookieOptions
+      {
+        HttpOnly = true,
+        Secure = true,
+        SameSite = SameSiteMode.Strict,
+        Expires = DateTime.UtcNow.AddDays(-1) // Set expiration date to the past
+      };
+      try
+      {
+        _httpContextAccessor.HttpContext.Response.Cookies.Append("refreshToken", "", cookieOptions);
+      }
+      catch (Exception ex)
+      {
+        throw new Exception("Failed to clear refresh token cookie", ex);
+      }
+    }
+
   }
 }

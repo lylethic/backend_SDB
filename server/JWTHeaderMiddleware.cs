@@ -13,11 +13,13 @@ namespace server
   {
     private readonly RequestDelegate _next;
     private readonly IConfiguration _config;
+    private readonly ILogger<JWTHeaderMiddleware> _logger;
 
-    public JWTHeaderMiddleware(RequestDelegate next, IConfiguration config)
+    public JWTHeaderMiddleware(RequestDelegate next, IConfiguration config, ILogger<JWTHeaderMiddleware> logger)
     {
       _next = next;
       _config = config;
+      _logger = logger;
     }
 
     public async Task Invoke(HttpContext context)
@@ -62,13 +64,15 @@ namespace server
         }
         catch (SecurityTokenException ex)
         {
-          // Token is invalid, so do nothing or handle the invalid token scenario (e.g., log the error)
-          throw new Exception(ex.Message);
+          _logger.LogError($"Invalid JWT token: {ex.Message}");
+
+          // Token is invalid, return 401 Unauthorized
+          context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+          await context.Response.WriteAsync("Invalid JWT token.");
+          return;
         }
       }
-
       await _next(context);
     }
   }
-
 }

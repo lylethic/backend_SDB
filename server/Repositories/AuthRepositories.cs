@@ -45,7 +45,7 @@ namespace server.Repositories
       }
 
       // Fetch user from DB
-      var user = _context.Accounts.FirstOrDefault(u => u.Email == model.Email);
+      var user = await _context.Accounts.FirstOrDefaultAsync(u => u.Email == model.Email);
 
       if (user is null)
       {
@@ -68,7 +68,6 @@ namespace server.Repositories
       }
 
       // Generate JWT tokens
-
       // Information in JWT
       var claims = new List<Claim>()
       {
@@ -77,18 +76,19 @@ namespace server.Repositories
 
       var accessToken = _tokenService.GenerateAccessToken(claims);
       var refreshToken = _tokenService.GenerateRefreshToken();
-      _tokenService.SetJWTCookie(accessToken);
 
-      // Save token into table TokenStored
-      var result = new Session
+      _tokenService.SetJWTCookie(accessToken);
+      _tokenService.SetRefreshTokenCookie(refreshToken);
+
+      var session = new Session
       {
         AccountId = user.AccountId,
         Token = refreshToken,
-        ExpiresAt = DateTime.Now.AddDays(2), // Test Refresh
+        ExpiresAt = DateTime.Now.AddDays(3),
         CreatedAt = DateTime.Now,
       };
 
-      _context.Sessions.AddAsync(result);
+      await _context.Sessions.AddAsync(session);
       await _context.SaveChangesAsync();
 
       return new ResponseDto
@@ -99,6 +99,49 @@ namespace server.Repositories
         RefreshToken = refreshToken
       };
     }
+
+    public async Task<ResponseDto> Logout()
+    {
+      try
+      {
+        // Get email in Claims
+        var userStored = _httpContextAccessor.HttpContext.User.FindFirst(ClaimTypes.Email)?.Value;
+
+        if (string.IsNullOrEmpty(userStored))
+        {
+          return new ResponseDto(true, "User not found in the current session");
+        }
+
+        var user = await _context.Accounts.FirstOrDefaultAsync(u => u.Email == userStored);
+
+        if (user == null)
+        {
+          return new ResponseDto(true, "User not found");
+        }
+
+        // Remove refresh token in DB
+        var session = await _context.Sessions
+            .FirstOrDefaultAsync(s => s.AccountId == user.AccountId);
+
+        if (session != null)
+        {
+          _context.Sessions.Remove(session);
+          await _context.SaveChangesAsync();
+        }
+
+        // Clear cookies
+        _tokenService.ClearJWTCookie();
+        _tokenService.ClearRefreshTokenCookie();
+
+        return new ResponseDto(true, "Logout successful");
+      }
+      catch (Exception ex)
+      {
+        // Log the exception if necessary
+        return new ResponseDto(false, "An error occurred while logging out: " + ex.Message);
+      }
+    }
+
 
     public async Task<ResponseDto> Register(RegisterDto model)
     {
@@ -113,7 +156,9 @@ namespace server.Repositories
       }
 
       // Check if user already exists
-      var existingUser = await _context.Accounts.FirstOrDefaultAsync(u => u.Email == model.Email);
+      var existingUser = await _context.Accounts
+        .FirstOrDefaultAsync(u => u.Email == model.Email);
+
       if (existingUser != null)
       {
         return new ResponseDto

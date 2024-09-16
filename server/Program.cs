@@ -16,7 +16,9 @@ builder.Services.AddControllers();
 
 //Connection DB Local
 builder.Services.AddDbContext<SoDauBaiContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("SoDauBaiContext")));
+    options.UseSqlServer(builder.Configuration.GetConnectionString("SoDauBaiContext"))
+    .EnableDetailedErrors()
+    .LogTo(Console.WriteLine));
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
@@ -27,6 +29,10 @@ builder.Services.AddCors(options => options.AddDefaultPolicy(policy =>
 //Inject app Dependencies (Dependecy Injecteion)
 builder.Services.AddScoped<IAuth, AuthRepositories>();
 builder.Services.AddScoped<ITokenService, TokenRepositories>();
+builder.Services.AddScoped<IAccount, AccountRespositories>();
+
+// Add AutoMapper and configure profiles
+builder.Services.AddAutoMapper(typeof(Program));
 
 builder.Services.AddAuthorization();
 builder.Services.AddIdentityApiEndpoints<IdentityUser>().AddEntityFrameworkStores<SoDauBaiContext>();
@@ -54,7 +60,7 @@ builder.Services.AddAuthentication(options =>
     ValidateIssuerSigningKey = true,
     ValidIssuer = configuration["JwtSettings:Issuer"],
     ValidAudience = configuration["JwtSettings:Audience"],
-    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(configuration["JwtSettings:SecretKey"]))
+    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(configuration["JwtSettings:SecretKey"]!))
   };
 });
 

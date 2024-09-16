@@ -14,5 +14,11 @@ namespace server.IService
     Task<ResponseDto> RefreshToken(TokenApiDto model);
 
     void SetJWTCookie(string token);
+
+    void SetRefreshTokenCookie(string refreshToken);
+
+    void ClearJWTCookie();
+
+    void ClearRefreshTokenCookie();
   }
 }

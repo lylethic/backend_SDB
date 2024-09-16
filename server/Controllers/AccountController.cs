@@ -2,105 +2,97 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using server.Data;
+using server.Dtos;
+using server.IService;
 using server.Models;
 
 namespace server.Controllers
 {
-    [Route("api/[controller]")]
-    [ApiController]
-    public class AccountController : ControllerBase
+  [Route("api/[controller]")]
+  [ApiController]
+  [Authorize]
+  public class AccountController : ControllerBase
+  {
+    private readonly IAccount _acc;
+
+    public AccountController(IAccount acc)
     {
-        private readonly SoDauBaiContext _context;
-
-        public AccountController(SoDauBaiContext context)
-        {
-            _context = context;
-        }
-
-        // GET: api/Auth
-        [HttpGet]
-        public async Task<ActionResult<IEnumerable<Account>>> GetAccounts()
-        {
-            return await _context.Accounts.ToListAsync();
-        }
-
-        // GET: api/Auth/5
-        [HttpGet("{id}")]
-        public async Task<ActionResult<Account>> GetAccount(int id)
-        {
-            var account = await _context.Accounts.FindAsync(id);
-
-            if (account == null)
-            {
-                return NotFound();
-            }
-
-            return account;
-        }
-
-        // PUT: api/Auth/5
-        [HttpPut("{id}")]
-        public async Task<IActionResult> PutAccount(int id, Account account)
-        {
-            if (id != account.AccountId)
-            {
-                return BadRequest();
-            }
-
-            _context.Entry(account).State = EntityState.Modified;
-
-            try
-            {
-                await _context.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                if (!AccountExists(id))
-                {
-                    return NotFound();
-                }
-                else
-                {
-                    throw;
-                }
-            }
-
-            return NoContent();
-        }
-
-        // POST: api/Auth
-        [HttpPost]
-        public async Task<ActionResult<Account>> PostAccount(Account account)
-        {
-            _context.Accounts.Add(account);
-            await _context.SaveChangesAsync();
-
-            return CreatedAtAction("GetAccount", new { id = account.AccountId }, account);
-        }
-
-        // DELETE: api/Auth/5
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteAccount(int id)
-        {
-            var account = await _context.Accounts.FindAsync(id);
-            if (account == null)
-            {
-                return NotFound();
-            }
-
-            _context.Accounts.Remove(account);
-            await _context.SaveChangesAsync();
-
-            return NoContent();
-        }
-
-        private bool AccountExists(int id)
-        {
-            return _context.Accounts.Any(e => e.AccountId == id);
-        }
+      _acc = acc;
     }
+
+    // GET: api/Auth
+    [HttpGet, Route("accounts")]
+    public async Task<IActionResult> GetAccounts()
+    {
+      try
+      {
+        var accounts = await _acc.GetAccounts();
+        if (accounts == null)
+        {
+          return NotFound(); // 404
+        }
+        return Ok(accounts); // 200
+      }
+      catch (Exception ex)
+      {
+        Console.WriteLine(ex.Message);
+        return StatusCode(500, "Server error"); // 500
+      }
+    }
+
+    // GET: api/Auth/5
+    [HttpGet, Route("account/{id}")]
+    public async Task<IActionResult> GetAccount(int id)
+    {
+      var account = await _acc.GetAccount(id);
+
+      if (account.StatusCode != 200)
+      {
+        return BadRequest(account);
+      }
+      return Ok(account);
+    }
+
+    // PUT: api/Auth/5
+    [HttpPut, Route("edit/{id}")]
+    public async Task<IActionResult> PutAccount(int id, AccountDto account)
+    {
+      var result = await _acc.UpdateAccount(id, account);
+      if (result.StatusCode != 200)
+      {
+        return BadRequest(result);
+      }
+      return Ok(result);
+    }
+
+    // POST: api/Auth
+    [HttpPost, Route("account")]
+    public async Task<IActionResult> CreateAccount(RegisterDto account)
+    {
+      var result = await _acc.AddAccount(account);
+      if (result.StatusCode != 200)
+      {
+        return BadRequest(result);
+      }
+      return Ok(result);
+    }
+
+    // DELETE: api/Auth/5
+    [HttpDelete, Route("delete/{id}")]
+    public async Task<IActionResult> DeleteAccount(int id)
+    {
+      var result = await _acc.DeleteAccount(id);
+      if (result.StatusCode != 200)
+      {
+        return BadRequest(result);
+      }
+
+      return Ok(result);
+    }
+  }
 }
