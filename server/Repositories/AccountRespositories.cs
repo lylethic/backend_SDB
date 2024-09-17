@@ -23,13 +23,13 @@ namespace server.Repositories
       _auth = auth;
     }
 
-    public async Task<AccountResponse<AccountDto>> AddAccount(RegisterDto acc)
+    public async Task<Data_Response<AccountDto>> AddAccount(RegisterDto acc)
     {
       try
       {
         if (!IsValidEmail(acc.Email))
         {
-          return new AccountResponse<AccountDto>(400, "Invalid Email format");
+          return new Data_Response<AccountDto>(400, "Invalid Email format");
         }
 
         var query = "SELECT * FROM ACCOUNT WHERE Email = @email";
@@ -40,7 +40,7 @@ namespace server.Repositories
 
         if (account != null)
         {
-          return new AccountResponse<AccountDto>(409, "Email already registered");
+          return new Data_Response<AccountDto>(409, "Email already registered");
         }
 
         // Hash the password
@@ -73,15 +73,15 @@ namespace server.Repositories
           SchoolId = acc.SchoolId,
         };
 
-        return new AccountResponse<AccountDto>(200, accountDto);
+        return new Data_Response<AccountDto>(200, accountDto);
       }
       catch (Exception ex)
       {
-        return new AccountResponse<AccountDto>(500, "Server error");
+        return new Data_Response<AccountDto>(500, "Server error");
       }
     }
 
-    public async Task<AccountResponse<AccountDto>> GetAccount(int accountId)
+    public async Task<Data_Response<AccountDto>> GetAccount(int accountId)
     {
       try
       {
@@ -91,9 +91,9 @@ namespace server.Repositories
             .FromSqlRaw(query, new SqlParameter("@accountId", accountId))
             .FirstOrDefaultAsync();
 
-        if (acc == null)
+        if (acc is null)
         {
-          return new AccountResponse<AccountDto>(404, "Account not founnd");
+          return new Data_Response<AccountDto>(404, "Account not founnd");
         }
 
         var result = new AccountDto
@@ -104,12 +104,11 @@ namespace server.Repositories
           Email = acc.Email
         };
 
-        return new AccountResponse<AccountDto>(200, result);
+        return new Data_Response<AccountDto>(200, result);
       }
       catch (Exception ex)
       {
-        Console.WriteLine(ex.Message);
-        return new AccountResponse<AccountDto>(500, "Server error");
+        return new Data_Response<AccountDto>(500, $"Server error: {ex.Message}");
       }
     }
 
@@ -138,13 +137,13 @@ namespace server.Repositories
       }
     }
 
-    public async Task<AccountResponse<AccountDto>> UpdateAccount(int accountId, AccountDto acc)
+    public async Task<Data_Response<AccountDto>> UpdateAccount(int accountId, AccountDto acc)
     {
       try
       {
         if (!IsValidEmail(acc.Email))
         {
-          return new AccountResponse<AccountDto>(400, "Invalid Email format");
+          return new Data_Response<AccountDto>(400, "Invalid Email format");
         }
 
         var query = "SELECT * FROM ACCOUNT WHERE AccountId = @accountId";
@@ -187,15 +186,15 @@ namespace server.Repositories
         var updateQuery = queryBuilder.ToString();
         await _context.Database.ExecuteSqlRawAsync(updateQuery, parameters.ToArray());
 
-        return new AccountResponse<AccountDto>(200, "Updated");
+        return new Data_Response<AccountDto>(200, "Updated");
       }
       catch (Exception ex)
       {
-        return new AccountResponse<AccountDto>(500, "Server Error");
+        return new Data_Response<AccountDto>(500, $"Server Error: {ex.Message}");
       }
     }
 
-    public async Task<AccountResponse<AccountDto>> DeleteAccount(int accountId)
+    public async Task<Data_Response<AccountDto>> DeleteAccount(int accountId)
     {
       try
       {
@@ -208,7 +207,7 @@ namespace server.Repositories
         // Check account null??
         if (account is null)
         {
-          return new AccountResponse<AccountDto>(404, "Account not found!");
+          return new Data_Response<AccountDto>(404, "Account not found!");
         }
 
         // Delete query
@@ -216,12 +215,12 @@ namespace server.Repositories
         await _context.Database
           .ExecuteSqlRawAsync(deleteQuery, new SqlParameter("@accountId", accountId));
 
-        return new AccountResponse<AccountDto>(200, "Deleted");
+        return new Data_Response<AccountDto>(200, "Deleted");
       }
       catch (Exception ex)
       {
         Console.WriteLine(ex.Message);
-        return new AccountResponse<AccountDto>(500, $"Error deleting account: {ex.Message}");
+        return new Data_Response<AccountDto>(500, $"Error deleting account: {ex.Message}");
       }
     }
 

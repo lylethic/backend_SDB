@@ -23,6 +23,7 @@ builder.Services.AddDbContext<SoDauBaiContext>(options =>
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+// Cors
 builder.Services.AddCors(options => options.AddDefaultPolicy(policy =>
     policy.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader()));
 
@@ -30,6 +31,7 @@ builder.Services.AddCors(options => options.AddDefaultPolicy(policy =>
 builder.Services.AddScoped<IAuth, AuthRepositories>();
 builder.Services.AddScoped<ITokenService, TokenRepositories>();
 builder.Services.AddScoped<IAccount, AccountRespositories>();
+builder.Services.AddScoped<IRole, RoleRepositories>();
 
 // Add AutoMapper and configure profiles
 builder.Services.AddAutoMapper(typeof(Program));

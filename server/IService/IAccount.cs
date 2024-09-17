@@ -6,9 +6,9 @@ namespace server.IService
   public interface IAccount
   {
     Task<List<AccountDto>> GetAccounts();
-    Task<AccountResponse<AccountDto>> GetAccount(int accountId);
-    Task<AccountResponse<AccountDto>> AddAccount(RegisterDto acc);
-    Task<AccountResponse<AccountDto>> UpdateAccount(int accountId, AccountDto acc);
-    Task<AccountResponse<AccountDto>> DeleteAccount(int id);
+    Task<Data_Response<AccountDto>> GetAccount(int accountId);
+    Task<Data_Response<AccountDto>> AddAccount(RegisterDto acc);
+    Task<Data_Response<AccountDto>> UpdateAccount(int accountId, AccountDto acc);
+    Task<Data_Response<AccountDto>> DeleteAccount(int id);
   }
 }
