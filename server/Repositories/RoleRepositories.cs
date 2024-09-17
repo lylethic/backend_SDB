@@ -154,6 +154,12 @@ namespace server.Repositories
           parameters.Add(new SqlParameter("@Description", model.Description));
         }
 
+        // Remove the last comma and space
+        if (queryBuilder.Length > 0)
+        {
+          queryBuilder.Length -= 2; // Remove the trailing comma and space
+        }
+
         queryBuilder.Append(" WHERE RoleId = @id");
         parameters.Add(new SqlParameter("@id", id));
 
