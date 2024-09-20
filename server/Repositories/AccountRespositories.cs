@@ -12,11 +12,11 @@ namespace server.Repositories
 {
   public class AccountRespositories : IAccount
   {
-    private readonly SoDauBaiContext _context;
+    private readonly Data.SoDauBaiContext _context;
     private readonly IAuth _auth;
     private readonly IMapper _map;
 
-    public AccountRespositories(SoDauBaiContext context, IMapper map, IAuth auth)
+    public AccountRespositories(Data.SoDauBaiContext context, IMapper map, IAuth auth)
     {
       _context = context;
       _map = map;
@@ -151,6 +151,11 @@ namespace server.Repositories
         var account = await _context.Accounts
           .FromSqlRaw(query, new SqlParameter("@accountId", accountId))
           .FirstOrDefaultAsync();
+
+        if (account is null)
+        {
+          return new Data_Response<AccountDto>(404, "Account not found");
+        }
 
         var queryBuilder = new StringBuilder("UPDATE Account SET ");
         var parameters = new List<SqlParameter>();

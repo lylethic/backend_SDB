@@ -10,12 +10,10 @@ namespace server.Repositories
   public class RoleRepositories : IRole
   {
     private readonly SoDauBaiContext _context;
-    private readonly IHttpContextAccessor httpContextAccessor;
 
-    public RoleRepositories(SoDauBaiContext context, IHttpContextAccessor httpContextAccessor)
+    public RoleRepositories(SoDauBaiContext context)
     {
       this._context = context;
-      this.httpContextAccessor = httpContextAccessor;
     }
 
     public async Task<Data_Response<RoleDto>> AddRole(RoleDto model)
@@ -30,7 +28,7 @@ namespace server.Repositories
 
         if (role is not null)
         {
-          return new Data_Response<RoleDto>(404, "Role already exists");
+          return new Data_Response<RoleDto>(409, "Role already exists");
         }
 
         var sqlInsert = @"INSERT INTO ROLE (NameRole, Description) 
@@ -141,6 +139,11 @@ namespace server.Repositories
         var roleIdExists = await _context.Roles
           .FromSqlRaw(findRole, new SqlParameter("@id", model.RoleId))
           .FirstOrDefaultAsync();
+
+        if (roleIdExists is null)
+        {
+          return new Data_Response<RoleDto>(404, "Role not found");
+        }
 
         var queryBuilder = new StringBuilder("UPDATE ROLE SET ");
         var parameters = new List<SqlParameter>();

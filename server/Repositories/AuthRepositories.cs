@@ -20,12 +20,12 @@ namespace server.Repositories
 {
   public class AuthRepositories : IAuth
   {
-    private readonly SoDauBaiContext _context;
+    private readonly Data.SoDauBaiContext _context;
     private readonly IConfiguration _config;
     private readonly IHttpContextAccessor _httpContextAccessor;
     private readonly ITokenService _tokenService;
 
-    public AuthRepositories(SoDauBaiContext context, IConfiguration config, IHttpContextAccessor httpContextAccessor, ITokenService tokenService)
+    public AuthRepositories(Data.SoDauBaiContext context, IConfiguration config, IHttpContextAccessor httpContextAccessor, ITokenService tokenService)
     {
       _context = context;
       _config = config;

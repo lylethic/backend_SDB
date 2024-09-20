@@ -15,7 +15,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
 
 //Connection DB Local
-builder.Services.AddDbContext<SoDauBaiContext>(options =>
+builder.Services.AddDbContext<server.Data.SoDauBaiContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("SoDauBaiContext"))
     .EnableDetailedErrors()
     .LogTo(Console.WriteLine));
@@ -32,12 +32,15 @@ builder.Services.AddScoped<IAuth, AuthRepositories>();
 builder.Services.AddScoped<ITokenService, TokenRepositories>();
 builder.Services.AddScoped<IAccount, AccountRespositories>();
 builder.Services.AddScoped<IRole, RoleRepositories>();
+builder.Services.AddScoped<ISchool, SchoolRepositories>();
+builder.Services.AddScoped<ITeacher, TeacherRepositories>();
+builder.Services.AddScoped<IStudent, StudentRepositories>();
 
 // Add AutoMapper and configure profiles
 builder.Services.AddAutoMapper(typeof(Program));
 
 builder.Services.AddAuthorization();
-builder.Services.AddIdentityApiEndpoints<IdentityUser>().AddEntityFrameworkStores<SoDauBaiContext>();
+builder.Services.AddIdentityApiEndpoints<IdentityUser>().AddEntityFrameworkStores<server.Data.SoDauBaiContext>();
 
 // Load configuration from appsettings.json
 var configuration = new ConfigurationBuilder()

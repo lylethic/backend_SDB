@@ -17,11 +17,11 @@ namespace server.Repositories
 {
   public class TokenRepositories : ITokenService
   {
-    private readonly SoDauBaiContext _context;
+    private readonly Data.SoDauBaiContext _context;
     private readonly IConfiguration _config;
     private readonly IHttpContextAccessor _httpContextAccessor;
 
-    public TokenRepositories(SoDauBaiContext context, IConfiguration config, IHttpContextAccessor httpContextAccessor)
+    public TokenRepositories(Data.SoDauBaiContext context, IConfiguration config, IHttpContextAccessor httpContextAccessor)
     {
       this._context = context ?? throw new ArgumentException(nameof(context));
       this._config = config ?? throw new ArgumentException(nameof(config));
