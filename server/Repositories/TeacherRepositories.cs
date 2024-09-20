@@ -236,6 +236,5 @@ namespace server.Repositories
         return new Data_Response<TeacherDto>(500, $"Server Error: {ex.Message}");
       }
     }
-
   }
 }

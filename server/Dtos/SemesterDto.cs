@@ -1,6 +1,6 @@
 ﻿namespace server.Dtos
 {
-  public class SemeterDto
+  public class SemesterDto
   {
     public int SemesterId { get; set; }
 

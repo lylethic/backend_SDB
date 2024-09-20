@@ -29,12 +29,12 @@ namespace server.Controllers
     {
       try
       {
-        var roles = await _teacherRepo.GetTeachers();
-        if (roles == null)
+        var teachers = await _teacherRepo.GetTeachers();
+        if (teachers == null)
         {
           return NotFound(); // 404
         }
-        return Ok(roles); // 200
+        return Ok(teachers); // 200
       }
       catch (Exception ex)
       {
