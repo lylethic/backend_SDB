@@ -1,17 +1,10 @@
-﻿
-using System;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Logging;
-using Microsoft.IdentityModel.Tokens;
-using server.Data;
+﻿using Microsoft.IdentityModel.Tokens;
 using server.Dtos;
 using server.IService;
-using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
-using System.Text;
 using System.Security.Cryptography;
+using System.Text;
 
 namespace server.Repositories
 {
@@ -40,7 +33,7 @@ namespace server.Repositories
         audience: _config["JwtSettings:Audience"],
         claims: claims,
         signingCredentials: signinCredentials,
-        expires: DateTime.UtcNow.AddDays(1)
+        expires: DateTime.UtcNow.AddDays(3)
         );
 
       var tokenString = new JwtSecurityTokenHandler().WriteToken(tokeOptions);
@@ -186,7 +179,8 @@ namespace server.Repositories
       {
         _httpContextAccessor.HttpContext.Response.Cookies.Append("refreshToken", refreshToken, cookieOptions);
       }
-      catch (Exception ex) {
+      catch (Exception ex)
+      {
         throw new Exception("Failed to set refresh token cookie", ex);
       }
     }

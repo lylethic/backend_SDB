@@ -1,11 +1,6 @@
-﻿using Microsoft.AspNetCore.Http;
-using Microsoft.IdentityModel.Tokens;
-using System;
-using System.Collections.Generic;
+﻿using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
-using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace server
 {
@@ -61,6 +56,15 @@ namespace server
               context.Request.Headers.Append("Authorization", "Bearer " + jwtToken);
             }
           }
+        }
+        catch (SecurityTokenExpiredException ex)
+        {
+          _logger.LogError($"JWT token expired: {ex.Message}");
+
+          // Token has expired, return 401 Unauthorized with a specific message
+          context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+          await context.Response.WriteAsync("JWT token has expired.");
+          return;
         }
         catch (SecurityTokenException ex)
         {

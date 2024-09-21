@@ -3,7 +3,6 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using server;
-using server.Data;
 using server.IService;
 using server.Repositories;
 using System.Text;
@@ -37,6 +36,7 @@ builder.Services.AddScoped<ITeacher, TeacherRepositories>();
 builder.Services.AddScoped<IStudent, StudentRepositories>();
 builder.Services.AddScoped<IAcademicYear, AcademicYearRepositories>();
 builder.Services.AddScoped<ISemester, SemesterRepositories>();
+builder.Services.AddScoped<ISubject, SubjectRepositories>();
 
 // Add AutoMapper and configure profiles
 builder.Services.AddAutoMapper(typeof(Program));

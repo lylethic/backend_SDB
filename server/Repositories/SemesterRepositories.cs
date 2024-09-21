@@ -3,8 +3,6 @@ using Microsoft.EntityFrameworkCore;
 using server.Data;
 using server.Dtos;
 using server.IService;
-using server.Models;
-using System.Collections.Generic;
 using System.Text;
 
 namespace server.Repositories
@@ -163,7 +161,7 @@ namespace server.Repositories
             .FromSqlRaw(findQuery, new SqlParameter("@id", id))
             .FirstOrDefaultAsync();
 
-        if (existingTeacher == null)
+        if (existingTeacher is null)
         {
           return new Data_Response<SemesterDto>(404, "Semester not found");
         }
@@ -172,7 +170,7 @@ namespace server.Repositories
         var queryBuilder = new StringBuilder("UPDATE Semester SET ");
         var parameters = new List<SqlParameter>();
 
-        if(model.AcademicYearId != 0)
+        if (model.AcademicYearId != 0)
         {
           queryBuilder.Append("AcademicYearId = @AcademicYearId, ");
           parameters.Add(new SqlParameter("@AcademicYearId", model.AcademicYearId));
