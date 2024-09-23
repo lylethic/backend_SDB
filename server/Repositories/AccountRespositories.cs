@@ -1,10 +1,8 @@
 ﻿using AutoMapper;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
-using server.Data;
 using server.Dtos;
 using server.IService;
-using server.Models;
 using System.Text;
 using System.Text.RegularExpressions;
 
@@ -77,7 +75,7 @@ namespace server.Repositories
       }
       catch (Exception ex)
       {
-        return new Data_Response<AccountDto>(500, "Server error");
+        return new Data_Response<AccountDto>(500, $"Server error: {ex.Message}");
       }
     }
 

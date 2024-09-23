@@ -28,7 +28,7 @@ namespace server.Repositories
 
         if (subject is not null)
         {
-          return new Data_Response<SubjectDto>(409, "Subject alreadyn exists");
+          return new Data_Response<SubjectDto>(409, "Subject already exists");
         }
 
         var sqlInsert = @"INSERT INTO SUBJECT (academicYearId, subjectName)
@@ -53,7 +53,6 @@ namespace server.Repositories
       {
         return new Data_Response<SubjectDto>(500, $"Server error: {ex.Message}");
       }
-
     }
 
     public async Task<Data_Response<SubjectDto>> DeleteSubject(int id)

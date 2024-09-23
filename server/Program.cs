@@ -37,6 +37,8 @@ builder.Services.AddScoped<IStudent, StudentRepositories>();
 builder.Services.AddScoped<IAcademicYear, AcademicYearRepositories>();
 builder.Services.AddScoped<ISemester, SemesterRepositories>();
 builder.Services.AddScoped<ISubject, SubjectRepositories>();
+builder.Services.AddScoped<ISubject_Assgm, SubjectAssgmRepositories>();
+builder.Services.AddScoped<IGrade, GradeRepositories>();
 
 // Add AutoMapper and configure profiles
 builder.Services.AddAutoMapper(typeof(Program));
