@@ -173,7 +173,7 @@ namespace server.Repositories
         var queryBuilder = new StringBuilder("UPDATE Grade SET ");
         var parameters = new List<SqlParameter>();
 
-        if (model.AcademicYearId != 0 || string.IsNullOrEmpty(model.GradeName))
+        if (model.AcademicYearId != 0 || !string.IsNullOrEmpty(model.GradeName))
         {
           queryBuilder.Append("AcademicYearId = @AcademicYearId, ");
           parameters.Add(new SqlParameter("@AcademicYearId", model.AcademicYearId));

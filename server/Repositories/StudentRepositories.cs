@@ -3,8 +3,6 @@ using Microsoft.EntityFrameworkCore;
 using server.Data;
 using server.Dtos;
 using server.IService;
-using server.Models;
-using System.Collections.Generic;
 using System.Text;
 
 
@@ -196,7 +194,7 @@ namespace server.Repositories
           parameters.Add(new SqlParameter("@AccountId", model.AccountId));
         }
 
-        if (String.IsNullOrEmpty(model.Description))
+        if (!string.IsNullOrEmpty(model.Description))
         {
           queryBuilder.Append("Description = @Description, ");
           parameters.Add(new SqlParameter("@Description", model.Description));

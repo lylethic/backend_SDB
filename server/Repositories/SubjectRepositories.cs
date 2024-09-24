@@ -158,7 +158,7 @@ namespace server.Repositories
         var queryBuilder = new StringBuilder("UPDATE Subject SET ");
         var parameters = new List<SqlParameter>();
 
-        if (model.AcademicYearId != 0 || string.IsNullOrEmpty(model.SubjectName))
+        if (model.AcademicYearId != 0 || !string.IsNullOrEmpty(model.SubjectName))
         {
           queryBuilder.Append("AcademicYearId = @AcademicYearId, ");
           parameters.Add(new SqlParameter("@AcademicYearId", model.AcademicYearId));
