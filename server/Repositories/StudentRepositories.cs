@@ -29,16 +29,14 @@ namespace server.Repositories
           return new Data_Response<StudentDto>(409, "Student already exists");
         }
 
-        var sqlInsert = @"INSERT INTO STUDENT (ClassId, GradeId, AccountId, RoleId, ShoolId, Fullname, Status, Description) 
-                          VALUES (@ClassId, @GradeId, @AccountId, @RoleId, @ShoolId, @Fullname, @Status, @Description);
+        var sqlInsert = @"INSERT INTO STUDENT (ClassId, GradeId, AccountId, Fullname, Status, Description) 
+                          VALUES (@ClassId, @GradeId, @AccountId, @Fullname, @Status, @Description);
                           SELECT CAST(SCOPE_IDENTITY() as int);";
 
         var insert = await _context.Database.ExecuteSqlRawAsync(sqlInsert,
           new SqlParameter("@ClassId", model.ClassId),
           new SqlParameter("@GradeId", model.GradeId),
           new SqlParameter("@AccountId", model.AccountId),
-          new SqlParameter("@RoleId", model.RoleId),
-          new SqlParameter("@ShoolId", model.SchoolId),
           new SqlParameter("@Fullname", model.Fullname),
           new SqlParameter("@Status", model.Status),
           new SqlParameter("@Description", model.Description)
@@ -50,8 +48,6 @@ namespace server.Repositories
           ClassId = model.ClassId,
           GradeId = model.GradeId,
           AccountId = model.AccountId,
-          RoleId = model.RoleId,
-          SchoolId = model.SchoolId,
           Fullname = model.Fullname,
           Status = model.Status,
           Description = model.Description,
@@ -93,27 +89,54 @@ namespace server.Repositories
     {
       try
       {
-        var query = "SELECT * FROM Student WHERE StudentId = @id";
+        // Correct SQL query with proper aliases
+        var query = @"
+            SELECT s.StudentId, s.ClassId, s.GradeId, s.AccountId, s.Fullname, s.Status, s.Description,
+                   a.AccountId as A_AccountId, a.RoleId, a.SchoolId, a.Email
+            FROM Student s INNER JOIN Account a ON s.AccountId = a.AccountId
+            WHERE s.StudentId = @id";
+
+        // Fetch the data using FromSqlRaw
         var student = await _context.Students
-          .FromSqlRaw(query, new SqlParameter("@id", id))
-          .FirstOrDefaultAsync();
+            .FromSqlRaw(query, new SqlParameter("@id", id))
+            .Select(static s => new
+            {
+              s.StudentId,
+              s.ClassId,
+              s.GradeId,
+              s.Account.AccountId,
+              s.Fullname,
+              s.Status,
+              s.Description,
+              AccountAccountId = s.Account.AccountId,
+              RoleId = s.Account.RoleId,
+              SchoolId = s.Account.SchoolId,
+              Email = s.Account.Email
+            })
+            .FirstOrDefaultAsync();
 
         if (student is null)
         {
           return new Data_Response<StudentDto>(404, "Student not found");
         }
 
+        // Map the result to the StudentDto
         var result = new StudentDto
         {
           StudentId = id,
           ClassId = student.ClassId,
           GradeId = student.GradeId,
           AccountId = student.AccountId,
-          RoleId = student.RoleId,
-          SchoolId = student.ShoolId,
           Fullname = student.Fullname,
           Status = student.Status,
           Description = student.Description,
+          Account = new AccountDto
+          {
+            AccountId = student.AccountAccountId,
+            RoleId = student.RoleId,
+            SchoolId = student.SchoolId,
+            Email = student.Email
+          }
         };
 
         return new Data_Response<StudentDto>(200, result);
@@ -123,6 +146,7 @@ namespace server.Repositories
         return new Data_Response<StudentDto>(500, $"Server error: {ex.Message}");
       }
     }
+
 
     public async Task<List<StudentDto>> GetStudents()
     {
@@ -137,8 +161,6 @@ namespace server.Repositories
           ClassId = x.ClassId,
           GradeId = x.GradeId,
           AccountId = x.AccountId,
-          RoleId = x.RoleId,
-          SchoolId = x.ShoolId,
           Fullname = x.Fullname,
           Status = x.Status,
           Description = x.Description,
@@ -164,11 +186,29 @@ namespace server.Repositories
 
         if (exists is null)
         {
-          return new Data_Response<StudentDto>(404, "Role not found");
+          return new Data_Response<StudentDto>(404, "Student not found");
         }
 
         var queryBuilder = new StringBuilder("UPDATE Student SET ");
         var parameters = new List<SqlParameter>();
+
+        if (model.ClassId != 0)
+        {
+          queryBuilder.Append("ClassId = @ClassId, ");
+          parameters.Add(new SqlParameter("@ClassId", model.ClassId));
+        }
+
+        if (model.GradeId != 0)
+        {
+          queryBuilder.Append("GradeId = @GradeId, ");
+          parameters.Add(new SqlParameter("@GradeId", model.GradeId));
+        }
+
+        if (model.AccountId != 0)
+        {
+          queryBuilder.Append("accountId = @accountId, ");
+          parameters.Add(new SqlParameter("@accountId", model.AccountId));
+        }
 
         if (!string.IsNullOrEmpty(model.Fullname))
         {
@@ -176,32 +216,11 @@ namespace server.Repositories
           parameters.Add(new SqlParameter("@Fullname", model.Fullname));
         }
 
-        if (model.AccountId != 0)
-        {
-          queryBuilder.Append("AccountId = @AccountId, ");
-          parameters.Add(new SqlParameter("@AccountId", model.AccountId));
-        }
-
-        if (model.SchoolId != 0)
-        {
-          queryBuilder.Append("SchoolId = @SchoolId, ");
-          parameters.Add(new SqlParameter("@SchoolId", model.SchoolId));
-        }
-
-        if (model.StudentId != 0)
-        {
-          queryBuilder.Append("AccountId = @AccountId, ");
-          parameters.Add(new SqlParameter("@AccountId", model.AccountId));
-        }
-
-        if (!string.IsNullOrEmpty(model.Description))
-        {
-          queryBuilder.Append("Description = @Description, ");
-          parameters.Add(new SqlParameter("@Description", model.Description));
-        }
-
         queryBuilder.Append("Status = @Status, ");
         parameters.Add(new SqlParameter("@Status", model.Status));
+
+        queryBuilder.Append("Description = @Description, ");
+        parameters.Add(new SqlParameter("@Description", model.Description));
 
 
         // Remove the last comma and space

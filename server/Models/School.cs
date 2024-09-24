@@ -19,15 +19,13 @@ public partial class School
 
     public bool SchoolType { get; set; }
 
-    public string? Desription { get; set; }
+    public string? Description { get; set; }
 
     public virtual ICollection<Account> Accounts { get; set; } = new List<Account>();
 
     public virtual ICollection<BiaSoDauBai> BiaSoDauBais { get; set; } = new List<BiaSoDauBai>();
 
     public virtual ICollection<Class> Classes { get; set; } = new List<Class>();
-
-    public virtual ICollection<Student> Students { get; set; } = new List<Student>();
 
     public virtual ICollection<Teacher> Teachers { get; set; } = new List<Teacher>();
 }

@@ -1,10 +1,7 @@
 ﻿using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Identity.Client;
-using server.Data;
 using server.Dtos;
 using server.IService;
-using server.Models;
 using System.Text;
 
 namespace server.Repositories
@@ -32,8 +29,8 @@ namespace server.Repositories
           return new Data_Response<SchoolDto>(409, "School already exists");
         }
 
-        var queryInsert = @"INSERT INTO SCHOOL (provinceId, districtId, nameSchcool, address, phoneNumber, schoolType, desription) 
-                            VALUES (@provinceId, @districtId, @nameSchcool, @address, @phoneNumber, @schoolType, @desription);
+        var queryInsert = @"INSERT INTO SCHOOL (provinceId, districtId, nameSchcool, address, phoneNumber, schoolType, description) 
+                            VALUES (@provinceId, @districtId, @nameSchcool, @address, @phoneNumber, @schoolType, @description);
                             SELECT CAST(SCOPE_IDENTITY() as int);";
 
         var schoolInsert = await _context.Database.ExecuteSqlRawAsync(queryInsert,
@@ -43,7 +40,7 @@ namespace server.Repositories
           new SqlParameter("@address", model.Address),
           new SqlParameter("@phoneNumber", model.PhoneNumber),
           new SqlParameter("@schoolType", model.SchoolType),
-          new SqlParameter("@desription", model.Desription));
+          new SqlParameter("@description", model.Description));
 
         var result = new SchoolDto
         {
@@ -54,7 +51,7 @@ namespace server.Repositories
           Address = model.Address,
           PhoneNumber = model.PhoneNumber,
           SchoolType = model.SchoolType,
-          Desription = model.Desription
+          Description = model.Description
         };
 
         return new Data_Response<SchoolDto>(200, result);
@@ -119,7 +116,7 @@ namespace server.Repositories
           PhoneNumber = school.PhoneNumber,
           Address = school.Address,
           SchoolType = school.SchoolType,
-          Desription = school.Desription
+          Description = school.Description
         };
 
         return new Data_Response<SchoolDto>(200, result);
@@ -147,7 +144,7 @@ namespace server.Repositories
           PhoneNumber = x.PhoneNumber,
           Address = x.Address,
           SchoolType = x.SchoolType,
-          Desription = x.Desription
+          Description = x.Description
         }).ToList();
 
         return result;
@@ -177,7 +174,7 @@ namespace server.Repositories
         var parameters = new List<SqlParameter>();
 
         if (model.ProvinceId != 0 || model.DistrictId != 0 || !string.IsNullOrEmpty(model.NameSchool)
-          || !string.IsNullOrEmpty(model.Desription) || !string.IsNullOrEmpty(model.Address)
+          || !string.IsNullOrEmpty(model.Description) || !string.IsNullOrEmpty(model.Address)
           || !string.IsNullOrEmpty(model.PhoneNumber) || model.SchoolType)
         {
           queryBuilder.Append("provinceId = @provinceId, ");
@@ -186,8 +183,8 @@ namespace server.Repositories
           queryBuilder.Append("districtId = @districtId, ");
           parameters.Add(new SqlParameter("@districtId", model.DistrictId));
 
-          queryBuilder.Append("desription = @desription, ");
-          parameters.Add(new SqlParameter("@Desription", model.Desription));
+          queryBuilder.Append("description = @description, ");
+          parameters.Add(new SqlParameter("@Description", model.Description));
 
           queryBuilder.Append("nameSchcool = @nameSchcool, ");
           parameters.Add(new SqlParameter("@nameSchcool", model.NameSchool));

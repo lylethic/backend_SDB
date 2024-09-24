@@ -12,6 +12,4 @@ public partial class Role
     public string Description { get; set; } = null!;
 
     public virtual ICollection<Account> Accounts { get; set; } = new List<Account>();
-
-    public virtual ICollection<Student> Students { get; set; } = new List<Student>();
 }

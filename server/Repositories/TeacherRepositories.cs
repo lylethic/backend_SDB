@@ -2,8 +2,6 @@
 using Microsoft.EntityFrameworkCore;
 using server.Data;
 using server.Dtos;
-using server.IService;
-using server.Models;
 using System.Text;
 
 namespace server.Repositories
@@ -33,7 +31,7 @@ namespace server.Repositories
         }
 
         var sqlInsert = @"INSERT INTO Teacher (AccountId, SchoolId, Fullname, DateOfBirth, Gender, Address, Status) 
-                          VALUES (@AccountId, @SchoolId, @Fullname ,@DateOfBirth, @Gender, @Address, @Status);
+                          VALUES (@AccountId, @SchoolId, @Fullname, @DateOfBirth, @Gender, @Address, @Status);
                           SELECT CAST(SCOPE_IDENTITY() as int);";
 
         var insert = await _context.Database.ExecuteSqlRawAsync(sqlInsert,

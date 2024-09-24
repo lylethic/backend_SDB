@@ -13,10 +13,6 @@ public partial class Student
 
     public int AccountId { get; set; }
 
-    public int RoleId { get; set; }
-
-    public int ShoolId { get; set; }
-
     public string Fullname { get; set; } = null!;
 
     public bool Status { get; set; }
@@ -28,8 +24,4 @@ public partial class Student
     public virtual Class Class { get; set; } = null!;
 
     public virtual Grade Grade { get; set; } = null!;
-
-    public virtual Role Role { get; set; } = null!;
-
-    public virtual School Shool { get; set; } = null!;
 }
