@@ -9,5 +9,7 @@ namespace server.IService
     Task<List<PC_GiangDay_BiaSDBDto>> GetPC_GiangDay_BiaSDBs();
     Task<Data_Response<PC_GiangDay_BiaSDBDto>> DeletePC_GiangDay_BiaSDB(int id);
     Task<Data_Response<PC_GiangDay_BiaSDBDto>> UpdatePC_GiangDay_BiaSDB(int id, PC_GiangDay_BiaSDBDto model);
+    Task<Data_Response<string>> BulkDelete(List<int> ids);
+    Task<string> ImportExcelFile(IFormFile file);
   }
 }

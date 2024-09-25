@@ -17,8 +17,6 @@ namespace server.Repositories
       this._context = context;
     }
 
-    Data_Response<ClassDto> data = new Data_Response<ClassDto>();
-
     public async Task<Data_Response<ClassDto>> CreateClass(ClassDto model)
     {
       try
