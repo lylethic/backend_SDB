@@ -280,14 +280,12 @@ namespace server.Repositories
             Directory.CreateDirectory(uploadsFolder);
           }
 
-          var filePath = Path.Combine(uploadsFolder, file.FileName); // Use file.FileName
+          var filePath = Path.Combine(uploadsFolder, file.FileName);
 
           using (var stream = new FileStream(filePath, FileMode.Create))
           {
             await file.CopyToAsync(stream);
           }
-
-          var classList = new List<ClassDto>();
 
           using (var stream = System.IO.File.Open(filePath, FileMode.Open, FileAccess.Read))
           {
@@ -326,7 +324,7 @@ namespace server.Repositories
           return "Successfully inserted all classes.";
         }
 
-        return "No filr uploaded";
+        return "No file uploaded";
       }
       catch (Exception ex)
       {
