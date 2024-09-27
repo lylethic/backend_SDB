@@ -3,7 +3,6 @@ using Microsoft.EntityFrameworkCore;
 using server.Data;
 using server.Dtos;
 using server.IService;
-using System.Collections.Generic;
 using System.Text;
 
 namespace server.Repositories
@@ -12,7 +11,7 @@ namespace server.Repositories
   {
     readonly SoDauBaiContext _context;
     public AcademicYearRepositories(SoDauBaiContext context) { this._context = context; }
-    
+
     public async Task<Data_Response<AcademicYearDto>> CreateAcademicYear(AcademicYearDto model)
     {
       try
@@ -152,13 +151,13 @@ namespace server.Repositories
     {
       try
       {
-        // Check if the teacher exists in the database
+        // Check if exists in the database
         var findQuery = "SELECT * FROM AcademicYear WHERE academicYearId = @id";
-        var existingTeacher = await _context.AcademicYears
+        var existingAca = await _context.AcademicYears
             .FromSqlRaw(findQuery, new SqlParameter("@id", id))
             .FirstOrDefaultAsync();
 
-        if (existingTeacher == null)
+        if (existingAca == null)
         {
           return new Data_Response<AcademicYearDto>(404, "AcademicYear not found");
         }

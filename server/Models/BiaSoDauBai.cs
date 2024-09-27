@@ -13,8 +13,6 @@ public partial class BiaSoDauBai
 
     public int ClassId { get; set; }
 
-    public int PhanCongGiangDayId { get; set; }
-
     public bool Status { get; set; }
 
     public virtual AcademicYear Academicyear { get; set; } = null!;
@@ -23,7 +21,7 @@ public partial class BiaSoDauBai
 
     public virtual Class Class { get; set; } = null!;
 
-    public virtual PhanCongGiangDay PhanCongGiangDay { get; set; } = null!;
+    public virtual ICollection<PhanCongGiangDay> PhanCongGiangDays { get; set; } = new List<PhanCongGiangDay>();
 
     public virtual School School { get; set; } = null!;
 }

@@ -80,12 +80,13 @@ namespace server.Repositories
           return new Data_Response<PC_GiangDay_BiaSDBDto>(409, "PC_GiangDay_BiaSDB already exists");
         }
 
-        var sqlInsert = @"INSERT INTO PhanCongGiangDay (TeacherId, Status)
+        var sqlInsert = @"INSERT INTO PhanCongGiangDay (TeacherId, biaSoDauBaiId, Status)
                           VALUES (@TeacherId, @Status);
                           SELECT CAST(SCOPE_IDENTITY() as int);";
 
         var insert = await _context.Database.ExecuteSqlRawAsync(sqlInsert,
           new SqlParameter("@TeacherId", model.TeacherId),
+          new SqlParameter("@biaSoDauBaiId", model.biaSoDauBaiId),
           new SqlParameter("@Status", model.Status)
           );
 
@@ -93,6 +94,7 @@ namespace server.Repositories
         {
           PhanCongGiangDayId = insert,
           TeacherId = model.TeacherId,
+          biaSoDauBaiId = model.biaSoDauBaiId,
           Status = model.Status,
         };
 
@@ -148,6 +150,7 @@ namespace server.Repositories
         {
           PhanCongGiangDayId = id,
           TeacherId = phancongSDB.TeacherId,
+          biaSoDauBaiId = phancongSDB.BiaSoDauBaiId,
           Status = phancongSDB.Status,
         };
 
@@ -177,6 +180,7 @@ namespace server.Repositories
         {
           PhanCongGiangDayId = x.PhanCongGiangDayId,
           TeacherId = x.TeacherId,
+          biaSoDauBaiId = x.BiaSoDauBaiId,
           Status = x.Status,
         }).ToList();
 
@@ -229,6 +233,7 @@ namespace server.Repositories
                   var myPhanCongGiangDay = new Models.PhanCongGiangDay
                   {
                     TeacherId = Convert.ToInt32(reader.GetValue(1)),
+                    BiaSoDauBaiId = Convert.ToInt32(reader.GetValue(2)),
                     Status = Convert.ToBoolean(reader.GetValue(2)),
                   };
 
@@ -268,10 +273,13 @@ namespace server.Repositories
         var queryBuilder = new StringBuilder("UPDATE Class SET ");
         var parameters = new List<SqlParameter>();
 
-        if (model.TeacherId != 0)
+        if (model.TeacherId != 0 || model.biaSoDauBaiId != 0)
         {
           queryBuilder.Append("TeacherId = @TeacherId, ");
           parameters.Add(new SqlParameter("@TeacherId", model.TeacherId));
+
+          queryBuilder.Append("biaSoDauBaiId = @biaSoDauBaiId, ");
+          parameters.Add(new SqlParameter("@biaSoDauBaiId", model.biaSoDauBaiId));
 
           queryBuilder.Append("Status = @Status, ");
           parameters.Add(new SqlParameter("@Status", model.Status));

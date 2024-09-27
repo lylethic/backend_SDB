@@ -67,12 +67,12 @@ namespace server.Repositories
     {
       try
       {
-        var findRole = "SELECT * FROM STUDENT WHERE StudentId = @id";
-        var role = await _context.Students
-          .FromSqlRaw(findRole, new SqlParameter("@id", id))
+        var find = "SELECT * FROM STUDENT WHERE StudentId = @id";
+        var student = await _context.Students
+          .FromSqlRaw(find, new SqlParameter("@id", id))
           .FirstOrDefaultAsync();
 
-        if (role is null)
+        if (student is null)
         {
           return new Data_Response<StudentDto>(404, "Student not found");
         }
@@ -154,9 +154,9 @@ namespace server.Repositories
       try
       {
         var query = "SELECT * FROM Student";
-        var roles = await _context.Students.FromSqlRaw(query).ToListAsync();
+        var students = await _context.Students.FromSqlRaw(query).ToListAsync();
 
-        var result = roles.Select(x => new StudentDto
+        var result = students.Select(x => new StudentDto
         {
           StudentId = x.StudentId,
           ClassId = x.ClassId,
@@ -182,7 +182,7 @@ namespace server.Repositories
       {
         var find = "SELECT * FROM Student WHERE StudentId = @id";
         var exists = await _context.Students
-          .FromSqlRaw(find, new SqlParameter("@id", model.StudentId))
+          .FromSqlRaw(find, new SqlParameter("@id", id))
           .FirstOrDefaultAsync();
 
         if (exists is null)

@@ -112,7 +112,6 @@ public partial class SoDauBaiContext : DbContext
       entity.Property(e => e.BiaSoDauBaiId).HasColumnName("biaSoDauBaiId");
       entity.Property(e => e.AcademicyearId).HasColumnName("academicyearId");
       entity.Property(e => e.ClassId).HasColumnName("classId");
-      entity.Property(e => e.PhanCongGiangDayId).HasColumnName("phanCongGiangDayId");
       entity.Property(e => e.SchoolId).HasColumnName("schoolId");
       entity.Property(e => e.Status)
               .HasDefaultValue(true)
@@ -127,11 +126,6 @@ public partial class SoDauBaiContext : DbContext
               .HasForeignKey(d => d.ClassId)
               .OnDelete(DeleteBehavior.ClientSetNull)
               .HasConstraintName("FK__BiaSoDauB__class__2A164134");
-
-      entity.HasOne(d => d.PhanCongGiangDay).WithMany(p => p.BiaSoDauBais)
-              .HasForeignKey(d => d.PhanCongGiangDayId)
-              .OnDelete(DeleteBehavior.ClientSetNull)
-              .HasConstraintName("FK__BiaSoDauB__phanC__29221CFB");
 
       entity.HasOne(d => d.School).WithMany(p => p.BiaSoDauBais)
               .HasForeignKey(d => d.SchoolId)
@@ -315,20 +309,26 @@ public partial class SoDauBaiContext : DbContext
 
     modelBuilder.Entity<PhanCongGiangDay>(entity =>
     {
-      entity.HasKey(e => e.PhanCongGiangDayId).HasName("PK__PhanCong__6B45110FD6A6E7DF");
+      entity.HasKey(e => e.PhanCongGiangDayId).HasName("PK__PhanCong__6B45110FBF930999");
 
       entity.ToTable("PhanCongGiangDay");
 
       entity.Property(e => e.PhanCongGiangDayId).HasColumnName("phanCongGiangDayId");
+      entity.Property(e => e.BiaSoDauBaiId).HasColumnName("biaSoDauBaiId");
       entity.Property(e => e.Status)
               .HasDefaultValue(true)
               .HasColumnName("status");
       entity.Property(e => e.TeacherId).HasColumnName("teacherId");
 
+      entity.HasOne(d => d.BiaSoDauBai).WithMany(p => p.PhanCongGiangDays)
+              .HasForeignKey(d => d.BiaSoDauBaiId)
+              .OnDelete(DeleteBehavior.ClientSetNull)
+              .HasConstraintName("FK__PhanCongG__biaSo__0A688BB1");
+
       entity.HasOne(d => d.Teacher).WithMany(p => p.PhanCongGiangDays)
               .HasForeignKey(d => d.TeacherId)
               .OnDelete(DeleteBehavior.ClientSetNull)
-              .HasConstraintName("FK__PhanCongG__teach__236943A5");
+              .HasConstraintName("FK__PhanCongG__teach__09746778");
     });
 
     modelBuilder.Entity<Role>(entity =>

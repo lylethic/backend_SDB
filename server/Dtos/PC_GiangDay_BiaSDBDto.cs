@@ -6,6 +6,8 @@
 
     public int TeacherId { get; set; }
 
+    public int biaSoDauBaiId { get; set; }
+
     public bool Status { get; set; }
   }
 }

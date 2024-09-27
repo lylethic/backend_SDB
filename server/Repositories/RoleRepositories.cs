@@ -137,7 +137,7 @@ namespace server.Repositories
       {
         var findRole = "SELECT * FROM ROLE WHERE RoleId = @id";
         var roleIdExists = await _context.Roles
-          .FromSqlRaw(findRole, new SqlParameter("@id", model.RoleId))
+          .FromSqlRaw(findRole, new SqlParameter("@id", id))
           .FirstOrDefaultAsync();
 
         if (roleIdExists is null)

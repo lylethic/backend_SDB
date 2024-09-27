@@ -41,6 +41,7 @@ builder.Services.AddScoped<ISubject_Assgm, SubjectAssgmRepositories>();
 builder.Services.AddScoped<IGrade, GradeRepositories>();
 builder.Services.AddScoped<IClass, ClassRepositories>();
 builder.Services.AddScoped<IPC_GiangDay_BiaSDB, PC_GiangDay_BiaSDBRepositories>();
+builder.Services.AddScoped<IClassify, ClassifyRepositories>();
 
 // Add AutoMapper and configure profiles
 builder.Services.AddAutoMapper(typeof(Program));
