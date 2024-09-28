@@ -55,13 +55,11 @@ namespace server.Repositories
       }
     }
 
-
     public async Task<Data_Response<ClassifyDto>> GetClassify(int id)
     {
       try
       {
-        var query = @"
-            SELECT * from Classification where ClassificationId = @id";
+        var query = @"SELECT * from Classification where ClassificationId = @id";
 
         // Fetch 
         var student = await _context.Classifications

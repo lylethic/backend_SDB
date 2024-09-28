@@ -15,6 +15,10 @@ public partial class BiaSoDauBai
 
     public bool Status { get; set; }
 
+    public DateOnly? DateCreated { get; set; }
+
+    public DateOnly? DateUpdated { get; set; }
+
     public virtual AcademicYear Academicyear { get; set; } = null!;
 
     public virtual ICollection<ChiTietSoDauBai> ChiTietSoDauBais { get; set; } = new List<ChiTietSoDauBai>();

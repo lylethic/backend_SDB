@@ -112,6 +112,8 @@ public partial class SoDauBaiContext : DbContext
       entity.Property(e => e.BiaSoDauBaiId).HasColumnName("biaSoDauBaiId");
       entity.Property(e => e.AcademicyearId).HasColumnName("academicyearId");
       entity.Property(e => e.ClassId).HasColumnName("classId");
+      entity.Property(e => e.DateCreated).HasColumnName("dateCreated");
+      entity.Property(e => e.DateUpdated).HasColumnName("dateUpdated");
       entity.Property(e => e.SchoolId).HasColumnName("schoolId");
       entity.Property(e => e.Status)
               .HasDefaultValue(true)

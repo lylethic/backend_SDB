@@ -10,8 +10,10 @@
 
     public int ClassId { get; set; }
 
-    public int PhanCongGiangDayId { get; set; }
-
     public bool Status { get; set; }
+
+    public DateOnly? DateCreated { get; set; }
+
+    public DateOnly? DateUpdated { get; set; }
   }
 }
