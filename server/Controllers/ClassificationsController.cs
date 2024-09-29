@@ -111,7 +111,7 @@ namespace server.Controllers
     {
       try
       {
-        var result = await _classify.ImportClassExcel(file);
+        var result = await _classify.ImportExcel(file);
 
         if (result.Contains("Successfully"))
         {

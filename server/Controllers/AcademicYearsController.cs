@@ -93,5 +93,39 @@ namespace server.Controllers
 
       return Ok(academicYears);
     }
+
+    [HttpDelete("bulkdelete")]
+    public async Task<IActionResult> BulkDelete(List<int> ids)
+    {
+      var academicYears = await _acaYearRepo.BulkDelete(ids);
+
+      if (academicYears.StatusCode != 200)
+      {
+        return BadRequest();
+      }
+
+      return Ok(academicYears);
+    }
+
+    [HttpPost("upload")]
+    public async Task<IActionResult> ImportExcel(IFormFile file)
+    {
+      try
+      {
+        var result = await _acaYearRepo.ImportExcel(file);
+
+        if (result.Contains("Successfully"))
+        {
+          return Ok(result);
+        }
+
+        return BadRequest(result);
+      }
+      catch (Exception ex)
+      {
+
+        throw new Exception("Failed");
+      }
+    }
   }
 }

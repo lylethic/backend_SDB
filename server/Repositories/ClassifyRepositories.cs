@@ -219,7 +219,7 @@ namespace server.Repositories
       }
     }
 
-    public async Task<string> ImportClassExcel(IFormFile file)
+    public async Task<string> ImportExcel(IFormFile file)
     {
       try
       {
@@ -234,7 +234,7 @@ namespace server.Repositories
             Directory.CreateDirectory(uploadsFolder);
           }
 
-          var filePath = Path.Combine(uploadsFolder, file.Name);
+          var filePath = Path.Combine(uploadsFolder, file.FileName);
           using (var stream = new FileStream(filePath, FileMode.Create))
           {
             await file.CopyToAsync(stream);

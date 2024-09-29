@@ -144,60 +144,83 @@ namespace server.Repositories
         try
         {
           var find = "SELECT * FROM BiaSoDauBai WHERE BiaSoDauBaiId = @id";
-          var exists = await _context.BiaSoDauBais
+          var existingBiaSoDaiBai = await _context.BiaSoDauBais
               .FromSqlRaw(find, new SqlParameter("@id", id))
               .FirstOrDefaultAsync();
 
-          if (exists == null)
+          if (existingBiaSoDaiBai == null)
           {
             return new Data_Response<BiaSoDauBaiDto>(404, "BiaSoDauBaiId not found");
           }
 
-          var queryBuilder = new StringBuilder("UPDATE BiaSoDauBai SET ");
-          var parameters = new List<SqlParameter>();
+          bool hasChanges = false;
 
-          if (model.SchoolId != 0)
+          // Compare if difference
+          var parameters = new List<SqlParameter>();
+          var queryBuilder = new StringBuilder("UPDATE BiaSoDauBai SET ");
+
+          if (model.SchoolId != 0 && model.SchoolId != existingBiaSoDaiBai.SchoolId)
           {
             queryBuilder.Append("SchoolId = @SchoolId, ");
             parameters.Add(new SqlParameter("@SchoolId", model.SchoolId));
+            hasChanges = true;
           }
 
-          if (model.AcademicyearId != 0)
+          if (model.AcademicyearId != 0 && model.AcademicyearId != existingBiaSoDaiBai.AcademicyearId)
           {
             queryBuilder.Append("AcademicyearId = @AcademicyearId, ");
             parameters.Add(new SqlParameter("@AcademicyearId", model.AcademicyearId));
+            hasChanges = true;
           }
 
-          if (model.ClassId != 0)
+          if (model.ClassId != 0 && model.ClassId != existingBiaSoDaiBai.ClassId)
           {
             queryBuilder.Append("ClassId = @ClassId, ");
             parameters.Add(new SqlParameter("@ClassId", model.ClassId));
+            hasChanges = true;
           }
 
-          queryBuilder.Append("Status = @Status, ");
-          parameters.Add(new SqlParameter("@Status", model.Status));
+          if (model.Status != existingBiaSoDaiBai.Status)
+          {
+            queryBuilder.Append("Status = @Status, ");
+            parameters.Add(new SqlParameter("@Status", model.Status));
+            hasChanges = true;
+          }
 
-          // Always update the dateUpdated field to current date
+          if (model.DateCreated.HasValue)
+          {
+            queryBuilder.Append("DateCreated = @DateCreated, ");
+            parameters.Add(new SqlParameter("@DateCreated", model.DateCreated.Value));
+          }
+
           var currentDate = DateOnly.FromDateTime(DateTime.Now);
-          queryBuilder.Append("DateUpdated = @DateUpdated, ");
-          parameters.Add(new SqlParameter("@DateUpdated", currentDate));
+          if (currentDate != existingBiaSoDaiBai.DateUpdated)
+          {
+            queryBuilder.Append("DateUpdated = @DateUpdated, ");
+            parameters.Add(new SqlParameter("@DateUpdated", currentDate));
+            hasChanges = true;
+
+          }
 
           // Remove the last comma and space
-          if (queryBuilder.Length > 0)
+          if (hasChanges)
           {
             queryBuilder.Length -= 2;
+            queryBuilder.Append(" WHERE BiaSoDauBaiId = @id");
+            parameters.Add(new SqlParameter("@id", id));
+
+            var updateQuery = queryBuilder.ToString();
+            await _context.Database.ExecuteSqlRawAsync(updateQuery, parameters.ToArray());
+
+            // Commit the transaction
+            await transaction.CommitAsync();
+
+            return new Data_Response<BiaSoDauBaiDto>(200, "Updated successfully");
           }
-
-          queryBuilder.Append(" WHERE BiaSoDauBaiId = @id");
-          parameters.Add(new SqlParameter("@id", id));
-
-          var updateQuery = queryBuilder.ToString();
-          await _context.Database.ExecuteSqlRawAsync(updateQuery, parameters.ToArray());
-
-          // Commit the transaction
-          await transaction.CommitAsync();
-
-          return new Data_Response<BiaSoDauBaiDto>(200, "Updated successfully");
+          else
+          {
+            return new Data_Response<BiaSoDauBaiDto>(200, "No changes detected");
+          }
         }
         catch (Exception ex)
         {
@@ -246,13 +269,13 @@ namespace server.Repositories
 
         var idList = string.Join(",", ids);
 
-        var deleteQuery = $"DELETE FROM BiaSoDaiBai WHERE BiaSoDaiBaiId IN ({idList})";
+        var deleteQuery = $"DELETE FROM BiaSoDauBai WHERE BiaSoDauBaiId IN ({idList})";
 
         var delete = await _context.Database.ExecuteSqlRawAsync(deleteQuery);
 
         if (delete == 0)
         {
-          return new Data_Response<string>(404, "No BiaSoDaiBaiId found to delete");
+          return new Data_Response<string>(404, "No BiaSoDauBaiId found to delete");
         }
 
         await transaction.CommitAsync();
@@ -266,7 +289,7 @@ namespace server.Repositories
       }
     }
 
-    public async Task<string> ImportClassExcel(IFormFile file)
+    public async Task<string> ImportExcel(IFormFile file)
     {
       try
       {
@@ -281,7 +304,7 @@ namespace server.Repositories
             Directory.CreateDirectory(uploadsFolder);
           }
 
-          var filePath = Path.Combine(uploadsFolder, file.Name);
+          var filePath = Path.Combine(uploadsFolder, file.FileName);
           using (var stream = new FileStream(filePath, FileMode.Create))
           {
             await file.CopyToAsync(stream);
@@ -309,8 +332,8 @@ namespace server.Repositories
                     AcademicyearId = Convert.ToInt32(reader.GetValue(2)),
                     ClassId = Convert.ToInt32(reader.GetValue(3)),
                     Status = Convert.ToBoolean(reader.GetValue(4)),
-                    DateCreated = reader.IsDBNull(5) ? null : DateOnly.FromDateTime(Convert.ToDateTime(reader.GetValue(5))),
-                    DateUpdated = reader.IsDBNull(6) ? null : DateOnly.FromDateTime(Convert.ToDateTime(reader.GetValue(6))),
+                    DateCreated = DateOnly.FromDateTime(DateTime.Now),
+                    DateUpdated = null
                   };
 
 

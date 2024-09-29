@@ -107,7 +107,7 @@ namespace server.Controllers
     {
       try
       {
-        var result = await _studentRepo.ImportClassExcel(file);
+        var result = await _studentRepo.ImportExcel(file);
 
         if (result.Contains("Successfully"))
         {

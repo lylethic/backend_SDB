@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using server.Dtos;
 using server.IService;
 
@@ -8,6 +9,7 @@ namespace server.Controllers
 {
   [Route("api/[controller]")]
   [ApiController]
+  [Authorize]
   public class BiaSoDauBaisController : ControllerBase
   {
     readonly IBiaSoDauBai _biaSodaubai;
@@ -45,7 +47,7 @@ namespace server.Controllers
         return BadRequest();
       }
 
-      return Ok(result);
+      return Ok(result.Data);
     }
 
     // POST api/<BiaSoDauBaisController>
@@ -56,10 +58,10 @@ namespace server.Controllers
 
       if (result.StatusCode != 200)
       {
-        return BadRequest();
+        return BadRequest(result.Message);
       }
 
-      return Ok(result);
+      return Ok(result.Data);
     }
 
     // PUT api/<BiaSoDauBaisController>/5
@@ -70,7 +72,7 @@ namespace server.Controllers
 
       if (result.StatusCode != 200)
       {
-        return BadRequest();
+        return BadRequest(result.Message);
       }
 
       return Ok(result);
@@ -84,10 +86,10 @@ namespace server.Controllers
 
       if (result.StatusCode != 200)
       {
-        return BadRequest();
+        return BadRequest(result.Message);
       }
 
-      return Ok(result);
+      return Ok(result.Data);
     }
 
     [HttpDelete("bulkdelete")]
@@ -97,18 +99,18 @@ namespace server.Controllers
 
       if (result.StatusCode != 200)
       {
-        return BadRequest();
+        return BadRequest(result.Message);
       }
 
-      return Ok(result);
+      return Ok(result.Data);
     }
 
     [HttpPost("upload")]
-    public async Task<IActionResult> ImportClassExcel(IFormFile file)
+    public async Task<IActionResult> ImportExcel(IFormFile file)
     {
       try
       {
-        var result = await _biaSodaubai.ImportClassExcel(file);
+        var result = await _biaSodaubai.ImportExcel(file);
 
         if (result.Contains("Successfully"))
         {

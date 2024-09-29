@@ -1,7 +1,9 @@
-﻿using Microsoft.Data.SqlClient;
+﻿using ExcelDataReader;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using server.Data;
 using server.Dtos;
+using server.Helpers;
 using server.IService;
 using System.Text;
 
@@ -9,8 +11,12 @@ namespace server.Repositories
 {
   public class AcademicYearRepositories : IAcademicYear
   {
-    readonly SoDauBaiContext _context;
-    public AcademicYearRepositories(SoDauBaiContext context) { this._context = context; }
+    private readonly SoDauBaiContext _context;
+
+    public AcademicYearRepositories(SoDauBaiContext context)
+    {
+      this._context = context;
+    }
 
     public async Task<Data_Response<AcademicYearDto>> CreateAcademicYear(AcademicYearDto model)
     {
@@ -201,6 +207,104 @@ namespace server.Repositories
       catch (Exception ex)
       {
         return new Data_Response<AcademicYearDto>(500, $"Server Error: {ex.Message}");
+      }
+    }
+
+    public async Task<string> ImportExcel(IFormFile file)
+    {
+      try
+      {
+        System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
+
+        if (file is not null && file.Length > 0)
+        {
+          var uploadsFolder = $"{Directory.GetCurrentDirectory()}\\Uploads";
+
+          if (!Directory.Exists(uploadsFolder))
+          {
+            Directory.CreateDirectory(uploadsFolder);
+          }
+
+          var filePath = Path.Combine(uploadsFolder, file.FileName);
+          using (var stream = new FileStream(filePath, FileMode.Create))
+          {
+            await file.CopyToAsync(stream);
+          }
+
+          using (var stream = System.IO.File.Open(filePath, FileMode.Open, FileAccess.Read))
+          {
+            using (var reader = ExcelReaderFactory.CreateReader(stream))
+            {
+              bool isHeaderSkipped = false;
+
+              do
+              {
+                while (reader.Read())
+                {
+                  if (!isHeaderSkipped)
+                  {
+                    isHeaderSkipped = true;
+                    continue;
+                  }
+
+                  var myAcademicYear = new Models.AcademicYear
+                  {
+                    DisplayAcademicYearName = reader.GetValue(1).ToString() ?? "null",
+                    YearStart = ExcelHelper.ConvertExcelDateToDateOnly(reader.GetValue(2))
+                    ?? DateOnly.FromDateTime(DateTime.Now),
+                    YearEnd = ExcelHelper.ConvertExcelDateToDateOnly(reader.GetValue(3))
+                    ?? DateOnly.FromDateTime(DateTime.Now),
+                    Description = reader.GetValue(4).ToString() ?? "null"
+                  };
+
+                  await _context.AcademicYears.AddAsync(myAcademicYear);
+                  await _context.SaveChangesAsync();
+                }
+              } while (reader.NextResult());
+            }
+          }
+
+          return "Successfully inserted";
+        }
+        return "No file uploaded";
+
+      }
+      catch (Exception ex)
+      {
+        throw new Exception($"Error while uploading file: {ex.Message}");
+      }
+    }
+
+    public async Task<Data_Response<string>> BulkDelete(List<int> ids)
+    {
+      await using var transaction = await _context.Database.BeginTransactionAsync();
+
+      try
+      {
+        if (ids is null || ids.Count == 0)
+        {
+          return new Data_Response<string>(400, "No IDs provided.");
+        }
+
+        var idList = string.Join(",", ids);
+
+        var deleteQuery = $"DELETE FROM AcademicYear WHERE AcademicYearId IN ({idList})";
+
+        var delete = await _context.Database.ExecuteSqlRawAsync(deleteQuery);
+
+        if (delete == 0)
+        {
+          return new Data_Response<string>(404, "No AcademicYearId found to delete");
+        }
+
+        await transaction.CommitAsync();
+
+        return new Data_Response<string>(200, "Deleted succesfully");
+      }
+      catch (Exception ex)
+      {
+        await transaction.RollbackAsync();
+        return new Data_Response<string>(500, $"Server error: {ex.Message}");
       }
     }
   }

@@ -10,6 +10,6 @@ namespace server.IService
     Task<Data_Response<StudentDto>> DeleteStudent(int id);
     Task<Data_Response<StudentDto>> UpdateStudent(int id, StudentDto model);
     Task<Data_Response<string>> BulkDelete(List<int> ids);
-    Task<string> ImportClassExcel(IFormFile file);
+    Task<string> ImportExcel(IFormFile file);
   }
 }

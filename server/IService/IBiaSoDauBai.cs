@@ -13,7 +13,8 @@ namespace server.IService
     Task<Data_Response<BiaSoDauBaiDto>> DeleteBiaSoDauBai(int id);
 
     Task<Data_Response<BiaSoDauBaiDto>> UpdateBiaSoDauBai(int id, BiaSoDauBaiDto model);
-    Task<string> ImportClassExcel(IFormFile file);
+
+    Task<string> ImportExcel(IFormFile file);
 
     Task<Data_Response<string>> BulkDelete(List<int> ids);
   }

@@ -263,7 +263,7 @@ namespace server.Repositories
       }
     }
 
-    public async Task<string> ImportClassExcel(IFormFile file)
+    public async Task<string> ImportExcel(IFormFile file)
     {
       try
       {
@@ -319,7 +319,7 @@ namespace server.Repositories
             }
           }
 
-          return "Successfully inserted all classes.";
+          return "Successfully inserted";
         }
 
         return "No file uploaded";

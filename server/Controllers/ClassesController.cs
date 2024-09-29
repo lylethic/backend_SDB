@@ -99,7 +99,7 @@ namespace server.Controllers
     {
       try
       {
-        var result = await _func.ImportClassExcel(file);
+        var result = await _func.ImportExcel(file);
 
         if (result.Contains("Successfully"))
         {
