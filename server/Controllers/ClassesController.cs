@@ -19,11 +19,11 @@ namespace server.Controllers
 
     // GET: api/<ClassesController>
     [HttpGet]
-    public async Task<IActionResult> GetAllClasses()
+    public async Task<IActionResult> GetAllClasses([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 50)
     {
       try
       {
-        var result = await _func.GetClasses();
+        var result = await _func.GetClasses(pageNumber, pageSize);
         if (result is null)
         {
           return NotFound();

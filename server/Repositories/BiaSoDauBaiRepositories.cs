@@ -142,96 +142,94 @@ namespace server.Repositories
 
     public async Task<Data_Response<BiaSoDauBaiDto>> UpdateBiaSoDauBai(int id, BiaSoDauBaiDto model)
     {
-      using (var transaction = await _context.Database.BeginTransactionAsync())
+      using var transaction = await _context.Database.BeginTransactionAsync();
+      try
       {
-        try
+        var find = "SELECT * FROM BiaSoDauBai WHERE BiaSoDauBaiId = @id";
+        var existingBiaSoDaiBai = await _context.BiaSoDauBais
+            .FromSqlRaw(find, new SqlParameter("@id", id))
+            .FirstOrDefaultAsync();
+
+        if (existingBiaSoDaiBai == null)
         {
-          var find = "SELECT * FROM BiaSoDauBai WHERE BiaSoDauBaiId = @id";
-          var existingBiaSoDaiBai = await _context.BiaSoDauBais
-              .FromSqlRaw(find, new SqlParameter("@id", id))
-              .FirstOrDefaultAsync();
-
-          if (existingBiaSoDaiBai == null)
-          {
-            return new Data_Response<BiaSoDauBaiDto>(404, "BiaSoDauBaiId not found");
-          }
-
-          bool hasChanges = false;
-
-          // Compare if difference
-          var parameters = new List<SqlParameter>();
-          var queryBuilder = new StringBuilder("UPDATE BiaSoDauBai SET ");
-
-          if (model.SchoolId != 0 && model.SchoolId != existingBiaSoDaiBai.SchoolId)
-          {
-            queryBuilder.Append("SchoolId = @SchoolId, ");
-            parameters.Add(new SqlParameter("@SchoolId", model.SchoolId));
-            hasChanges = true;
-          }
-
-          if (model.AcademicyearId != 0 && model.AcademicyearId != existingBiaSoDaiBai.AcademicyearId)
-          {
-            queryBuilder.Append("AcademicyearId = @AcademicyearId, ");
-            parameters.Add(new SqlParameter("@AcademicyearId", model.AcademicyearId));
-            hasChanges = true;
-          }
-
-          if (model.ClassId != 0 && model.ClassId != existingBiaSoDaiBai.ClassId)
-          {
-            queryBuilder.Append("ClassId = @ClassId, ");
-            parameters.Add(new SqlParameter("@ClassId", model.ClassId));
-            hasChanges = true;
-          }
-
-          if (model.Status != existingBiaSoDaiBai.Status)
-          {
-            queryBuilder.Append("Status = @Status, ");
-            parameters.Add(new SqlParameter("@Status", model.Status));
-            hasChanges = true;
-          }
-
-          if (model.DateCreated.HasValue)
-          {
-            queryBuilder.Append("DateCreated = @DateCreated, ");
-            parameters.Add(new SqlParameter("@DateCreated", model.DateCreated.Value));
-          }
-
-          var currentDate = DateOnly.FromDateTime(DateTime.Now);
-          if (currentDate != existingBiaSoDaiBai.DateUpdated)
-          {
-            queryBuilder.Append("DateUpdated = @DateUpdated, ");
-            parameters.Add(new SqlParameter("@DateUpdated", currentDate));
-            hasChanges = true;
-
-          }
-
-          // Remove the last comma and space
-          if (hasChanges)
-          {
-            queryBuilder.Length -= 2;
-            queryBuilder.Append(" WHERE BiaSoDauBaiId = @id");
-            parameters.Add(new SqlParameter("@id", id));
-
-            var updateQuery = queryBuilder.ToString();
-            await _context.Database.ExecuteSqlRawAsync(updateQuery, [.. parameters]);
-
-            // Commit the transaction
-            await transaction.CommitAsync();
-
-            return new Data_Response<BiaSoDauBaiDto>(200, "Updated successfully");
-          }
-          else
-          {
-            return new Data_Response<BiaSoDauBaiDto>(200, "No changes detected");
-          }
+          return new Data_Response<BiaSoDauBaiDto>(404, "BiaSoDauBaiId not found");
         }
-        catch (Exception ex)
+
+        bool hasChanges = false;
+
+        // Compare if difference
+        var parameters = new List<SqlParameter>();
+        var queryBuilder = new StringBuilder("UPDATE BiaSoDauBai SET ");
+
+        if (model.SchoolId != 0 && model.SchoolId != existingBiaSoDaiBai.SchoolId)
         {
-          // Rollback the transaction in case of an error
-          await transaction.RollbackAsync();
-
-          return new Data_Response<BiaSoDauBaiDto>(500, $"Server Error: {ex.Message}");
+          queryBuilder.Append("SchoolId = @SchoolId, ");
+          parameters.Add(new SqlParameter("@SchoolId", model.SchoolId));
+          hasChanges = true;
         }
+
+        if (model.AcademicyearId != 0 && model.AcademicyearId != existingBiaSoDaiBai.AcademicyearId)
+        {
+          queryBuilder.Append("AcademicyearId = @AcademicyearId, ");
+          parameters.Add(new SqlParameter("@AcademicyearId", model.AcademicyearId));
+          hasChanges = true;
+        }
+
+        if (model.ClassId != 0 && model.ClassId != existingBiaSoDaiBai.ClassId)
+        {
+          queryBuilder.Append("ClassId = @ClassId, ");
+          parameters.Add(new SqlParameter("@ClassId", model.ClassId));
+          hasChanges = true;
+        }
+
+        if (model.Status != existingBiaSoDaiBai.Status)
+        {
+          queryBuilder.Append("Status = @Status, ");
+          parameters.Add(new SqlParameter("@Status", model.Status));
+          hasChanges = true;
+        }
+
+        if (model.DateCreated.HasValue)
+        {
+          queryBuilder.Append("DateCreated = @DateCreated, ");
+          parameters.Add(new SqlParameter("@DateCreated", model.DateCreated.Value));
+        }
+
+        var currentDate = DateOnly.FromDateTime(DateTime.Now);
+        if (currentDate != existingBiaSoDaiBai.DateUpdated)
+        {
+          queryBuilder.Append("DateUpdated = @DateUpdated, ");
+          parameters.Add(new SqlParameter("@DateUpdated", currentDate));
+          hasChanges = true;
+
+        }
+
+        // Remove the last comma and space
+        if (hasChanges)
+        {
+          queryBuilder.Length -= 2;
+          queryBuilder.Append(" WHERE BiaSoDauBaiId = @id");
+          parameters.Add(new SqlParameter("@id", id));
+
+          var updateQuery = queryBuilder.ToString();
+          await _context.Database.ExecuteSqlRawAsync(updateQuery, [.. parameters]);
+
+          // Commit the transaction
+          await transaction.CommitAsync();
+
+          return new Data_Response<BiaSoDauBaiDto>(200, "Updated successfully");
+        }
+        else
+        {
+          return new Data_Response<BiaSoDauBaiDto>(200, "No changes detected");
+        }
+      }
+      catch (Exception ex)
+      {
+        // Rollback the transaction in case of an error
+        await transaction.RollbackAsync();
+
+        return new Data_Response<BiaSoDauBaiDto>(500, $"Server Error: {ex.Message}");
       }
     }
 

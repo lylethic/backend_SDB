@@ -168,18 +168,21 @@ namespace server.Repositories
       }
     }
 
-    public async Task<List<ClassDto>> GetClasses()
+    public async Task<List<ClassDto>> GetClasses(int pageNumber, int pageSize)
     {
       try
       {
-        var find = "SELECT * FROM Class";
-        var classes = await _context.Classes
-          .FromSqlRaw(find).ToListAsync();
+        var skip = (pageNumber - 1) * pageSize;
 
-        if (classes is null)
-        {
-          throw new Exception("Empty");
-        }
+        var find = @"SELECT * FROM Class ORDER BY CLASSID 
+                      OFFSET @skip ROWS 
+                      FETCH NEXT @pageSize ROWS ONLY";
+
+        var classes = await _context.Classes
+          .FromSqlRaw(find,
+          new SqlParameter("@skip", skip),
+          new SqlParameter("@pageSize", pageSize)
+          ).ToListAsync() ?? throw new Exception("Empty");
 
         var result = classes.Select(x => new ClassDto
         {

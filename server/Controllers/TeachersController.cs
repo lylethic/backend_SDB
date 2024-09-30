@@ -1,11 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using server.Models;
+﻿using Microsoft.AspNetCore.Mvc;
 using server.Dtos;
 using server.IService;
 
@@ -25,11 +18,11 @@ namespace server.Controllers
 
     // GET: api/Teachers
     [HttpGet]
-    public async Task<IActionResult> GetTeachers()
+    public async Task<IActionResult> GetTeachers(int pageNumber = 1, int pageSize = 50)
     {
       try
       {
-        var teachers = await _teacherRepo.GetTeachers();
+        var teachers = await _teacherRepo.GetTeachers(pageNumber, pageSize);
         if (teachers == null)
         {
           return NotFound(); // 404
@@ -97,6 +90,39 @@ namespace server.Controllers
       }
 
       return Ok(teacher);
+    }
+
+    [HttpDelete("bulkdelete")]
+    public async Task<IActionResult> BulkDelete(List<int> ids)
+    {
+      var teacher = await _teacherRepo.BulkDelete(ids);
+
+      if (teacher.StatusCode != 200)
+      {
+        return BadRequest(teacher);
+      }
+
+      return Ok(teacher);
+    }
+
+    [HttpPost, Route("upload")]
+    public async Task<IActionResult> ImportExcelFile(IFormFile file)
+    {
+      try
+      {
+        var result = await _teacherRepo.ImportExcelFile(file);
+        if (!result.Contains("Succesfully"))
+        {
+          return BadRequest(result);
+        }
+
+        return Ok(result);
+      }
+      catch (Exception ex)
+      {
+        throw new Exception($"Error: {ex.Message}");
+        throw;
+      }
     }
   }
 }

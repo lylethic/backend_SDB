@@ -304,6 +304,7 @@ namespace server.Repositories
                   {
                     // Skip account if it already exists
                     continue;
+                    throw new Exception("Email already exists");
                   }
 
                   // Hash the password

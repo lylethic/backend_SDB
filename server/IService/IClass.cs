@@ -8,7 +8,7 @@ namespace server.IService
 
     Task<Data_Response<ClassDto>> GetClass(int id);
 
-    Task<List<ClassDto>> GetClasses();
+    Task<List<ClassDto>> GetClasses(int pageNumber, int pageSize);
 
     Task<Data_Response<ClassDto>> DeleteClass(int id);
 
