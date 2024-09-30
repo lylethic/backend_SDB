@@ -17,6 +17,39 @@ namespace server.Repositories
       this._context = context;
     }
 
+    public async Task<List<PC_GiangDay_BiaSDBDto>> GetPC_GiangDay_BiaSDBs(int pageNumber, int pageSize)
+    {
+      try
+      {
+        var skip = (pageNumber - 1) * pageSize;
+
+        var fetch = @"SELECT * FROM PhanCongGiangDay
+                      ORDER BY BIASODAUBAIID 
+                      OFFSET @skip ROWS
+                      FETCH NEXT @pageSize ROWS ONLY";
+
+        var phancongSBD = await _context.PhanCongGiangDays
+          .FromSqlRaw(fetch,
+                      new SqlParameter("@skip", skip),
+                      new SqlParameter("@pageSize", pageSize)
+          ).ToListAsync() ?? throw new Exception("Empty");
+
+        var result = phancongSBD.Select(x => new PC_GiangDay_BiaSDBDto
+        {
+          PhanCongGiangDayId = x.PhanCongGiangDayId,
+          TeacherId = x.TeacherId,
+          biaSoDauBaiId = x.BiaSoDauBaiId,
+          Status = x.Status,
+        }).ToList();
+
+        return result;
+      }
+      catch (Exception ex)
+      {
+        throw new Exception($"Server error: {ex.Message}");
+      }
+    }
+
     public async Task<Data_Response<string>> BulkDelete(List<int> ids)
     {
       await using var transaction = await _context.Database.BeginTransactionAsync();
@@ -159,36 +192,6 @@ namespace server.Repositories
       catch (Exception ex)
       {
         return new Data_Response<PC_GiangDay_BiaSDBDto>(500, $"Server Error: {ex.Message}");
-      }
-    }
-
-    public async Task<List<PC_GiangDay_BiaSDBDto>> GetPC_GiangDay_BiaSDBs()
-    {
-      try
-      {
-        var find = "SELECT * FROM PhanCongGiangDay";
-        var phancongSBD = await _context.PhanCongGiangDays
-          .FromSqlRaw(find)
-          .ToListAsync();
-
-        if (phancongSBD is null)
-        {
-          throw new Exception("Empty");
-        }
-
-        var result = phancongSBD.Select(x => new PC_GiangDay_BiaSDBDto
-        {
-          PhanCongGiangDayId = x.PhanCongGiangDayId,
-          TeacherId = x.TeacherId,
-          biaSoDauBaiId = x.BiaSoDauBaiId,
-          Status = x.Status,
-        }).ToList();
-
-        return result;
-      }
-      catch (Exception ex)
-      {
-        throw new Exception($"Server error: {ex.Message}");
       }
     }
 

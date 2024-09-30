@@ -1,15 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using server.Data;
 using server.Dtos;
 using server.IService;
-using server.Models;
 
 namespace server.Controllers
 {
@@ -27,11 +19,11 @@ namespace server.Controllers
 
     // GET: api/Auth
     [HttpGet, Route("accounts")]
-    public async Task<IActionResult> GetAccounts()
+    public async Task<IActionResult> GetAccounts(int pageNumber = 1, int pageSize = 50)
     {
       try
       {
-        var accounts = await _acc.GetAccounts();
+        var accounts = await _acc.GetAccounts(pageNumber, pageSize);
         if (accounts == null)
         {
           return NotFound(); // 404
@@ -46,7 +38,7 @@ namespace server.Controllers
     }
 
     // GET: api/Auth/5
-    [HttpGet, Route("account/{id}")]
+    [HttpGet, Route("{id}")]
     public async Task<IActionResult> GetAccount(int id)
     {
       var account = await _acc.GetAccount(id);
@@ -59,7 +51,7 @@ namespace server.Controllers
     }
 
     // PUT: api/Auth/5
-    [HttpPut, Route("edit/{id}")]
+    [HttpPut, Route("{id}")]
     public async Task<IActionResult> PutAccount(int id, AccountDto account)
     {
       var result = await _acc.UpdateAccount(id, account);
@@ -71,7 +63,7 @@ namespace server.Controllers
     }
 
     // POST: api/Auth
-    [HttpPost, Route("account")]
+    [HttpPost]
     public async Task<IActionResult> CreateAccount(RegisterDto account)
     {
       var result = await _acc.AddAccount(account);
@@ -83,7 +75,7 @@ namespace server.Controllers
     }
 
     // DELETE: api/Auth/5
-    [HttpDelete, Route("delete/{id}")]
+    [HttpDelete, Route("{id}")]
     public async Task<IActionResult> DeleteAccount(int id)
     {
       var result = await _acc.DeleteAccount(id);
@@ -93,6 +85,38 @@ namespace server.Controllers
       }
 
       return Ok(result);
+    }
+
+    [HttpDelete, Route("bulkdelete")]
+    public async Task<IActionResult> BulkDelete(List<int> ids)
+    {
+      var result = await _acc.BulkDelete(ids);
+      if (result.StatusCode != 200)
+      {
+        return BadRequest(result);
+      }
+
+      return Ok(result);
+    }
+
+    [HttpPost, Route("upload")]
+    public async Task<IActionResult> ImportExcel(IFormFile file)
+    {
+      try
+      {
+        var result = await _acc.ImportExcel(file);
+        if (!result.Contains("Successfully"))
+        {
+          return BadRequest(result);
+        }
+
+        return Ok(result);
+      }
+      catch (Exception ex)
+      {
+        return StatusCode(500, $"Server Error: {ex.Message}");
+      }
+
     }
   }
 }

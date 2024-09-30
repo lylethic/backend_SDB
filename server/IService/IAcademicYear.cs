@@ -6,7 +6,7 @@ namespace server.IService
   {
     Task<Data_Response<AcademicYearDto>> CreateAcademicYear(AcademicYearDto model);
     Task<Data_Response<AcademicYearDto>> GetAcademicYear(int id);
-    Task<List<AcademicYearDto>> GetAcademicYears();
+    Task<List<AcademicYearDto>> GetAcademicYears(int pageNumber, int pageSize);
     Task<Data_Response<AcademicYearDto>> DeleteAcademicYear(int id);
     Task<Data_Response<AcademicYearDto>> UpdateAcademicYear(int id, AcademicYearDto model);
     Task<Data_Response<string>> BulkDelete(List<int> ids);

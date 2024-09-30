@@ -10,9 +10,12 @@ namespace server.Repositories
 {
   public class BiaSoDauBaiRepositories : IBiaSoDauBai
   {
-    readonly SoDauBaiContext _context;
+    private readonly SoDauBaiContext _context;
 
-    public BiaSoDauBaiRepositories(SoDauBaiContext context) { this._context = context; }
+    public BiaSoDauBaiRepositories(SoDauBaiContext context)
+    {
+      this._context = context;
+    }
 
     public async Task<Data_Response<BiaSoDauBaiDto>> CreateBiaSoDauBai(BiaSoDauBaiDto model)
     {
@@ -112,12 +115,12 @@ namespace server.Repositories
       {
         var skip = (pageNumber - 1) * pageSize;
 
-        var roles = await _context.BiaSoDauBais
+        var biaSoDauBai = await _context.BiaSoDauBais
             .Skip(skip)     // Skip the first (pageNumber - 1) * pageSize records
             .Take(pageSize) // Take pageSize records
             .ToListAsync();
 
-        var result = roles.Select(x => new BiaSoDauBaiDto
+        var result = biaSoDauBai.Select(x => new BiaSoDauBaiDto
         {
           BiaSoDauBaiId = x.BiaSoDauBaiId,
           SchoolId = x.SchoolId,
@@ -210,7 +213,7 @@ namespace server.Repositories
             parameters.Add(new SqlParameter("@id", id));
 
             var updateQuery = queryBuilder.ToString();
-            await _context.Database.ExecuteSqlRawAsync(updateQuery, parameters.ToArray());
+            await _context.Database.ExecuteSqlRawAsync(updateQuery, [.. parameters]);
 
             // Commit the transaction
             await transaction.CommitAsync();

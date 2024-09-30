@@ -120,7 +120,7 @@ namespace server.Repositories
       }
       catch (Exception ex)
       {
-        return new Data_Response<GradeDto>(500, "Server error");
+        return new Data_Response<GradeDto>(500, $"Server error: {ex.Message}");
       }
     }
 

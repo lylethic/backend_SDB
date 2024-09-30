@@ -19,11 +19,11 @@ namespace server.Controllers
 
     // GET: api/<PhanCongGiangDaysController>
     [HttpGet]
-    public async Task<IActionResult> GetAll()
+    public async Task<IActionResult> GetAll(int pageNumber = 1, int pageSize = 50)
     {
       try
       {
-        var result = await _func.GetPC_GiangDay_BiaSDBs();
+        var result = await _func.GetPC_GiangDay_BiaSDBs(pageNumber, pageSize);
         if (result == null)
         {
           return NotFound();
@@ -105,6 +105,26 @@ namespace server.Controllers
       }
 
       return Ok(result);
+    }
+
+    [HttpPost("upload")]
+    public async Task<IActionResult> ImportExcel(IFormFile file)
+    {
+      try
+      {
+        var result = await _func.ImportExcelFile(file);
+
+        if (result.Contains("Successfully"))
+        {
+          return Ok(result);
+        }
+
+        return BadRequest(result);
+      }
+      catch (Exception ex)
+      {
+        return StatusCode(500, $"Server Error: {ex.Message}");
+      }
     }
   }
 }

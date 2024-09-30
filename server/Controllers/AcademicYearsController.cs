@@ -20,11 +20,11 @@ namespace server.Controllers
 
     // GET: api/AcademicYears
     [HttpGet]
-    public async Task<IActionResult> GetAcademicYears()
+    public async Task<IActionResult> GetAcademicYears(int pageNumber = 1, int pageSize = 50)
     {
       try
       {
-        var academicYears = await _acaYearRepo.GetAcademicYears();
+        var academicYears = await _acaYearRepo.GetAcademicYears(pageNumber, pageSize);
         if (academicYears == null)
         {
           return NotFound(); // 404
@@ -34,7 +34,7 @@ namespace server.Controllers
       catch (Exception ex)
       {
         Console.WriteLine(ex.Message);
-        return StatusCode(500, "Server error"); // 500
+        return StatusCode(500, $"Server error: {ex.Message}"); // 500
       }
     }
 
@@ -124,7 +124,7 @@ namespace server.Controllers
       catch (Exception ex)
       {
 
-        throw new Exception("Failed");
+        throw new Exception($"Failed: {ex.Message}");
       }
     }
   }

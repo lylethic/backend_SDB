@@ -19,39 +19,46 @@ namespace server.Repositories
 
     public async Task<Data_Response<ClassifyDto>> CreateClassify(ClassifyDto model)
     {
-      try
+      using (var transaction = await _context.Database.BeginTransactionAsync())
       {
-        var find = "SELECT * FROM CLASSIFICATION WHERE classificationId = @id";
-        var classify = await _context.Classifications
-          .FromSqlRaw(find, new SqlParameter("@id", model.ClassificationId))
-          .FirstOrDefaultAsync();
-
-        if (classify is not null)
+        try
         {
-          return new Data_Response<ClassifyDto>(409, "classificationId already exists");
-        }
+          var find = "SELECT * FROM CLASSIFICATION WHERE classificationId = @id";
+          var classify = await _context.Classifications
+            .FromSqlRaw(find, new SqlParameter("@id", model.ClassificationId))
+            .FirstOrDefaultAsync();
 
-        var query = @"INSERT INTO CLASSIFICATION (classifyName, score) 
+          if (classify is not null)
+          {
+            return new Data_Response<ClassifyDto>(409, "classificationId already exists");
+          }
+
+          var query = @"INSERT INTO CLASSIFICATION (classifyName, score) 
                        VALUES (@classifyName, @score)";
 
-        var insert = await _context.Database.ExecuteSqlRawAsync(query,
-          new SqlParameter("@classifyName", model.ClassifyName),
-          new SqlParameter("@score", model.Score)
-          );
+          var insert = await _context.Database.ExecuteSqlRawAsync(query,
+            new SqlParameter("@classifyName", model.ClassifyName),
+            new SqlParameter("@score", model.Score)
+            );
 
-        var result = new ClassifyDto
+          await transaction.CommitAsync();
+
+          var result = new ClassifyDto
+          {
+            ClassificationId = insert,
+            ClassifyName = model.ClassifyName,
+            Score = model.Score,
+          };
+
+          return new Data_Response<ClassifyDto>(200, result);
+
+        }
+        catch (Exception ex)
         {
-          ClassificationId = insert,
-          ClassifyName = model.ClassifyName,
-          Score = model.Score,
-        };
+          await transaction.RollbackAsync();
 
-        return new Data_Response<ClassifyDto>(200, result);
-
-      }
-      catch (Exception ex)
-      {
-        return new Data_Response<ClassifyDto>(200, $"Server error: {ex.Message}");
+          return new Data_Response<ClassifyDto>(200, $"Server error: {ex.Message}");
+        }
       }
     }
 
@@ -118,47 +125,67 @@ namespace server.Repositories
 
     public async Task<Data_Response<ClassifyDto>> UpdateClassify(int id, ClassifyDto model)
     {
-      try
+      using (var transaction = await _context.Database.BeginTransactionAsync())
       {
-        var find = "SELECT * FROM Classification WHERE ClassificationId = @id";
-        var exists = await _context.Classifications
-          .FromSqlRaw(find, new SqlParameter("@id", id))
-          .FirstOrDefaultAsync();
-
-        if (exists == null)
+        try
         {
-          return new Data_Response<ClassifyDto>(404, "ClassificationId not found");
+          var find = "SELECT * FROM Classification WHERE ClassificationId = @id";
+          var exists = await _context.Classifications
+            .FromSqlRaw(find, new SqlParameter("@id", id))
+            .FirstOrDefaultAsync();
+
+          if (exists == null)
+          {
+            return new Data_Response<ClassifyDto>(404, "ClassificationId not found");
+          }
+
+          bool hasChanges = false;
+
+          var parameters = new List<SqlParameter>();
+          var queryBuilder = new StringBuilder("UPDATE Classification SET ");
+
+          if (!string.IsNullOrEmpty(model.ClassifyName) && model.ClassifyName != exists.ClassifyName)
+          {
+            queryBuilder.Append("ClassifyName = @ClassifyName, ");
+            parameters.Add(new SqlParameter("@ClassifyName", model.ClassifyName));
+            hasChanges = true;
+          }
+
+          if (model.Score != exists.Score)
+          {
+            queryBuilder.Append("Score = @Score, ");
+            parameters.Add(new SqlParameter("@Score", model.Score));
+            hasChanges = true;
+          }
+
+          // Remove the last comma and space
+          if (queryBuilder.Length > 0)
+          {
+            queryBuilder.Length -= 2;
+          }
+
+          if (hasChanges)
+          {
+            queryBuilder.Append(" WHERE ClassificationId = @id");
+            parameters.Add(new SqlParameter("@id", id));
+
+            var updateQuery = queryBuilder.ToString();
+            await _context.Database.ExecuteSqlRawAsync(updateQuery, [.. parameters]);
+
+            await transaction.CommitAsync();
+
+            return new Data_Response<ClassifyDto>(200, "Updated");
+          }
+          else
+          {
+            return new Data_Response<ClassifyDto>(200, "No changes detected");
+          }
         }
-
-        var queryBuilder = new StringBuilder("UPDATE Classification SET ");
-        var parameters = new List<SqlParameter>();
-
-        if (!string.IsNullOrEmpty(model.ClassifyName))
+        catch (Exception ex)
         {
-          queryBuilder.Append("ClassifyName = @ClassifyName, ");
-          parameters.Add(new SqlParameter("@ClassifyName", model.ClassifyName));
+          await transaction.RollbackAsync();
+          return new Data_Response<ClassifyDto>(500, $"Server Error: {ex.Message}");
         }
-
-        queryBuilder.Append("Score = @Score, ");
-        parameters.Add(new SqlParameter("@Score", model.Score));
-
-        // Remove the last comma and space
-        if (queryBuilder.Length > 0)
-        {
-          queryBuilder.Length -= 2;
-        }
-
-        queryBuilder.Append(" WHERE ClassificationId = @id");
-        parameters.Add(new SqlParameter("@id", id));
-
-        var updateQuery = queryBuilder.ToString();
-        await _context.Database.ExecuteSqlRawAsync(updateQuery, parameters.ToArray());
-
-        return new Data_Response<ClassifyDto>(200, "Updated");
-      }
-      catch (Exception ex)
-      {
-        return new Data_Response<ClassifyDto>(500, $"Server Error: {ex.Message}");
       }
     }
 

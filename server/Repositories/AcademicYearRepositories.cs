@@ -123,17 +123,21 @@ namespace server.Repositories
       }
     }
 
-    public async Task<List<AcademicYearDto>> GetAcademicYears()
+    public async Task<List<AcademicYearDto>> GetAcademicYears(int pageNumber, int pageSize)
     {
       try
       {
-        var query = "SELECT * FROM AcademicYear";
-        var academicYear = await _context.AcademicYears.FromSqlRaw(query).ToListAsync();
+        var skip = (pageNumber - 1) * pageSize;
+        var query = @"SELECT * FROM AcademicYear 
+                      ORDER BY ACADEMICYEARID
+                      OFFSET @skip ROWS
+                      FETCH NEXT @pageSize ROWS ONLY";
 
-        if (academicYear is null)
-        {
-          throw new Exception("No content");
-        }
+        var academicYear = await _context.AcademicYears
+          .FromSqlRaw(query,
+          new SqlParameter("@skip", skip),
+          new SqlParameter("@pageSize", pageSize)
+          ).ToListAsync() ?? throw new Exception("Empty");
 
         var result = academicYear.Select(x => new AcademicYearDto
         {
@@ -149,7 +153,7 @@ namespace server.Repositories
       catch (Exception ex)
       {
         Console.WriteLine(ex.Message);
-        throw;
+        throw new Exception($"Server error: {ex.Message}");
       }
     }
 

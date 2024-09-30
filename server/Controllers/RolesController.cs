@@ -1,16 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Data;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using server.Data;
 using server.Dtos;
 using server.IService;
-using server.Models;
 
 namespace server.Controllers
 {
@@ -28,11 +19,11 @@ namespace server.Controllers
 
     // GET: api/Roles`  
     [HttpGet]
-    public async Task<IActionResult> GetRoles()
+    public async Task<IActionResult> GetRoles(int pageNumber = 1, int pageSize = 50)
     {
       try
       {
-        var roles = await _roleRepo.GetRoles();
+        var roles = await _roleRepo.GetRoles(pageNumber, pageSize);
         if (roles == null)
         {
           return NotFound(); // 404
@@ -42,7 +33,7 @@ namespace server.Controllers
       catch (Exception ex)
       {
         Console.WriteLine(ex.Message);
-        return StatusCode(500, "Server error"); // 500
+        return StatusCode(500, $"Server error: {ex.Message}"); // 500
       }
     }
 
@@ -86,7 +77,7 @@ namespace server.Controllers
       return Ok(result);
     }
 
-    //// DELETE: api/Roles/5
+    // DELETE: api/Roles/5
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeleteRole(int id)
     {
@@ -97,6 +88,39 @@ namespace server.Controllers
       }
 
       return Ok(result);
+    }
+
+    [HttpDelete("bulkdelete")]
+    public async Task<IActionResult> BulkDelete(List<int> ids)
+    {
+      var result = await _roleRepo.BulkDelete(ids);
+
+      if (result.StatusCode != 200)
+      {
+        return BadRequest(result);
+      }
+
+      return Ok(result);
+    }
+
+    [HttpPost("upload")]
+    public async Task<IActionResult> ImportExcelFile(IFormFile file)
+    {
+      try
+      {
+        var result = await _roleRepo.ImportExcel(file);
+
+        if (result.Contains("Successfully"))
+        {
+          return Ok(result);
+        }
+
+        return BadRequest(result);
+      }
+      catch (Exception ex)
+      {
+        return StatusCode(500, $"Server Error: {ex.Message}");
+      }
     }
   }
 }
