@@ -18,12 +18,31 @@ namespace server.Controllers
     }
 
     // GET: api/Auth
-    [HttpGet, Route("accounts")]
+    [HttpGet]
     public async Task<IActionResult> GetAccounts(int pageNumber = 1, int pageSize = 50)
     {
       try
       {
         var accounts = await _acc.GetAccounts(pageNumber, pageSize);
+        if (accounts == null)
+        {
+          return NotFound(); // 404
+        }
+        return Ok(accounts); // 200
+      }
+      catch (Exception ex)
+      {
+        Console.WriteLine(ex.Message);
+        return StatusCode(500, "Server error"); // 500
+      }
+    }
+
+    [HttpGet, Route("GetAccountsByRole")]
+    public async Task<IActionResult> GetAccountsByRole(int pageNumber, int pageSize, int roleId)
+    {
+      try
+      {
+        var accounts = await _acc.GetAccountsByRole(pageNumber, pageSize, roleId);
         if (accounts == null)
         {
           return NotFound(); // 404

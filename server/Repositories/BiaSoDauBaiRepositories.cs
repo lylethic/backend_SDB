@@ -33,7 +33,7 @@ namespace server.Repositories
             return new Data_Response<BiaSoDauBaiDto>(409, "Sodaubai already exists");
           }
 
-          model.DateCreated = DateOnly.FromDateTime(DateTime.Now);
+          model.DateCreated = DateTime.Now;
           model.DateUpdated = null;
 
           var queryInsert = @"INSERT INTO BiaSoDauBai (schoolId, academicYearId, classId, status, dateCreated, dateUpdated)
@@ -195,13 +195,12 @@ namespace server.Repositories
           parameters.Add(new SqlParameter("@DateCreated", model.DateCreated.Value));
         }
 
-        var currentDate = DateOnly.FromDateTime(DateTime.Now);
+        var currentDate = DateTime.Now;
         if (currentDate != existingBiaSoDaiBai.DateUpdated)
         {
           queryBuilder.Append("DateUpdated = @DateUpdated, ");
           parameters.Add(new SqlParameter("@DateUpdated", currentDate));
           hasChanges = true;
-
         }
 
         // Remove the last comma and space
@@ -333,7 +332,7 @@ namespace server.Repositories
                     AcademicyearId = Convert.ToInt32(reader.GetValue(2)),
                     ClassId = Convert.ToInt32(reader.GetValue(3)),
                     Status = Convert.ToBoolean(reader.GetValue(4)),
-                    DateCreated = DateOnly.FromDateTime(DateTime.Now),
+                    DateCreated = DateTime.Now,
                     DateUpdated = null
                   };
 

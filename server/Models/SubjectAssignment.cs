@@ -13,6 +13,10 @@ public partial class SubjectAssignment
 
     public string? Description { get; set; }
 
+    public DateTime? DateCreated { get; set; }
+
+    public DateTime? DateUpdated { get; set; }
+
     public virtual Subject Subject { get; set; } = null!;
 
     public virtual Teacher Teacher { get; set; } = null!;

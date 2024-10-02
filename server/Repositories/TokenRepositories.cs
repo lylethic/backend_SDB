@@ -33,7 +33,7 @@ namespace server.Repositories
         audience: _config["JwtSettings:Audience"],
         claims: claims,
         signingCredentials: signinCredentials,
-        expires: DateTime.UtcNow.AddDays(3)
+        expires: DateTime.Now.AddDays(3)
         );
 
       var tokenString = new JwtSecurityTokenHandler().WriteToken(tokeOptions);
@@ -154,7 +154,7 @@ namespace server.Repositories
         HttpOnly = true,
         Secure = true,
         SameSite = SameSiteMode.Strict, // Prevent CSRF attacks
-        Expires = DateTime.UtcNow.AddDays(3),
+        Expires = DateTime.Now.AddDays(3),
       };
       try
       {
@@ -173,7 +173,7 @@ namespace server.Repositories
         HttpOnly = true,
         Secure = true,
         SameSite = SameSiteMode.Strict,
-        Expires = DateTime.UtcNow.AddDays(5),
+        Expires = DateTime.Now.AddDays(5),
       };
       try
       {
@@ -192,7 +192,7 @@ namespace server.Repositories
         HttpOnly = true,
         Secure = true,
         SameSite = SameSiteMode.Strict,
-        Expires = DateTime.UtcNow.AddDays(-1) // Set expiration date to the past
+        Expires = DateTime.Now.AddDays(-1) // Set expiration date to the past
       };
       try
       {
@@ -211,7 +211,7 @@ namespace server.Repositories
         HttpOnly = true,
         Secure = true,
         SameSite = SameSiteMode.Strict,
-        Expires = DateTime.UtcNow.AddDays(-1) // Set expiration date to the past
+        Expires = DateTime.Now.AddDays(-1) // Set expiration date to the past
       };
       try
       {

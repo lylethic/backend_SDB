@@ -6,7 +6,9 @@ namespace server.IService
   {
     Task<List<AccountDto>> GetAccounts(int pageNumber, int pageSize);
 
-    Task<Data_Response<AccountDto>> GetAccount(int accountId);
+    Task<List<AccountDto>> GetAccountsByRole(int pageNumber, int pageSize, int roleId);
+
+    Task<Data_Response<AccountDto>> GetAccount(int id);
 
     Task<Data_Response<AccountDto>> AddAccount(RegisterDto acc);
 

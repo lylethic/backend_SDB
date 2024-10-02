@@ -15,11 +15,15 @@ public partial class Teacher
 
     public DateTime DateOfBirth { get; set; }
 
-    public byte Gender { get; set; }
+    public bool Gender { get; set; }
 
     public string Address { get; set; } = null!;
 
     public bool Status { get; set; }
+
+    public DateTime? DateCreate { get; set; }
+
+    public DateTime? DateUpdate { get; set; }
 
     public virtual Account Account { get; set; } = null!;
 

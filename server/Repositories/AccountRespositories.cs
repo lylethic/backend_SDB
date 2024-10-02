@@ -10,7 +10,7 @@ using System.Text.RegularExpressions;
 
 namespace server.Repositories
 {
-  public class AccountRespositories : IAccount
+  public class AccountRespositories : IService.IAccount
   {
     private readonly Data.SoDauBaiContext _context;
     private readonly IAuth _auth;
@@ -58,17 +58,22 @@ namespace server.Repositories
          which is crucial for getting the AccountId after the insertion.
         */
         string sqlInsert = @"
-            INSERT INTO Account (Email, RoleId, SchoolId, Password, PasswordSalt)
-            VALUES (@Email, @RoleId, @SchoolId, @Password, @PasswordSalt);
+            INSERT INTO Account (Email, RoleId, SchoolId, Password, PasswordSalt, DateCreated, DateUpdated)
+            VALUES (@Email, @RoleId, @SchoolId, @Password, @PasswordSalt, @DateCreated, @DateUpdated);
             SELECT CAST(SCOPE_IDENTITY() as int);
         ";
+
+        acc.DateCreated = DateTime.Now;
+        acc.DateUpdated = null;
 
         var accountId = await _context.Database.ExecuteSqlRawAsync(sqlInsert,
             new SqlParameter("@Email", acc.Email),
             new SqlParameter("@RoleId", acc.RoleId),
             new SqlParameter("@SchoolId", acc.SchoolId),
             new SqlParameter("@Password", passwordHash),
-            new SqlParameter("@PasswordSalt", passwordSalt)
+            new SqlParameter("@PasswordSalt", passwordSalt),
+            new SqlParameter("@DateCreated", acc.DateCreated),
+            new SqlParameter("@DateUpdated", DBNull.Value)
         );
 
         var accountDto = new AccountDto
@@ -77,6 +82,8 @@ namespace server.Repositories
           Email = acc.Email,
           RoleId = acc.RoleId,
           SchoolId = acc.SchoolId,
+          DateCreated = acc.DateCreated,
+          DateUpdated = acc.DateUpdated,
         };
 
         return new Data_Response<AccountDto>(200, accountDto);
@@ -87,36 +94,78 @@ namespace server.Repositories
       }
     }
 
-    public async Task<Data_Response<AccountDto>> GetAccount(int accountId)
+    public async Task<Data_Response<AccountDto>> GetAccount(int id)
     {
       try
       {
-        var query = "SELECT * FROM ACCOUNT WHERE AccountId = @accountId";
+        var query = @"SELECT acc.AccountId as Acc_AccountId, acc.roleId, acc.schoolId, acc.email, 
+                             tea.AccountId as Teacher_AccId, tea.teacherId, tea.fullname, tea.status
+                      FROM Account as acc 
+                      INNER JOIN Teacher as tea ON acc.AccountId = tea.AccountId
+                      WHERE acc.accountId = @id";
 
-        var acc = await _context.Accounts
-            .FromSqlRaw(query, new SqlParameter("@accountId", accountId))
+        var account = await _context.Accounts
+            .Include(a => a.Teachers)
+            .Select(acc => new AccountDto
+            {
+              AccountId = acc.AccountId,
+              RoleId = acc.RoleId,
+              SchoolId = acc.SchoolId,
+              Email = acc.Email,
+              Teacher = acc.Teachers.Select(tea => new TeacherDto
+              {
+                TeacherId = tea.TeacherId,
+                Fullname = tea.Fullname,
+                Status = tea.Status
+              }).FirstOrDefault()
+            })
             .FirstOrDefaultAsync();
 
-        if (acc is null)
+        if (account is null)
         {
-          return new Data_Response<AccountDto>(404, "Account not founnd");
+          return new Data_Response<AccountDto>(404, "Account not found");
         }
 
-        var result = new AccountDto
-        {
-          AccountId = acc.AccountId,
-          RoleId = acc.RoleId,
-          SchoolId = acc.SchoolId,
-          Email = acc.Email
-        };
-
-        return new Data_Response<AccountDto>(200, result);
+        return new Data_Response<AccountDto>(200, account);
       }
       catch (Exception ex)
       {
         return new Data_Response<AccountDto>(500, $"Server error: {ex.Message}");
       }
     }
+
+    //public async Task<Data_Response<AccountDto>> GetAccount(int accountId)
+    //{
+    //  try
+    //  {
+    //    var query = "SELECT * FROM ACCOUNT WHERE AccountId = @accountId";
+
+    //    var acc = await _context.Accounts
+    //        .FromSqlRaw(query, new SqlParameter("@accountId", accountId))
+    //        .FirstOrDefaultAsync();
+
+    //    if (acc is null)
+    //    {
+    //      return new Data_Response<AccountDto>(404, "Account not founnd");
+    //    }
+
+    //    var result = new AccountDto
+    //    {
+    //      AccountId = acc.AccountId,
+    //      RoleId = acc.RoleId,
+    //      SchoolId = acc.SchoolId,
+    //      Email = acc.Email,
+    //      DateCreated = acc.DateCreated,
+    //      DateUpdated = acc.DateUpdated
+    //    };
+
+    //    return new Data_Response<AccountDto>(200, result);
+    //  }
+    //  catch (Exception ex)
+    //  {
+    //    return new Data_Response<AccountDto>(500, $"Server error: {ex.Message}");
+    //  }
+    //}
 
     public async Task<List<AccountDto>> GetAccounts(int pageNumber, int pageSize)
     {
@@ -140,7 +189,9 @@ namespace server.Repositories
           AccountId = acc.AccountId,
           RoleId = acc.RoleId,
           SchoolId = acc.SchoolId,
-          Email = acc.Email
+          Email = acc.Email,
+          DateCreated = acc.DateCreated,
+          DateUpdated = acc.DateUpdated
         }).ToList();
 
         return result;
@@ -152,61 +203,122 @@ namespace server.Repositories
       }
     }
 
-    public async Task<Data_Response<AccountDto>> UpdateAccount(int accountId, AccountDto acc)
+    public async Task<List<AccountDto>> GetAccountsByRole(int pageNumber, int pageSize, int roleId)
     {
       try
       {
-        if (!IsValidEmail(acc.Email))
+        var skip = (pageNumber - 1) * pageSize;
+
+        var query = @"SELECT * FROM ACCOUNT 
+                      WHERE RoleId = @roleId
+                      ORDER BY EMAIL 
+                      OFFSET @skip ROWS
+                      FETCH NEXT @pageSize ROWS ONLY;";
+
+        var accsList = await _context.Accounts
+            .FromSqlRaw(query,
+                        new SqlParameter("@roleId", roleId),
+                        new SqlParameter("@skip", skip),
+                        new SqlParameter("@pageSize", pageSize)
+            ).ToListAsync() ?? throw new Exception("Empty");
+
+        var result = accsList.Select(acc => new AccountDto
+        {
+          AccountId = acc.AccountId,
+          RoleId = acc.RoleId,
+          SchoolId = acc.SchoolId,
+          Email = acc.Email,
+          DateCreated = acc.DateCreated,
+          DateUpdated = acc.DateUpdated
+        }).ToList();
+
+        return result;
+      }
+      catch (Exception ex)
+      {
+        Console.WriteLine(ex.Message);
+        throw new Exception($"Server error: {ex.Message}");
+      }
+    }
+
+    public async Task<Data_Response<AccountDto>> UpdateAccount(int accountId, AccountDto model)
+    {
+      try
+      {
+        if (!IsValidEmail(model.Email))
         {
           return new Data_Response<AccountDto>(400, "Invalid Email format");
         }
 
         var query = "SELECT * FROM ACCOUNT WHERE AccountId = @accountId";
 
-        var account = await _context.Accounts
+        var existingAccount = await _context.Accounts
           .FromSqlRaw(query, new SqlParameter("@accountId", accountId))
           .FirstOrDefaultAsync();
 
-        if (account is null)
+        if (existingAccount is null)
         {
           return new Data_Response<AccountDto>(404, "Account not found");
         }
 
+        bool hasChanges = false;
+
         var queryBuilder = new StringBuilder("UPDATE Account SET ");
         var parameters = new List<SqlParameter>();
 
-        if (!string.IsNullOrEmpty(acc.Email))
+        if (!string.IsNullOrEmpty(model.Email) && model.Email != existingAccount.Email)
         {
           queryBuilder.Append("Email = @Email, ");
-          parameters.Add(new SqlParameter("@Email", acc.Email));
+          parameters.Add(new SqlParameter("@Email", model.Email));
+          hasChanges = true;
         }
 
-        if (acc.RoleId != 0)
+        if (model.RoleId != 0 && model.RoleId != existingAccount.RoleId)
         {
           queryBuilder.Append("RoleId = @RoleId, ");
-          parameters.Add(new SqlParameter("@RoleId", acc.RoleId));
+          parameters.Add(new SqlParameter("@RoleId", model.RoleId));
+          hasChanges = true;
         }
 
-        if (acc.SchoolId != 0)
+        if (model.SchoolId != 0 && model.SchoolId != existingAccount.SchoolId)
         {
           queryBuilder.Append("SchoolId = @SchoolId, ");
-          parameters.Add(new SqlParameter("@SchoolId", acc.SchoolId));
+          parameters.Add(new SqlParameter("@SchoolId", model.SchoolId));
+          hasChanges = true;
         }
 
-        // Remove the last comma and space
-        if (queryBuilder.Length > 0)
+        if (model.DateCreated.HasValue)
         {
-          queryBuilder.Length -= 2; // Remove the trailing comma and space
+          queryBuilder.Append("DateCreated = @DateCreated, ");
+          parameters.Add(new SqlParameter("@DateCreated", model.DateCreated.Value));
+          hasChanges = true;
         }
 
-        queryBuilder.Append(" WHERE AccountId = @accountId");
-        parameters.Add(new SqlParameter("@accountId", accountId));
+        var currentDate = DateTime.Now;
+        if (currentDate != model.DateUpdated)
+        {
+          queryBuilder.Append("DateUpdated = @DateUpdated, ");
+          parameters.Add(new SqlParameter("@DateUpdated", currentDate));
+          hasChanges = true;
+        }
 
-        // Execute the update query
-        var updateQuery = queryBuilder.ToString();
-        await _context.Database.ExecuteSqlRawAsync(updateQuery, parameters.ToArray());
+        if (hasChanges)
+        {
+          queryBuilder.Length -= 2;
 
-        return new Data_Response<AccountDto>(200, "Updated");
+          queryBuilder.Append(" WHERE AccountId = @accountId");
+          parameters.Add(new SqlParameter("@accountId", accountId));
+
+          // Execute the update query
+          var updateQuery = queryBuilder.ToString();
+          await _context.Database.ExecuteSqlRawAsync(updateQuery, [.. parameters]);
+          return new Data_Response<AccountDto>(200, "Updated");
+
+        }
+        else
+        {
+          return new Data_Response<AccountDto>(200, "No changes detected");
+        }
       }
       catch (Exception ex)
       {
@@ -286,7 +398,9 @@ namespace server.Repositories
                     RoleId = Convert.ToInt16(reader.GetValue(1)),
                     SchoolId = Convert.ToInt16(reader.GetValue(2)),
                     Email = reader.GetValue(3).ToString() ?? "email",
-                    Password = reader.GetValue(4)?.ToString() ?? string.Empty
+                    Password = reader.GetValue(4)?.ToString() ?? string.Empty,
+                    DateCreated = DateTime.Now,
+                    DateUpdated = null
                   };
 
                   if (!IsValidEmail(accountDto.Email))
@@ -316,8 +430,10 @@ namespace server.Repositories
                     RoleId = accountDto.RoleId,
                     SchoolId = accountDto.SchoolId,
                     Email = accountDto.Email,
-                    Password = passwordHash,
-                    PasswordSalt = passwordSalt
+                    MatKhau = passwordHash,
+                    PasswordSalt = passwordSalt,
+                    DateCreated = accountDto.DateCreated,
+                    DateUpdated = accountDto.DateUpdated,
                   };
 
 

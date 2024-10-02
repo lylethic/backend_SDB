@@ -20,11 +20,11 @@ namespace server.Controllers
 
     // GET: api/Students
     [HttpGet]
-    public async Task<IActionResult> GetStudents()
+    public async Task<IActionResult> GetStudents(int pageNumber = 1, int pageSize = 50)
     {
       try
       {
-        var roles = await _studentRepo.GetStudents();
+        var roles = await _studentRepo.GetStudents(pageNumber, pageSize);
         if (roles == null)
         {
           return NotFound(); // 404

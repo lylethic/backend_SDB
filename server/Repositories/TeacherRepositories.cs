@@ -31,9 +31,11 @@ namespace server.Repositories
           return new Data_Response<TeacherDto>(409, "Teacher already exists");
         }
 
-        var sqlInsert = @"INSERT INTO Teacher (AccountId, SchoolId, Fullname, DateOfBirth, Gender, Address, Status) 
-                          VALUES (@AccountId, @SchoolId, @Fullname, @DateOfBirth, @Gender, @Address, @Status);
+        var sqlInsert = @"INSERT INTO Teacher (AccountId, SchoolId, Fullname, DateOfBirth, Gender, Address, Status, DateCreate, DateUpdate) 
+                          VALUES (@AccountId, @SchoolId, @Fullname, @DateOfBirth, @Gender, @Address, @Status, @DateCreate, @DateUpdate);
                           SELECT CAST(SCOPE_IDENTITY() as int);";
+
+        var currentdate = DateTime.Now;
 
         var insert = await _context.Database.ExecuteSqlRawAsync(sqlInsert,
           new SqlParameter("@AccountId", model.AccountId),
@@ -42,7 +44,9 @@ namespace server.Repositories
           new SqlParameter("@DateOfBirth", model.DateOfBirth.ToString("dd/MM/yyyy")),
           new SqlParameter("@Gender", model.Gender),
           new SqlParameter("@Address", model.Address),
-          new SqlParameter("@Status", model.Status)
+          new SqlParameter("@Status", model.Status),
+          new SqlParameter("@DateCreate", currentdate),
+          new SqlParameter("@DateUpdate", DBNull.Value)
         );
 
         var result = new TeacherDto
@@ -55,6 +59,8 @@ namespace server.Repositories
           Gender = model.Gender,
           Address = model.Address,
           Status = model.Status,
+          DateCreate = model.DateCreate,
+          DateUpdate = model.DateUpdate
         };
 
         return new Data_Response<TeacherDto>(200, result);
@@ -114,6 +120,8 @@ namespace server.Repositories
           Gender = teacher.Gender,
           Address = teacher.Address,
           Status = teacher.Status,
+          DateCreate = teacher.DateCreate,
+          DateUpdate = teacher.DateUpdate
         };
 
         return new Data_Response<TeacherDto>(200, result);
@@ -159,6 +167,41 @@ namespace server.Repositories
       {
         Console.WriteLine(ex.Message);
         throw new Exception($"Server error: {ex.Message}");
+      }
+    }
+
+    public async Task<List<TeacherDto>> GetTeachers()
+    {
+      try
+      {
+        var query = "SELECT * FROM Teacher";
+        var teachers = await _context.Teachers.FromSqlRaw(query).ToListAsync();
+
+        if (teachers is null)
+        {
+          throw new Exception("No content");
+        }
+
+        var result = teachers.Select(x => new TeacherDto
+        {
+          TeacherId = x.TeacherId,
+          AccountId = x.AccountId,
+          SchoolId = x.SchoolId,
+          Fullname = x.Fullname,
+          DateOfBirth = x.DateOfBirth,
+          Gender = x.Gender,
+          Address = x.Address,
+          Status = x.Status,
+          DateCreate = x.DateCreate,
+          DateUpdate = x.DateUpdate
+        }).ToList();
+
+        return result;
+      }
+      catch (Exception ex)
+      {
+        Console.WriteLine(ex.Message);
+        throw new Exception($"Error: {ex.Message}");
       }
     }
 
@@ -231,12 +274,23 @@ namespace server.Repositories
           queryBuilder.Append("Status = @Status ");
           parameters.Add(new SqlParameter("@Status", model.Status));
           hasChanges = true;
+        }
 
+        if (model.DateCreate.HasValue)
+        {
+          queryBuilder.Append("DateCreate = @DateCreate, ");
+          parameters.Add(new SqlParameter("@DateCreate", model.DateCreate.Value));
+        }
+
+        if (model.DateUpdate != existingTeacher.DateUpdate)
+        {
+          queryBuilder.Append("DateUpdate = @DateUpdate, ");
+          parameters.Add(new SqlParameter("@DateUpdate", model.DateUpdate));
+          hasChanges = true;
         }
 
         if (hasChanges)
         {
-          // Remove trailing comma from the query if necessary
           if (queryBuilder[^2] == ',')
           {
             queryBuilder.Length -= 2;
@@ -247,7 +301,7 @@ namespace server.Repositories
 
           // Execute the update query
           var updateQuery = queryBuilder.ToString();
-          await _context.Database.ExecuteSqlRawAsync(updateQuery, parameters.ToArray());
+          await _context.Database.ExecuteSqlRawAsync(updateQuery, [.. parameters]);
 
           // Commit the transaction
           await transaction.CommitAsync();
@@ -309,9 +363,11 @@ namespace server.Repositories
                     SchoolId = Convert.ToInt16(reader.GetValue(2)),
                     Fullname = reader.GetValue(3).ToString()?.Trim() ?? "Fullname",
                     DateOfBirth = Convert.ToDateTime(reader.GetValue(4)),
-                    Gender = Convert.ToByte(reader.GetValue(5)),
+                    Gender = Convert.ToBoolean(reader.GetValue(5)),
                     Address = reader.GetValue(6).ToString()?.Trim() ?? "address",
                     Status = Convert.ToBoolean(reader.GetValue(7)),
+                    DateCreate = DateTime.Now,
+                    DateUpdate = null
                   };
 
                   await _context.Teachers.AddAsync(myTeachers);
@@ -350,7 +406,7 @@ namespace server.Repositories
 
         if (delete == 0)
         {
-          return new Data_Response<string>(404, "No BiaSoDauBaiId found to delete");
+          return new Data_Response<string>(404, "No TeacherId found to delete");
         }
 
         await transaction.CommitAsync();

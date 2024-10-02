@@ -13,9 +13,13 @@ public partial class Account
 
     public string Email { get; set; } = null!;
 
-    public byte[] Password { get; set; } = null!;
+    public byte[] MatKhau { get; set; } = null!;
 
     public byte[] PasswordSalt { get; set; } = null!;
+
+    public DateTime? DateCreated { get; set; }
+
+    public DateTime? DateUpdated { get; set; }
 
     public virtual Role Role { get; set; } = null!;
 

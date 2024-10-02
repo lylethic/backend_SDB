@@ -13,6 +13,10 @@ public partial class Grade
 
     public string? Description { get; set; }
 
+    public DateTime? DateCreated { get; set; }
+
+    public DateTime? DateUpdated { get; set; }
+
     public virtual AcademicYear AcademicYear { get; set; } = null!;
 
     public virtual ICollection<Class> Classes { get; set; } = new List<Class>();

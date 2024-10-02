@@ -32,7 +32,7 @@ namespace server.Controllers
       catch (Exception ex)
       {
         Console.WriteLine(ex.Message);
-        return StatusCode(500, "Server error"); // 500
+        return StatusCode(500, $"Server error: {ex.Message}"); // 500
       }
     }
 
@@ -111,17 +111,16 @@ namespace server.Controllers
       try
       {
         var result = await _teacherRepo.ImportExcelFile(file);
-        if (!result.Contains("Succesfully"))
+        if (result.Contains("Successfully"))
         {
-          return BadRequest(result);
+          return Ok(result);
         }
 
-        return Ok(result);
+        return BadRequest(result);
       }
       catch (Exception ex)
       {
         throw new Exception($"Error: {ex.Message}");
-        throw;
       }
     }
   }

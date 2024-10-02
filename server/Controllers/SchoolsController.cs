@@ -17,7 +17,7 @@ namespace server.Controllers
     }
 
     // GET: api/<SchoolsController>
-    [HttpGet, Route("school/{id}")]
+    [HttpGet, Route("{id}")]
     public async Task<IActionResult> GetSchoolById(int id)
     {
       var result = await _school.GetSchool(id);
@@ -30,7 +30,7 @@ namespace server.Controllers
     }
 
     // GET api/<SchoolsController>/5
-    [HttpGet, Route("schools")]
+    [HttpGet]
     public async Task<IActionResult> GetSchools()
     {
       try

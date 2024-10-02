@@ -21,6 +21,10 @@ public partial class School
 
     public string? Description { get; set; }
 
+    public DateTime? DateCreated { get; set; }
+
+    public DateTime? DateUpdated { get; set; }
+
     public virtual ICollection<Account> Accounts { get; set; } = new List<Account>();
 
     public virtual ICollection<BiaSoDauBai> BiaSoDauBais { get; set; } = new List<BiaSoDauBai>();

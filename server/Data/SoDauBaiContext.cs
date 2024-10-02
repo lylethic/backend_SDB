@@ -57,7 +57,7 @@ public partial class SoDauBaiContext : DbContext
   {
     modelBuilder.Entity<AcademicYear>(entity =>
     {
-      entity.HasKey(e => e.AcademicYearId).HasName("PK__Academic__F8DBC2842A191ACA");
+      entity.HasKey(e => e.AcademicYearId).HasName("PK__Academic__F8DBC284F22A4AB7");
 
       entity.ToTable("AcademicYear");
 
@@ -74,19 +74,25 @@ public partial class SoDauBaiContext : DbContext
 
     modelBuilder.Entity<Account>(entity =>
     {
-      entity.HasKey(e => e.AccountId).HasName("PK__Account__F267251E98D34857");
+      entity.HasKey(e => e.AccountId).HasName("PK__Account__F267251EC17D30B7");
 
       entity.ToTable("Account");
 
-      entity.HasIndex(e => e.Email, "UQ__Account__AB6E616424F67397").IsUnique();
+      entity.HasIndex(e => e.Email, "UQ__Account__AB6E61646734D732").IsUnique();
 
       entity.Property(e => e.AccountId).HasColumnName("accountId");
+      entity.Property(e => e.DateCreated)
+              .HasColumnType("datetime")
+              .HasColumnName("dateCreated");
+      entity.Property(e => e.DateUpdated)
+              .HasColumnType("datetime")
+              .HasColumnName("dateUpdated");
       entity.Property(e => e.Email)
               .HasMaxLength(50)
               .HasColumnName("email");
-      entity.Property(e => e.Password)
+      entity.Property(e => e.MatKhau)
               .HasMaxLength(200)
-              .HasColumnName("password");
+              .HasColumnName("matKhau");
       entity.Property(e => e.PasswordSalt)
               .HasMaxLength(200)
               .HasColumnName("passwordSalt");
@@ -96,24 +102,28 @@ public partial class SoDauBaiContext : DbContext
       entity.HasOne(d => d.Role).WithMany(p => p.Accounts)
               .HasForeignKey(d => d.RoleId)
               .OnDelete(DeleteBehavior.ClientSetNull)
-              .HasConstraintName("FK__Account__roleId__59063A47");
+              .HasConstraintName("FK__Account__roleId__3E52440B");
 
       entity.HasOne(d => d.School).WithMany(p => p.Accounts)
               .HasForeignKey(d => d.SchoolId)
-              .HasConstraintName("FK__Account__schoolI__59FA5E80");
+              .HasConstraintName("FK__Account__schoolI__3F466844");
     });
 
     modelBuilder.Entity<BiaSoDauBai>(entity =>
     {
-      entity.HasKey(e => e.BiaSoDauBaiId).HasName("PK__BiaSoDau__B84AE35E5B82570B");
+      entity.HasKey(e => e.BiaSoDauBaiId).HasName("PK__BiaSoDau__B84AE35E6D878F11");
 
       entity.ToTable("BiaSoDauBai");
 
       entity.Property(e => e.BiaSoDauBaiId).HasColumnName("biaSoDauBaiId");
       entity.Property(e => e.AcademicyearId).HasColumnName("academicyearId");
       entity.Property(e => e.ClassId).HasColumnName("classId");
-      entity.Property(e => e.DateCreated).HasColumnName("dateCreated");
-      entity.Property(e => e.DateUpdated).HasColumnName("dateUpdated");
+      entity.Property(e => e.DateCreated)
+              .HasColumnType("datetime")
+              .HasColumnName("dateCreated");
+      entity.Property(e => e.DateUpdated)
+              .HasColumnType("datetime")
+              .HasColumnName("dateUpdated");
       entity.Property(e => e.SchoolId).HasColumnName("schoolId");
       entity.Property(e => e.Status)
               .HasDefaultValue(true)
@@ -122,22 +132,22 @@ public partial class SoDauBaiContext : DbContext
       entity.HasOne(d => d.Academicyear).WithMany(p => p.BiaSoDauBais)
               .HasForeignKey(d => d.AcademicyearId)
               .OnDelete(DeleteBehavior.ClientSetNull)
-              .HasConstraintName("FK__BiaSoDauB__acade__282DF8C2");
+              .HasConstraintName("FK__BiaSoDauB__acade__72C60C4A");
 
       entity.HasOne(d => d.Class).WithMany(p => p.BiaSoDauBais)
               .HasForeignKey(d => d.ClassId)
               .OnDelete(DeleteBehavior.ClientSetNull)
-              .HasConstraintName("FK__BiaSoDauB__class__2A164134");
+              .HasConstraintName("FK__BiaSoDauB__class__73BA3083");
 
       entity.HasOne(d => d.School).WithMany(p => p.BiaSoDauBais)
               .HasForeignKey(d => d.SchoolId)
               .OnDelete(DeleteBehavior.ClientSetNull)
-              .HasConstraintName("FK__BiaSoDauB__schoo__2739D489");
+              .HasConstraintName("FK__BiaSoDauB__schoo__71D1E811");
     });
 
     modelBuilder.Entity<ChiTietSoDauBai>(entity =>
     {
-      entity.HasKey(e => e.ChiTietSoDauBaiId).HasName("PK__ChiTietS__684F0A5B180E3479");
+      entity.HasKey(e => e.ChiTietSoDauBaiId).HasName("PK__ChiTietS__684F0A5B05F1C33D");
 
       entity.ToTable("ChiTietSoDauBai");
 
@@ -173,36 +183,36 @@ public partial class SoDauBaiContext : DbContext
 
       entity.HasOne(d => d.AcademicYear).WithMany(p => p.ChiTietSoDauBais)
               .HasForeignKey(d => d.AcademicYearId)
-              .HasConstraintName("FK__ChiTietSo__acade__2EDAF651");
+              .HasConstraintName("FK__ChiTietSo__acade__7D439ABD");
 
       entity.HasOne(d => d.BiaSoDauBai).WithMany(p => p.ChiTietSoDauBais)
               .HasForeignKey(d => d.BiaSoDauBaiId)
-              .HasConstraintName("FK__ChiTietSo__biaSo__2CF2ADDF");
+              .HasConstraintName("FK__ChiTietSo__biaSo__7B5B524B");
 
       entity.HasOne(d => d.Class).WithMany(p => p.ChiTietSoDauBais)
               .HasForeignKey(d => d.ClassId)
-              .HasConstraintName("FK__ChiTietSo__class__2DE6D218");
+              .HasConstraintName("FK__ChiTietSo__class__7C4F7684");
 
       entity.HasOne(d => d.Classification).WithMany(p => p.ChiTietSoDauBais)
               .HasForeignKey(d => d.ClassificationId)
-              .HasConstraintName("FK__ChiTietSo__class__32AB8735");
+              .HasConstraintName("FK__ChiTietSo__class__01142BA1");
 
       entity.HasOne(d => d.Semester).WithMany(p => p.ChiTietSoDauBais)
               .HasForeignKey(d => d.SemesterId)
-              .HasConstraintName("FK__ChiTietSo__semes__2FCF1A8A");
+              .HasConstraintName("FK__ChiTietSo__semes__7E37BEF6");
 
       entity.HasOne(d => d.Subject).WithMany(p => p.ChiTietSoDauBais)
               .HasForeignKey(d => d.SubjectId)
-              .HasConstraintName("FK__ChiTietSo__subje__31B762FC");
+              .HasConstraintName("FK__ChiTietSo__subje__00200768");
 
       entity.HasOne(d => d.Week).WithMany(p => p.ChiTietSoDauBais)
               .HasForeignKey(d => d.WeekId)
-              .HasConstraintName("FK__ChiTietSo__weekI__30C33EC3");
+              .HasConstraintName("FK__ChiTietSo__weekI__7F2BE32F");
     });
 
     modelBuilder.Entity<Class>(entity =>
     {
-      entity.HasKey(e => e.ClassId).HasName("PK__Class__7577347EDC9E01BE");
+      entity.HasKey(e => e.ClassId).HasName("PK__Class__7577347EF2845A37");
 
       entity.ToTable("Class");
 
@@ -211,6 +221,12 @@ public partial class SoDauBaiContext : DbContext
       entity.Property(e => e.ClassName)
               .HasMaxLength(50)
               .HasColumnName("className");
+      entity.Property(e => e.DateCreated)
+              .HasColumnType("datetime")
+              .HasColumnName("dateCreated");
+      entity.Property(e => e.DateUpdated)
+              .HasColumnType("datetime")
+              .HasColumnName("dateUpdated");
       entity.Property(e => e.Description)
               .HasMaxLength(100)
               .HasColumnName("description");
@@ -224,27 +240,27 @@ public partial class SoDauBaiContext : DbContext
       entity.HasOne(d => d.AcademicYear).WithMany(p => p.Classes)
               .HasForeignKey(d => d.AcademicYearId)
               .OnDelete(DeleteBehavior.ClientSetNull)
-              .HasConstraintName("FK__Class__academicY__02FC7413");
+              .HasConstraintName("FK__Class__academicY__5535A963");
 
       entity.HasOne(d => d.Grade).WithMany(p => p.Classes)
               .HasForeignKey(d => d.GradeId)
               .OnDelete(DeleteBehavior.ClientSetNull)
-              .HasConstraintName("FK__Class__gradeId__01142BA1");
+              .HasConstraintName("FK__Class__gradeId__534D60F1");
 
       entity.HasOne(d => d.School).WithMany(p => p.Classes)
               .HasForeignKey(d => d.SchoolId)
               .OnDelete(DeleteBehavior.ClientSetNull)
-              .HasConstraintName("FK__Class__schoolId__03F0984C");
+              .HasConstraintName("FK__Class__schoolId__5629CD9C");
 
       entity.HasOne(d => d.Teacher).WithMany(p => p.Classes)
               .HasForeignKey(d => d.TeacherId)
               .OnDelete(DeleteBehavior.ClientSetNull)
-              .HasConstraintName("FK__Class__teacherId__02084FDA");
+              .HasConstraintName("FK__Class__teacherId__5441852A");
     });
 
     modelBuilder.Entity<Classification>(entity =>
     {
-      entity.HasKey(e => e.ClassificationId).HasName("PK__Classifi__93F59C967AB49F0A");
+      entity.HasKey(e => e.ClassificationId).HasName("PK__Classifi__93F59C962ED302E2");
 
       entity.ToTable("Classification");
 
@@ -257,12 +273,18 @@ public partial class SoDauBaiContext : DbContext
 
     modelBuilder.Entity<Grade>(entity =>
     {
-      entity.HasKey(e => e.GradeId).HasName("PK__Grade__FB4362F9A98275B9");
+      entity.HasKey(e => e.GradeId).HasName("PK__Grade__FB4362F9F6031319");
 
       entity.ToTable("Grade");
 
       entity.Property(e => e.GradeId).HasColumnName("gradeId");
       entity.Property(e => e.AcademicYearId).HasColumnName("academicYearId");
+      entity.Property(e => e.DateCreated)
+              .HasColumnType("datetime")
+              .HasColumnName("dateCreated");
+      entity.Property(e => e.DateUpdated)
+              .HasColumnType("datetime")
+              .HasColumnName("dateUpdated");
       entity.Property(e => e.Description)
               .HasMaxLength(100)
               .HasColumnName("description");
@@ -273,17 +295,23 @@ public partial class SoDauBaiContext : DbContext
       entity.HasOne(d => d.AcademicYear).WithMany(p => p.Grades)
               .HasForeignKey(d => d.AcademicYearId)
               .OnDelete(DeleteBehavior.ClientSetNull)
-              .HasConstraintName("FK__Grade__academicY__6D0D32F4");
+              .HasConstraintName("FK__Grade__academicY__4F7CD00D");
     });
 
     modelBuilder.Entity<PhanCongChuNhiem>(entity =>
     {
-      entity.HasKey(e => e.PhanCongChuNhiemId).HasName("PK__PhanCong__B11B5963FDC5D885");
+      entity.HasKey(e => e.PhanCongChuNhiemId).HasName("PK__PhanCong__B11B59634233BEEF");
 
       entity.ToTable("PhanCongChuNhiem");
 
       entity.Property(e => e.PhanCongChuNhiemId).HasColumnName("phanCongChuNhiemId");
       entity.Property(e => e.ClassId).HasColumnName("classId");
+      entity.Property(e => e.DateCreated)
+              .HasColumnType("datetime")
+              .HasColumnName("dateCreated");
+      entity.Property(e => e.DateUpdated)
+              .HasColumnType("datetime")
+              .HasColumnName("dateUpdated");
       entity.Property(e => e.Description)
               .HasMaxLength(100)
               .HasColumnName("description");
@@ -296,27 +324,33 @@ public partial class SoDauBaiContext : DbContext
       entity.HasOne(d => d.Class).WithMany(p => p.PhanCongChuNhiems)
               .HasForeignKey(d => d.ClassId)
               .OnDelete(DeleteBehavior.ClientSetNull)
-              .HasConstraintName("FK__PhanCongC__class__1DB06A4F");
+              .HasConstraintName("FK__PhanCongC__class__6D0D32F4");
 
       entity.HasOne(d => d.Semester).WithMany(p => p.PhanCongChuNhiems)
               .HasForeignKey(d => d.SemesterId)
               .OnDelete(DeleteBehavior.ClientSetNull)
-              .HasConstraintName("FK__PhanCongC__semes__1F98B2C1");
+              .HasConstraintName("FK__PhanCongC__semes__6E01572D");
 
       entity.HasOne(d => d.Teacher).WithMany(p => p.PhanCongChuNhiems)
               .HasForeignKey(d => d.TeacherId)
               .OnDelete(DeleteBehavior.ClientSetNull)
-              .HasConstraintName("FK__PhanCongC__teach__1CBC4616");
+              .HasConstraintName("FK__PhanCongC__teach__6C190EBB");
     });
 
     modelBuilder.Entity<PhanCongGiangDay>(entity =>
     {
-      entity.HasKey(e => e.PhanCongGiangDayId).HasName("PK__PhanCong__6B45110FBF930999");
+      entity.HasKey(e => e.PhanCongGiangDayId).HasName("PK__PhanCong__6B45110FAC828123");
 
       entity.ToTable("PhanCongGiangDay");
 
       entity.Property(e => e.PhanCongGiangDayId).HasColumnName("phanCongGiangDayId");
       entity.Property(e => e.BiaSoDauBaiId).HasColumnName("biaSoDauBaiId");
+      entity.Property(e => e.DateCreated)
+              .HasColumnType("datetime")
+              .HasColumnName("dateCreated");
+      entity.Property(e => e.DateUpdated)
+              .HasColumnType("datetime")
+              .HasColumnName("dateUpdated");
       entity.Property(e => e.Status)
               .HasDefaultValue(true)
               .HasColumnName("status");
@@ -325,21 +359,27 @@ public partial class SoDauBaiContext : DbContext
       entity.HasOne(d => d.BiaSoDauBai).WithMany(p => p.PhanCongGiangDays)
               .HasForeignKey(d => d.BiaSoDauBaiId)
               .OnDelete(DeleteBehavior.ClientSetNull)
-              .HasConstraintName("FK__PhanCongG__biaSo__0A688BB1");
+              .HasConstraintName("FK__PhanCongG__biaSo__787EE5A0");
 
       entity.HasOne(d => d.Teacher).WithMany(p => p.PhanCongGiangDays)
               .HasForeignKey(d => d.TeacherId)
               .OnDelete(DeleteBehavior.ClientSetNull)
-              .HasConstraintName("FK__PhanCongG__teach__09746778");
+              .HasConstraintName("FK__PhanCongG__teach__778AC167");
     });
 
     modelBuilder.Entity<Role>(entity =>
     {
-      entity.HasKey(e => e.RoleId).HasName("PK__Role__CD98462ADDF7E78D");
+      entity.HasKey(e => e.RoleId).HasName("PK__Role__CD98462A2E70449A");
 
       entity.ToTable("Role");
 
       entity.Property(e => e.RoleId).HasColumnName("roleId");
+      entity.Property(e => e.DateCreated)
+              .HasColumnType("datetime")
+              .HasColumnName("dateCreated");
+      entity.Property(e => e.DateUpdated)
+              .HasColumnType("datetime")
+              .HasColumnName("dateUpdated");
       entity.Property(e => e.Description)
               .HasMaxLength(50)
               .HasColumnName("description");
@@ -351,16 +391,22 @@ public partial class SoDauBaiContext : DbContext
 
     modelBuilder.Entity<School>(entity =>
     {
-      entity.HasKey(e => e.SchoolId).HasName("PK__School__129B9799CF486F48");
+      entity.HasKey(e => e.SchoolId).HasName("PK__School__129B97994F702CA8");
 
       entity.ToTable("School");
 
-      entity.HasIndex(e => e.PhoneNumber, "UQ__School__4849DA0155FC7936").IsUnique();
+      entity.HasIndex(e => e.PhoneNumber, "UQ__School__4849DA01E5AFEBAE").IsUnique();
 
       entity.Property(e => e.SchoolId).HasColumnName("schoolId");
       entity.Property(e => e.Address)
               .HasMaxLength(200)
               .HasColumnName("address");
+      entity.Property(e => e.DateCreated)
+              .HasColumnType("datetime")
+              .HasColumnName("dateCreated");
+      entity.Property(e => e.DateUpdated)
+              .HasColumnType("datetime")
+              .HasColumnName("dateUpdated");
       entity.Property(e => e.Description)
               .HasMaxLength(100)
               .HasColumnName("description");
@@ -381,7 +427,7 @@ public partial class SoDauBaiContext : DbContext
 
     modelBuilder.Entity<Semester>(entity =>
     {
-      entity.HasKey(e => e.SemesterId).HasName("PK__Semester__F2F37E870A6790A8");
+      entity.HasKey(e => e.SemesterId).HasName("PK__Semester__F2F37E870280302E");
 
       entity.ToTable("Semester");
 
@@ -399,12 +445,12 @@ public partial class SoDauBaiContext : DbContext
       entity.HasOne(d => d.AcademicYear).WithMany(p => p.Semesters)
               .HasForeignKey(d => d.AcademicYearId)
               .OnDelete(DeleteBehavior.ClientSetNull)
-              .HasConstraintName("FK__Semester__academ__6A30C649");
+              .HasConstraintName("FK__Semester__academ__4CA06362");
     });
 
     modelBuilder.Entity<Session>(entity =>
     {
-      entity.HasKey(e => e.TokenId).HasName("PK__Session__AC16DB47DB5C1E78");
+      entity.HasKey(e => e.TokenId).HasName("PK__Session__AC16DB476AE5069D");
 
       entity.ToTable("Session");
 
@@ -423,18 +469,24 @@ public partial class SoDauBaiContext : DbContext
       entity.HasOne(d => d.Account).WithMany(p => p.Sessions)
               .HasForeignKey(d => d.AccountId)
               .OnDelete(DeleteBehavior.ClientSetNull)
-              .HasConstraintName("FK__Session__account__756D6ECB");
+              .HasConstraintName("FK__Session__account__4222D4EF");
     });
 
     modelBuilder.Entity<Student>(entity =>
     {
-      entity.HasKey(e => e.StudentId).HasName("PK__Student__4D11D63C8FD22332");
+      entity.HasKey(e => e.StudentId).HasName("PK__Student__4D11D63CF8C06A45");
 
       entity.ToTable("Student");
 
       entity.Property(e => e.StudentId).HasColumnName("studentId");
       entity.Property(e => e.AccountId).HasColumnName("accountId");
       entity.Property(e => e.ClassId).HasColumnName("classId");
+      entity.Property(e => e.DateCreated)
+              .HasColumnType("datetime")
+              .HasColumnName("dateCreated");
+      entity.Property(e => e.DateUpdated)
+              .HasColumnType("datetime")
+              .HasColumnName("dateUpdated");
       entity.Property(e => e.Description)
               .HasMaxLength(100)
               .HasColumnName("description");
@@ -449,22 +501,22 @@ public partial class SoDauBaiContext : DbContext
       entity.HasOne(d => d.Account).WithMany(p => p.Students)
               .HasForeignKey(d => d.AccountId)
               .OnDelete(DeleteBehavior.ClientSetNull)
-              .HasConstraintName("FK__Student__account__09A971A2");
+              .HasConstraintName("FK__Student__account__5BE2A6F2");
 
       entity.HasOne(d => d.Class).WithMany(p => p.Students)
               .HasForeignKey(d => d.ClassId)
               .OnDelete(DeleteBehavior.ClientSetNull)
-              .HasConstraintName("FK__Student__classId__08B54D69");
+              .HasConstraintName("FK__Student__classId__5AEE82B9");
 
       entity.HasOne(d => d.Grade).WithMany(p => p.Students)
               .HasForeignKey(d => d.GradeId)
               .OnDelete(DeleteBehavior.ClientSetNull)
-              .HasConstraintName("FK__Student__gradeId__07C12930");
+              .HasConstraintName("FK__Student__descrip__59FA5E80");
     });
 
     modelBuilder.Entity<Subject>(entity =>
     {
-      entity.HasKey(e => e.SubjectId).HasName("PK__Subject__ACF9A7606A2A51FA");
+      entity.HasKey(e => e.SubjectId).HasName("PK__Subject__ACF9A76049DF2750");
 
       entity.ToTable("Subject");
 
@@ -477,16 +529,22 @@ public partial class SoDauBaiContext : DbContext
       entity.HasOne(d => d.AcademicYear).WithMany(p => p.Subjects)
               .HasForeignKey(d => d.AcademicYearId)
               .OnDelete(DeleteBehavior.ClientSetNull)
-              .HasConstraintName("FK__Subject__academi__0F624AF8");
+              .HasConstraintName("FK__Subject__academi__5EBF139D");
     });
 
     modelBuilder.Entity<SubjectAssignment>(entity =>
     {
-      entity.HasKey(e => e.SubjectAssignmentId).HasName("PK__SubjectA__803AC446A9FA67AB");
+      entity.HasKey(e => e.SubjectAssignmentId).HasName("PK__SubjectA__803AC446C4C89C7C");
 
       entity.ToTable("SubjectAssignment");
 
       entity.Property(e => e.SubjectAssignmentId).HasColumnName("subjectAssignmentId");
+      entity.Property(e => e.DateCreated)
+              .HasColumnType("datetime")
+              .HasColumnName("dateCreated");
+      entity.Property(e => e.DateUpdated)
+              .HasColumnType("datetime")
+              .HasColumnName("dateUpdated");
       entity.Property(e => e.Description)
               .HasMaxLength(100)
               .HasColumnName("description");
@@ -496,17 +554,17 @@ public partial class SoDauBaiContext : DbContext
       entity.HasOne(d => d.Subject).WithMany(p => p.SubjectAssignments)
               .HasForeignKey(d => d.SubjectId)
               .OnDelete(DeleteBehavior.ClientSetNull)
-              .HasConstraintName("FK__SubjectAs__subje__1332DBDC");
+              .HasConstraintName("FK__SubjectAs__subje__628FA481");
 
       entity.HasOne(d => d.Teacher).WithMany(p => p.SubjectAssignments)
               .HasForeignKey(d => d.TeacherId)
               .OnDelete(DeleteBehavior.ClientSetNull)
-              .HasConstraintName("FK__SubjectAs__teach__123EB7A3");
+              .HasConstraintName("FK__SubjectAs__teach__619B8048");
     });
 
     modelBuilder.Entity<Teacher>(entity =>
     {
-      entity.HasKey(e => e.TeacherId).HasName("PK__Teacher__98E93895DE7F4185");
+      entity.HasKey(e => e.TeacherId).HasName("PK__Teacher__98E93895630519B1");
 
       entity.ToTable("Teacher");
 
@@ -515,14 +573,20 @@ public partial class SoDauBaiContext : DbContext
       entity.Property(e => e.Address)
               .HasMaxLength(200)
               .HasColumnName("address");
+      entity.Property(e => e.DateCreate)
+              .HasColumnType("datetime")
+              .HasColumnName("dateCreate");
       entity.Property(e => e.DateOfBirth)
               .HasColumnType("datetime")
               .HasColumnName("dateOfBirth");
+      entity.Property(e => e.DateUpdate)
+              .HasColumnType("datetime")
+              .HasColumnName("dateUpdate");
       entity.Property(e => e.Fullname)
               .HasMaxLength(100)
               .HasColumnName("fullname");
       entity.Property(e => e.Gender)
-              .HasDefaultValue((byte)1)
+              .HasDefaultValue(true)
               .HasColumnName("gender");
       entity.Property(e => e.SchoolId).HasColumnName("schoolId");
       entity.Property(e => e.Status)
@@ -532,17 +596,17 @@ public partial class SoDauBaiContext : DbContext
       entity.HasOne(d => d.Account).WithMany(p => p.Teachers)
               .HasForeignKey(d => d.AccountId)
               .OnDelete(DeleteBehavior.ClientSetNull)
-              .HasConstraintName("FK__Teacher__account__6477ECF3");
+              .HasConstraintName("FK__Teacher__account__46E78A0C");
 
       entity.HasOne(d => d.School).WithMany(p => p.Teachers)
               .HasForeignKey(d => d.SchoolId)
               .OnDelete(DeleteBehavior.ClientSetNull)
-              .HasConstraintName("FK__Teacher__schoolI__656C112C");
+              .HasConstraintName("FK__Teacher__schoolI__47DBAE45");
     });
 
     modelBuilder.Entity<Week>(entity =>
     {
-      entity.HasKey(e => e.WeekId).HasName("PK__Week__982269FEE6B6DA03");
+      entity.HasKey(e => e.WeekId).HasName("PK__Week__982269FECEF27BBB");
 
       entity.ToTable("Week");
 
@@ -560,7 +624,7 @@ public partial class SoDauBaiContext : DbContext
       entity.HasOne(d => d.Semester).WithMany(p => p.Weeks)
               .HasForeignKey(d => d.SemesterId)
               .OnDelete(DeleteBehavior.ClientSetNull)
-              .HasConstraintName("FK__Week__semesterId__18EBB532");
+              .HasConstraintName("FK__Week__semesterId__68487DD7");
     });
 
     OnModelCreatingPartial(modelBuilder);

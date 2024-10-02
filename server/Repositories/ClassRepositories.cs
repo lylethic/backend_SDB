@@ -22,7 +22,7 @@ namespace server.Repositories
       try
       {
         // check grade
-        var findGrade = "SELECT * FROM Grade WHERE gradeId = @id";
+        var findGrade = @"SELECT * FROM Grade WHERE gradeId = @id";
         var grade = await _context.Grades
           .FromSqlRaw(findGrade, new SqlParameter("@id", model.GradeId))
           .FirstOrDefaultAsync();
@@ -77,9 +77,11 @@ namespace server.Repositories
           return new Data_Response<ClassDto>(409, "Grade already exists");
         }
 
-        var sqlInsert = @"INSERT INTO Class (gradeId, teacherId, academicYearId, schoolId, className, status, description)
-                          VALUES (@gradeId, @teacherId, @academicYearId, @schoolId, @className, @status, @description);
+        var sqlInsert = @"INSERT INTO Class (gradeId, teacherId, academicYearId, schoolId, className, status, description, dateCreated, dateUpdated)
+                          VALUES (@gradeId, @teacherId, @academicYearId, @schoolId, @className, @status, @description, @dateCreated, @dateUpdated);
                           SELECT CAST(SCOPE_IDENTITY() as int);";
+
+        var currentDate = DateTime.Now;
 
         var insert = await _context.Database.ExecuteSqlRawAsync(sqlInsert,
           new SqlParameter("@gradeId", model.GradeId),
@@ -88,7 +90,9 @@ namespace server.Repositories
           new SqlParameter("@schoolId", model.SchoolId),
           new SqlParameter("@className", model.ClassName),
           new SqlParameter("@status", model.Status),
-          new SqlParameter("@description", model.Description)
+          new SqlParameter("@description", model.Description),
+          new SqlParameter("@dateCreated", model.DateCreated),
+          new SqlParameter("@dateUpdated", DBNull.Value)
           );
 
         var result = new ClassDto
@@ -101,6 +105,8 @@ namespace server.Repositories
           ClassName = model.ClassName,
           Status = model.Status,
           Description = model.Description,
+          DateCreated = model.DateCreated,
+          DateUpdated = model.DateUpdated,
         };
 
         return new Data_Response<ClassDto>(200, result);
@@ -158,6 +164,8 @@ namespace server.Repositories
           ClassName = getClass.ClassName,
           Status = getClass.Status,
           Description = getClass.Description,
+          DateCreated = getClass.DateCreated,
+          DateUpdated = getClass.DateUpdated,
         };
 
         return new Data_Response<ClassDto>(200, result);
@@ -194,6 +202,8 @@ namespace server.Repositories
           ClassName = x.ClassName,
           Status = x.Status,
           Description = x.Description,
+          DateCreated = x.DateCreated,
+          DateUpdated = x.DateUpdated,
         }).ToList();
 
         return result;
@@ -210,55 +220,95 @@ namespace server.Repositories
       try
       {
         var find = "SELECT * FROM Class WHERE ClassId = @id";
-
         var getClass = await _context.Classes
-          .FromSqlRaw(find, new SqlParameter("@id", id))
-          .FirstOrDefaultAsync();
+            .FromSqlRaw(find, new SqlParameter("@id", id))
+            .FirstOrDefaultAsync();
 
         if (getClass is null)
         {
-          return new Data_Response<ClassDto>(404, "Not found");
+          return new Data_Response<ClassDto>(404, "Class not found");
         }
 
-        var queryBuilder = new StringBuilder("UPDATE Class SET ");
+        bool hasChanges = false;
         var parameters = new List<SqlParameter>();
+        var queryBuilder = new StringBuilder("UPDATE Class SET ");
 
-        if (model.GradeId != 0 || model.TeacherId != 0 || model.AcademicYearId != 0 || model.SchoolId != 0 || !string.IsNullOrEmpty(model.ClassName))
+        // Conditional checks for each field
+        if (model.GradeId != 0 && model.GradeId != getClass.GradeId)
         {
           queryBuilder.Append("GradeId = @GradeId, ");
           parameters.Add(new SqlParameter("@GradeId", model.GradeId));
+          hasChanges = true;
+        }
 
+        if (model.TeacherId != 0 && model.TeacherId != getClass.TeacherId)
+        {
           queryBuilder.Append("TeacherId = @TeacherId, ");
           parameters.Add(new SqlParameter("@TeacherId", model.TeacherId));
+          hasChanges = true;
+        }
 
+        if (model.AcademicYearId != 0 && model.AcademicYearId != getClass.AcademicYearId)
+        {
           queryBuilder.Append("AcademicYearId = @AcademicYearId, ");
           parameters.Add(new SqlParameter("@AcademicYearId", model.AcademicYearId));
+          hasChanges = true;
+        }
 
+        if (model.SchoolId != 0 && model.SchoolId != getClass.SchoolId)
+        {
           queryBuilder.Append("SchoolId = @SchoolId, ");
           parameters.Add(new SqlParameter("@SchoolId", model.SchoolId));
+          hasChanges = true;
+        }
 
+        if (!string.IsNullOrEmpty(model.ClassName) && model.ClassName != getClass.ClassName)
+        {
           queryBuilder.Append("ClassName = @ClassName, ");
           parameters.Add(new SqlParameter("@ClassName", model.ClassName));
+          hasChanges = true;
+        }
 
-          queryBuilder.Append("Status = @Status, ");
-          parameters.Add(new SqlParameter("@Status", model.Status));
-
+        if (!string.IsNullOrEmpty(model.Description) && model.Description != getClass.Description)
+        {
           queryBuilder.Append("Description = @Description, ");
           parameters.Add(new SqlParameter("@Description", model.Description));
+          hasChanges = true;
         }
 
-        if (queryBuilder[queryBuilder.Length - 2] == ',')
+        if (model.Status != getClass.Status)
         {
-          queryBuilder.Length -= 2;
+          queryBuilder.Append("Status = @Status, ");
+          parameters.Add(new SqlParameter("@Status", model.Status));
+          hasChanges = true;
         }
 
-        queryBuilder.Append(" WHERE ClassId = @id");
-        parameters.Add(new SqlParameter("@id", id));
+        if (hasChanges)
+        {
+          // Always update DateUpdated
+          queryBuilder.Append("DateUpdated = @DateUpdated ");
+          parameters.Add(new SqlParameter("@DateUpdated", DateTime.Now));
 
-        var updateQuery = queryBuilder.ToString();
-        await _context.Database.ExecuteSqlRawAsync(updateQuery, parameters.ToArray());
+          // Remove the last comma and space if present
+          if (queryBuilder[queryBuilder.Length - 2] == ',')
+          {
+            queryBuilder.Length -= 2;
+          }
 
-        return new Data_Response<ClassDto>(200, "Updated");
+          // Add WHERE clause
+          queryBuilder.Append(" WHERE ClassId = @id");
+          parameters.Add(new SqlParameter("@id", id));
+
+          // Execute the update query
+          var updateQuery = queryBuilder.ToString();
+          await _context.Database.ExecuteSqlRawAsync(updateQuery, [.. parameters]);
+
+          return new Data_Response<ClassDto>(200, "Class updated successfully");
+        }
+        else
+        {
+          return new Data_Response<ClassDto>(200, "No changes detected");
+        }
       }
       catch (Exception ex)
       {
@@ -270,7 +320,7 @@ namespace server.Repositories
     {
       try
       {
-        System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
+        Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
 
         if (file is not null && file.Length > 0)
         {
@@ -290,39 +340,39 @@ namespace server.Repositories
 
           using (var stream = System.IO.File.Open(filePath, FileMode.Open, FileAccess.Read))
           {
-            using (var reader = ExcelReaderFactory.CreateReader(stream))
+            using var reader = ExcelReaderFactory.CreateReader(stream);
+
+            bool isHeaderSkipped = false;
+
+            do
             {
-              bool isHeaderSkipped = false;
-
-              do
+              while (reader.Read())
               {
-                while (reader.Read())
+                if (!isHeaderSkipped)
                 {
-                  if (!isHeaderSkipped)
-                  {
-                    isHeaderSkipped = true;
-                    continue;
-                  }
-
-                  var myClass = new Models.Class
-                  {
-                    GradeId = Convert.ToInt32(reader.GetValue(1)),
-                    TeacherId = Convert.ToInt32(reader.GetValue(2)),
-                    AcademicYearId = Convert.ToInt32(reader.GetValue(3)),
-                    SchoolId = Convert.ToInt32(reader.GetValue(4)),
-                    ClassName = reader.GetValue(5)?.ToString() ?? "Unknown",
-                    Status = Convert.ToBoolean(reader.GetValue(6)),
-                    Description = reader.GetValue(7)?.ToString()
-                  };
-
-                  await _context.Classes.AddAsync(myClass);
-                  await _context.SaveChangesAsync();
+                  isHeaderSkipped = true;
+                  continue;
                 }
-              } while (reader.NextResult());
-            }
-          }
 
-          return "Successfully inserted";
+                var myClass = new Models.Class
+                {
+                  GradeId = Convert.ToInt32(reader.GetValue(1)),
+                  TeacherId = Convert.ToInt32(reader.GetValue(2)),
+                  AcademicYearId = Convert.ToInt32(reader.GetValue(3)),
+                  SchoolId = Convert.ToInt32(reader.GetValue(4)),
+                  ClassName = reader.GetValue(5)?.ToString() ?? "Unknown",
+                  Status = Convert.ToBoolean(reader.GetValue(6)),
+                  Description = reader.GetValue(7)?.ToString(),
+                  DateCreated = DateTime.Now,
+                  DateUpdated = null
+                };
+
+                await _context.Classes.AddAsync(myClass);
+                await _context.SaveChangesAsync();
+              }
+            } while (reader.NextResult());
+          }
+          return "Successfully inserted!";
         }
 
         return "No file uploaded";
@@ -368,6 +418,5 @@ namespace server.Repositories
         return new Data_Response<string>(500, $"Server error: {ex.Message}");
       }
     }
-
   }
 }

@@ -1,20 +1,10 @@
-﻿using AutoMapper;
-using Azure.Core;
-using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Identity.Data;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.IdentityModel.Tokens;
-using NuGet.Protocol;
-using server.Data;
+﻿using Microsoft.EntityFrameworkCore;
 using server.Dtos;
 using server.IService;
 using server.Models;
-using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
-using System.Text;
 using System.Security.Cryptography;
-using Microsoft.Data.SqlClient;
+using System.Text;
 
 namespace server.Repositories
 {
@@ -45,6 +35,11 @@ namespace server.Repositories
       }
 
       // Fetch user from DB
+      var query = @"SELECT acc.accountId, acc.roleId, acc.schoolId, acc.email, 
+                             tea.teacherId, tea.fullname, tea.status
+                      FROM Account as acc inner join Teacher as tea on acc.accountId = tea.accountId
+                      WHERE Email = @accountId";
+
       var user = await _context.Accounts.FirstOrDefaultAsync(u => u.Email == model.Email);
 
       if (user is null)
@@ -57,7 +52,7 @@ namespace server.Repositories
       }
 
       // Validate password
-      bool isPasswordValid = ValidateHash(model.Password, user.Password, user.PasswordSalt);
+      bool isPasswordValid = ValidateHash(model.Password!, user.MatKhau, user.PasswordSalt);
       if (!isPasswordValid)
       {
         return new ResponseDto
@@ -142,7 +137,6 @@ namespace server.Repositories
       }
     }
 
-
     public async Task<ResponseDto> Register(RegisterDto model)
     {
       // request empty
@@ -177,7 +171,7 @@ namespace server.Repositories
         RoleId = model.RoleId,
         SchoolId = model.SchoolId,
         Email = model.Email,
-        Password = passwordHash,
+        MatKhau = passwordHash,
         PasswordSalt = passwordSalt
       };
 

@@ -9,5 +9,7 @@
     public string GradeName { get; set; } = null!;
 
     public string? Description { get; set; }
+
+    public AcademicYearDto? AcademicYear { get; set; }
   }
 }

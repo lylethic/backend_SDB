@@ -15,7 +15,6 @@ namespace server.Repositories
 
     public StudentRepositories(SoDauBaiContext context) { this._context = context; }
 
-
     public async Task<Data_Response<StudentDto>> CreateStudent(StudentDto model)
     {
       try
@@ -31,9 +30,11 @@ namespace server.Repositories
           return new Data_Response<StudentDto>(409, "Student already exists");
         }
 
-        var sqlInsert = @"INSERT INTO STUDENT (ClassId, GradeId, AccountId, Fullname, Status, Description) 
-                          VALUES (@ClassId, @GradeId, @AccountId, @Fullname, @Status, @Description);
+        var sqlInsert = @"INSERT INTO STUDENT (ClassId, GradeId, AccountId, Fullname, Status, Description, DateCreated, DateUpdated) 
+                          VALUES (@ClassId, @GradeId, @AccountId, @Fullname, @Status, @Description, @DateCreated, @DateUpdated);
                           SELECT CAST(SCOPE_IDENTITY() as int);";
+
+        var currentdate = DateTime.Now;
 
         var insert = await _context.Database.ExecuteSqlRawAsync(sqlInsert,
           new SqlParameter("@ClassId", model.ClassId),
@@ -41,7 +42,9 @@ namespace server.Repositories
           new SqlParameter("@AccountId", model.AccountId),
           new SqlParameter("@Fullname", model.Fullname),
           new SqlParameter("@Status", model.Status),
-          new SqlParameter("@Description", model.Description)
+          new SqlParameter("@Description", model.Description),
+          new SqlParameter("@DateCreated", currentdate),
+          new SqlParameter("@DateUpdated", DBNull.Value)
         );
 
         var result = new StudentDto
@@ -53,6 +56,8 @@ namespace server.Repositories
           Fullname = model.Fullname,
           Status = model.Status,
           Description = model.Description,
+          DateCreated = model.DateCreated,
+          DateUpdated = model.DateUpdated
         };
 
         return new Data_Response<StudentDto>(200, result);
@@ -149,12 +154,16 @@ namespace server.Repositories
       }
     }
 
-    public async Task<List<StudentDto>> GetStudents()
+    public async Task<List<StudentDto>> GetStudents(int pageNumber, int pageSize)
     {
       try
       {
-        var query = "SELECT * FROM Student";
-        var students = await _context.Students.FromSqlRaw(query).ToListAsync();
+        var skip = (pageNumber - 1) * pageSize;
+        var query = @"SELECT * FROM Student ORDER BY FULLNAME OFFSET @skip ROWS FETCH NEXT @pageSize ROWS ONLY;";
+        var students = await _context.Students.FromSqlRaw(query,
+              new SqlParameter("@skip", skip),
+              new SqlParameter("@pageSize", pageSize)
+          ).ToListAsync();
 
         var result = students.Select(x => new StudentDto
         {
@@ -165,6 +174,8 @@ namespace server.Repositories
           Fullname = x.Fullname,
           Status = x.Status,
           Description = x.Description,
+          DateCreated = x.DateCreated,
+          DateUpdated = x.DateUpdated,
         }).ToList();
 
         return result;
@@ -172,7 +183,7 @@ namespace server.Repositories
       catch (Exception ex)
       {
         Console.WriteLine(ex.Message);
-        throw;
+        throw new Exception($"Error: {ex.Message}");
       }
     }
 
@@ -190,53 +201,85 @@ namespace server.Repositories
           return new Data_Response<StudentDto>(404, "Student not found");
         }
 
-        var queryBuilder = new StringBuilder("UPDATE Student SET ");
-        var parameters = new List<SqlParameter>();
+        bool hasChanges = false;
 
-        if (model.ClassId != 0)
+        var parameters = new List<SqlParameter>();
+        var queryBuilder = new StringBuilder("UPDATE Student SET ");
+
+        if (model.ClassId != 0 && model.ClassId != exists.ClassId)
         {
           queryBuilder.Append("ClassId = @ClassId, ");
           parameters.Add(new SqlParameter("@ClassId", model.ClassId));
+          hasChanges = true;
         }
 
-        if (model.GradeId != 0)
+        if (model.GradeId != 0 && model.GradeId != exists.GradeId)
         {
           queryBuilder.Append("GradeId = @GradeId, ");
           parameters.Add(new SqlParameter("@GradeId", model.GradeId));
+          hasChanges = true;
         }
 
-        if (model.AccountId != 0)
+        if (model.AccountId != 0 && model.AccountId != exists.AccountId)
         {
           queryBuilder.Append("accountId = @accountId, ");
           parameters.Add(new SqlParameter("@accountId", model.AccountId));
+          hasChanges = true;
         }
 
-        if (!string.IsNullOrEmpty(model.Fullname))
+        if (!string.IsNullOrEmpty(model.Fullname) && model.Fullname != exists.Fullname)
         {
           queryBuilder.Append("Fullname = @Fullname, ");
           parameters.Add(new SqlParameter("@Fullname", model.Fullname));
+          hasChanges = true;
         }
 
-        queryBuilder.Append("Status = @Status, ");
-        parameters.Add(new SqlParameter("@Status", model.Status));
-
-        queryBuilder.Append("Description = @Description, ");
-        parameters.Add(new SqlParameter("@Description", model.Description));
-
-
-        // Remove the last comma and space
-        if (queryBuilder.Length > 0)
+        if (model.Status != exists.Status && model.Status != exists.Status)
         {
-          queryBuilder.Length -= 2;
+          queryBuilder.Append("Status = @Status, ");
+          parameters.Add(new SqlParameter("@Status", model.Status));
+          hasChanges = true;
         }
 
-        queryBuilder.Append(" WHERE StudentId = @id");
-        parameters.Add(new SqlParameter("@id", id));
+        if (model.Description != exists.Description && model.Description != exists.Description)
+        {
+          queryBuilder.Append("Description = @Description, ");
+          parameters.Add(new SqlParameter("@Description", model.Description));
+          hasChanges = true;
+        }
 
-        var updateQuery = queryBuilder.ToString();
-        await _context.Database.ExecuteSqlRawAsync(updateQuery, parameters.ToArray());
+        if (model.DateCreated.HasValue)
+        {
+          queryBuilder.Append("DateCreated = @DateCreated, ");
+          parameters.Add(new SqlParameter("@DateCreated", model.DateCreated.Value));
+        }
 
-        return new Data_Response<StudentDto>(200, "Updated");
+        if (model.DateUpdated != exists.DateUpdated)
+        {
+          queryBuilder.Append("DateUpdated = @DateUpdated, ");
+          parameters.Add(new SqlParameter("@DateUpdated", model.DateUpdated));
+          hasChanges = true;
+        }
+
+        if (hasChanges)
+        {
+          if (queryBuilder.Length > 0)
+          {
+            queryBuilder.Length -= 2;
+          }
+
+          queryBuilder.Append(" WHERE StudentId = @id");
+          parameters.Add(new SqlParameter("@id", id));
+
+          var updateQuery = queryBuilder.ToString();
+          await _context.Database.ExecuteSqlRawAsync(updateQuery, parameters.ToArray());
+
+          return new Data_Response<StudentDto>(200, "Updated");
+        }
+        else
+        {
+          return new Data_Response<StudentDto>(200, "No changes detected");
+        }
       }
       catch (Exception ex)
       {
@@ -248,7 +291,7 @@ namespace server.Repositories
     {
       try
       {
-        System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
+        Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
 
         if (file is not null && file.Length > 0)
         {
@@ -265,37 +308,38 @@ namespace server.Repositories
             await file.CopyToAsync(stream);
           }
 
-          using (var stream = System.IO.File.Open(filePath, FileMode.Open, FileAccess.Read))
+          using (var stream = File.Open(filePath, FileMode.Open, FileAccess.Read))
           {
-            using (var reader = ExcelReaderFactory.CreateReader(stream))
+            using var reader = ExcelReaderFactory.CreateReader(stream);
+
+            bool isHeaderSkipped = false;
+
+            do
             {
-              bool isHeaderSkipped = false;
-
-              do
+              while (reader.Read())
               {
-                while (reader.Read())
+                if (!isHeaderSkipped)
                 {
-                  if (!isHeaderSkipped)
-                  {
-                    isHeaderSkipped = true;
-                    continue;
-                  }
-
-                  var myStudent = new Models.Student
-                  {
-                    ClassId = Convert.ToInt32(reader.GetValue(1)),
-                    GradeId = Convert.ToInt32(reader.GetValue(2)),
-                    AccountId = Convert.ToInt32(reader.GetValue(3)),
-                    Fullname = reader.GetValue(4).ToString() ?? "Undefined",
-                    Status = Convert.ToBoolean(reader.GetValue(5)),
-                    Description = reader.GetValue(6)?.ToString() ?? $"{DateTime.UtcNow}"
-                  };
-
-                  await _context.Students.AddAsync(myStudent);
-                  await _context.SaveChangesAsync();
+                  isHeaderSkipped = true;
+                  continue;
                 }
-              } while (reader.NextResult());
-            }
+
+                var myStudent = new Models.Student
+                {
+                  ClassId = Convert.ToInt32(reader.GetValue(1)),
+                  GradeId = Convert.ToInt32(reader.GetValue(2)),
+                  AccountId = Convert.ToInt32(reader.GetValue(3)),
+                  Fullname = reader.GetValue(4).ToString() ?? "Undefined",
+                  Status = Convert.ToBoolean(reader.GetValue(5)),
+                  Description = reader.GetValue(6)?.ToString() ?? $"{DateTime.Now}",
+                  DateCreated = DateTime.Now,
+                  DateUpdated = null
+                };
+
+                await _context.Students.AddAsync(myStudent);
+                await _context.SaveChangesAsync();
+              }
+            } while (reader.NextResult());
           }
 
           return "Successfully inserted all classes.";
