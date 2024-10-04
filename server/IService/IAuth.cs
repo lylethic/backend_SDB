@@ -1,13 +1,11 @@
-﻿using Microsoft.AspNetCore.Identity.Data;
-using Microsoft.AspNetCore.Mvc;
-using server.Dtos;
-using System.IdentityModel.Tokens.Jwt;
+﻿using server.Dtos;
+using server.Types;
 
 namespace server.IService
 {
   public interface IAuth
   {
-    Task<ResponseDto> Login(AuthDto model);
+    Task<LoginResType> Login(AuthDto model);
     Task<ResponseDto> Logout();
     Task<ResponseDto> Register(RegisterDto model);
     void GenerateHash(string password, out byte[] passwordHash, out byte[] passwordSalt);

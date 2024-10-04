@@ -1,16 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Azure;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using server.Data;
 using server.Dtos;
 using server.IService;
-using server.Models;
 
 namespace server.Controllers
 {
@@ -38,13 +29,7 @@ namespace server.Controllers
         return Unauthorized(result.Message);
       }
 
-      return Ok(new
-      {
-        success = result.IsSuccess,
-        message = result.Message,
-        accessToken = result.AccessToken,
-        refreshToken = result.RefreshToken
-      });
+      return Ok(result);
     }
 
     // POST: api/Register

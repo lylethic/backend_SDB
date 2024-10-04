@@ -1,4 +1,5 @@
 ﻿using server.Dtos;
+using server.Types;
 
 namespace server.IService
 {
@@ -8,7 +9,7 @@ namespace server.IService
 
     Task<List<AccountDto>> GetAccountsByRole(int pageNumber, int pageSize, int roleId);
 
-    Task<Data_Response<AccountDto>> GetAccount(int id);
+    Task<Data_Response<AccountResType>> GetAccount(int id);
 
     Task<Data_Response<AccountDto>> AddAccount(RegisterDto acc);
 

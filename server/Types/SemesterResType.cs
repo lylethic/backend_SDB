@@ -1,6 +1,6 @@
-﻿namespace server.Dtos
+﻿namespace server.Types
 {
-  public class SemesterDto
+  public class SemesterResType
   {
     public int SemesterId { get; set; }
 
@@ -13,5 +13,11 @@
     public DateOnly DateEnd { get; set; }
 
     public string? Description { get; set; }
+
+    public string? DisplayAcademicYearName { get; set; } = null;
+
+    public DateOnly? YearStart { get; set; }
+
+    public DateOnly? YearEnd { get; set; }
   }
 }

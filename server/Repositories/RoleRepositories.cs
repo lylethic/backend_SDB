@@ -21,7 +21,12 @@ namespace server.Repositories
     {
       try
       {
-        var query = "SELECT * FROM ROLE WHERE RoleId = @id";
+        var query = @"SELECT * 
+                      FROM ROLE 
+                      WHERE RoleId = @id ORDERBY ROLEID 
+                      OFFSET @skip ROWS 
+                      FETCH NEXT @pageSize ROWS ONLY";
+
         var role = await _context.Roles
           .FromSqlRaw(query, new SqlParameter("@id", id))
           .FirstOrDefaultAsync();

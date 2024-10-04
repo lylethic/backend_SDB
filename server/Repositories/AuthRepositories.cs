@@ -2,6 +2,7 @@
 using server.Dtos;
 using server.IService;
 using server.Models;
+using server.Types;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
@@ -23,43 +24,25 @@ namespace server.Repositories
       _tokenService = tokenService;
     }
 
-    public async Task<ResponseDto> Login(AuthDto model)
+    public async Task<LoginResType> Login(AuthDto model)
     {
       if (model is null)
       {
-        return new ResponseDto
-        {
-          IsSuccess = false,
-          Message = "Invalid client request",
-        };
+        return new LoginResType(false, "Invalid client request");
       }
-
-      // Fetch user from DB
-      var query = @"SELECT acc.accountId, acc.roleId, acc.schoolId, acc.email, 
-                             tea.teacherId, tea.fullname, tea.status
-                      FROM Account as acc inner join Teacher as tea on acc.accountId = tea.accountId
-                      WHERE Email = @accountId";
 
       var user = await _context.Accounts.FirstOrDefaultAsync(u => u.Email == model.Email);
 
       if (user is null)
       {
-        return new ResponseDto
-        {
-          IsSuccess = false,
-          Message = "Invalid email",
-        };
+        return new LoginResType(false, "Invalid email");
       }
 
       // Validate password
       bool isPasswordValid = ValidateHash(model.Password!, user.MatKhau, user.PasswordSalt);
       if (!isPasswordValid)
       {
-        return new ResponseDto
-        {
-          IsSuccess = false,
-          Message = "Invalid password",
-        };
+        return new LoginResType(false, "Invalid password");
       }
 
       // Generate JWT tokens
@@ -86,12 +69,16 @@ namespace server.Repositories
       await _context.Sessions.AddAsync(session);
       await _context.SaveChangesAsync();
 
-      return new ResponseDto
+      return new LoginResType
       {
         IsSuccess = true,
         Message = "Login successful",
         AccessToken = accessToken,
-        RefreshToken = refreshToken
+        RefreshToken = refreshToken,
+        Email = user.Email,
+        AccountId = user.AccountId,
+        RoleId = user.RoleId,
+        SchoolId = user.SchoolId,
       };
     }
 

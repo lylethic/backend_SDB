@@ -6,6 +6,7 @@ using server.Dtos;
 using server.Helpers;
 using server.IService;
 using server.Models;
+using server.Types;
 using System.Text;
 
 namespace server.Repositories
@@ -91,20 +92,20 @@ namespace server.Repositories
       }
     }
 
-    public async Task<Data_Response<SemesterDto>> GetSemester(int id)
+    public async Task<Data_Response<SemesterResType>> GetSemester(int id)
     {
       try
       {
         var find = @"SELECT s.semesterId, 
-				s.semesterName, 
-				s.dateStart, 
-				s.dateEnd,
-				a.academicYearId, a.displayAcademicYear_Name, 
-				a.yearStart, 
-				a.yearEnd
-FROM Semester s INNER JOIN
-AcademicYear A ON S.academicYearId = A.academicYearId
-WHERE s.SemesterId = @id";
+				                    s.semesterName, 
+				                    s.dateStart, 
+				                    s.dateEnd,
+				                    a.academicYearId, a.displayAcademicYear_Name, 
+				                    a.yearStart, 
+				                    a.yearEnd
+                    FROM Semester s INNER JOIN
+                    AcademicYear A ON S.academicYearId = A.academicYearId
+                    WHERE s.SemesterId = @id";
 
         var semester = await _context.Semesters
           .FromSqlRaw(find, new SqlParameter("@id", id))
@@ -126,10 +127,10 @@ WHERE s.SemesterId = @id";
 
         if (semester is null)
         {
-          return new Data_Response<SemesterDto>(404, "Semester not found");
+          return new Data_Response<SemesterResType>(404, "Semester not found");
         }
 
-        var result = new SemesterDto
+        var result = new SemesterResType
         {
           SemesterId = id,
           SemesterName = semester.SemesterName,
@@ -141,11 +142,11 @@ WHERE s.SemesterId = @id";
           YearEnd = semester.AcademicYear.YearEnd
         };
 
-        return new Data_Response<SemesterDto>(200, result);
+        return new Data_Response<SemesterResType>(200, result);
       }
       catch (Exception ex)
       {
-        return new Data_Response<SemesterDto>(500, $"Server error: {ex.Message}");
+        return new Data_Response<SemesterResType>(500, $"Server error: {ex.Message}");
       }
     }
 
@@ -362,6 +363,5 @@ WHERE s.SemesterId = @id";
         return new Data_Response<string>(500, $"Server error: {ex.Message}");
       }
     }
-
   }
 }

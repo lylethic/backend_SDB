@@ -5,12 +5,13 @@ using Microsoft.EntityFrameworkCore;
 using server.Dtos;
 using server.IService;
 using server.Models;
+using server.Types;
 using System.Text;
 using System.Text.RegularExpressions;
 
 namespace server.Repositories
 {
-  public class AccountRespositories : IService.IAccount
+  public class AccountRespositories : IAccount
   {
     private readonly Data.SoDauBaiContext _context;
     private readonly IAuth _auth;
@@ -94,7 +95,7 @@ namespace server.Repositories
       }
     }
 
-    public async Task<Data_Response<AccountDto>> GetAccount(int id)
+    public async Task<Data_Response<AccountResType>> GetAccount(int id)
     {
       try
       {
@@ -124,14 +125,25 @@ namespace server.Repositories
 
         if (account is null)
         {
-          return new Data_Response<AccountDto>(404, "Account not found");
+          return new Data_Response<AccountResType>(404, "Account not found");
         }
 
-        return new Data_Response<AccountDto>(200, account);
+        var result = new AccountResType
+        {
+          AccountId = account.AccountId,
+          RoleId = account.RoleId,
+          SchoolId = account.SchoolId,
+          Email = account.Email,
+          TeacherId = account.Teacher.TeacherId,
+          FullName = account.Teacher.Fullname,
+          StatusTeacher = account.Teacher.Status
+        };
+
+        return new Data_Response<AccountResType>(200, result);
       }
       catch (Exception ex)
       {
-        return new Data_Response<AccountDto>(500, $"Server error: {ex.Message}");
+        return new Data_Response<AccountResType>(500, $"Server error: {ex.Message}");
       }
     }
 
