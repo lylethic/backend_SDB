@@ -43,14 +43,16 @@ namespace server.Repositories
           return new Data_Response<GradeDto>(409, "Grade already exists");
         }
 
-        var sqlInsert = @"INSERT INTO Grade (academicYearId, gradeName, description)
-                          VALUES (@academicYearId, @gradeName, @description);
+        var sqlInsert = @"INSERT INTO Grade (academicYearId, gradeName, description, dateCreated, dateUpdated)
+                          VALUES (@academicYearId, @gradeName, @description, @dateCreated, @dateUpdated);
                           SELECT CAST(SCOPE_IDENTITY() as int);";
 
         var insert = await _context.Database.ExecuteSqlRawAsync(sqlInsert,
           new SqlParameter("@academicYearId", model.AcademicYearId),
           new SqlParameter("@gradeName", model.GradeName),
-          new SqlParameter("@description", model.Description)
+          new SqlParameter("@description", model.Description),
+          new SqlParameter("@dateCreated", model.DateCreated),
+          new SqlParameter("@dateUpdated", model.DateUpdated)
           );
 
         var result = new GradeDto
@@ -58,6 +60,8 @@ namespace server.Repositories
           AcademicYearId = model.AcademicYearId,
           GradeName = model.GradeName,
           Description = model.Description,
+          DateCreated = model.DateCreated,
+          DateUpdated = model.DateUpdated,
         };
 
         return new Data_Response<GradeDto>(200, result);
@@ -121,15 +125,18 @@ namespace server.Repositories
     {
       try
       {
-        var find = "SELECT * FROM GRADE";
+        var skip = (pageNumber - 1) * pageSize;
+
+        var find = @"SELECT * FROM GRADE 
+                      ORDER BY GRADEID
+                      OFFSET @skip ROWS
+                      FETCH  NEXT @pageSize ROWS ONLY;";
 
         var grade = await _context.Grades
-          .FromSqlRaw(find).ToListAsync();
-
-        if (grade is null)
-        {
-          throw new Exception("Empty");
-        }
+          .FromSqlRaw(find,
+          new SqlParameter("@skip", skip),
+          new SqlParameter("@pageSize", pageSize)
+          ).ToListAsync() ?? throw new Exception("Empty");
 
         var result = grade.Select(x => new GradeDto
         {
@@ -144,55 +151,91 @@ namespace server.Repositories
       catch (Exception ex)
       {
         Console.WriteLine(ex.Message);
-        throw;
+        throw new Exception($"Server Error: {ex.Message}");
       }
     }
 
     public async Task<Data_Response<GradeDto>> UpdateGrade(int id, GradeDto model)
     {
+      using var transaction = await _context.Database.BeginTransactionAsync();
+
       try
       {
         var find = "SELECT * FROM Grade WHERE GradeId = @id";
 
-        var grade = await _context.Grades
+        var existingGrade = await _context.Grades
           .FromSqlRaw(find, new SqlParameter("@id", id))
           .FirstOrDefaultAsync();
 
-        if (grade is null)
+        if (existingGrade is null)
         {
           return new Data_Response<GradeDto>(404, "Grade not found");
         }
 
+        bool hasChanges = false;
+
         var queryBuilder = new StringBuilder("UPDATE Grade SET ");
         var parameters = new List<SqlParameter>();
 
-        if (model.AcademicYearId != 0 || !string.IsNullOrEmpty(model.GradeName))
+        if (model.AcademicYearId != 0 && model.AcademicYearId != existingGrade.AcademicYearId)
         {
           queryBuilder.Append("AcademicYearId = @AcademicYearId, ");
           parameters.Add(new SqlParameter("@AcademicYearId", model.AcademicYearId));
+          hasChanges = true;
+        }
 
+        if (!string.IsNullOrEmpty(model.GradeName) && model.GradeName != existingGrade.GradeName)
+        {
           queryBuilder.Append("GradeName = @GradeName, ");
           parameters.Add(new SqlParameter("@GradeName", model.GradeName));
-
+          hasChanges |= true;
+        }
+        if (model.Description != existingGrade.Description)
+        {
           queryBuilder.Append("Description = @Description, ");
           parameters.Add(new SqlParameter("@Description", model.Description));
+          hasChanges = true;
         }
 
-        if (queryBuilder[queryBuilder.Length - 2] == ',')
+        if (model.DateCreated.HasValue)
         {
-          queryBuilder.Length -= 2;
+          queryBuilder.Append("DateCreated = @DateCreated, ");
+          parameters.Add(new SqlParameter("@DateCreated", model.DateCreated.Value));
         }
 
-        queryBuilder.Append(" WHERE GradeId = @id");
-        parameters.Add(new SqlParameter("@id", id));
+        if (model.DateUpdated != existingGrade.DateUpdated)
+        {
+          queryBuilder.Append("DateUpdated = @DateUpdated, ");
+          parameters.Add(new SqlParameter("@DateUpdated", DateTime.Now));
+          hasChanges = true;
+        }
 
-        var updateQuery = queryBuilder.ToString();
-        await _context.Database.ExecuteSqlRawAsync(updateQuery, parameters.ToArray());
+        if (hasChanges)
+        {
+          if (queryBuilder[queryBuilder.Length - 2] == ',')
+          {
+            queryBuilder.Length -= 2;
+          }
 
-        return new Data_Response<GradeDto>(200, "Updated");
+          queryBuilder.Append(" WHERE GradeId = @id");
+          parameters.Add(new SqlParameter("@id", id));
+
+          var updateQuery = queryBuilder.ToString();
+          await _context.Database.ExecuteSqlRawAsync(updateQuery, [.. parameters]);
+
+          await transaction.CommitAsync();
+          return new Data_Response<GradeDto>(200, "Updated");
+        }
+        else
+        {
+          return new Data_Response<GradeDto>(200, "No changes detected");
+        }
+
       }
       catch (Exception ex)
       {
+        await transaction.RollbackAsync();
+
         return new Data_Response<GradeDto>(500, $"Server error: {ex.Message}");
       }
     }
@@ -202,6 +245,7 @@ namespace server.Repositories
       try
       {
         var find = "SELECT * FROM Grade WHERE GradeId = @id";
+
         var grade = await _context.Grades
           .FromSqlRaw(find, new SqlParameter("@id", id))
           .FirstOrDefaultAsync();
@@ -299,8 +343,10 @@ namespace server.Repositories
                 var myGrades = new Models.Grade
                 {
                   AcademicYearId = Convert.ToInt16(reader.GetValue(1)),
-                  GradeName = reader.GetValue(2).ToString() ?? "Khoi lop",
-                  Description = reader.GetValue(3).ToString() ?? "Mo Ta",
+                  GradeName = reader.GetValue(2).ToString()?.Trim() ?? "Khoi lop",
+                  Description = reader.GetValue(3).ToString()?.Trim() ?? "Mo Ta",
+                  DateCreated = DateTime.Now,
+                  DateUpdated = null
                 };
 
                 await _context.Grades.AddAsync(myGrades);

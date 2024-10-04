@@ -6,8 +6,6 @@
 
     public int AccountId { get; set; }
 
-    public int SchoolId { get; set; }
-
     public string Fullname { get; set; } = null!;
 
     public DateTime DateOfBirth { get; set; }
@@ -21,5 +19,13 @@
     public DateTime? DateCreate { get; set; }
 
     public DateTime? DateUpdate { get; set; }
+
+    // School Table
+    public int SchoolId { get; set; }
+
+    public string? NameSchool { get; set; }
+
+    public bool SchoolType { get; set; }
+
   }
 }

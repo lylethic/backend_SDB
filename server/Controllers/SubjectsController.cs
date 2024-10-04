@@ -21,11 +21,11 @@ namespace server.Controllers
 
     // GET: api/<SubjectsController>
     [HttpGet]
-    public async Task<IActionResult> GetAllSubject()
+    public async Task<IActionResult> GetAllSubject(int pageNumber = 1, int pageSize = 50)
     {
       try
       {
-        var result = await _subjectRepo.GetSubjects();
+        var result = await _subjectRepo.GetSubjects(pageNumber, pageSize);
         if (result is null)
         {
           return NotFound();
@@ -94,6 +94,39 @@ namespace server.Controllers
       }
 
       return Ok(subject);
+    }
+
+    [HttpDelete("bulkdelete")]
+    public async Task<IActionResult> BulkDelete(List<int> ids)
+    {
+      var result = await _subjectRepo.BulkDelete(ids);
+
+      if (result.StatusCode != 200)
+      {
+        return BadRequest(result);
+      }
+
+      return Ok(result);
+    }
+
+    [HttpPost("upload")]
+    public async Task<IActionResult> ImportExcelFile(IFormFile file)
+    {
+      try
+      {
+        var result = await _subjectRepo.ImportExcelFile(file);
+
+        if (result.Contains("Successfully"))
+        {
+          return Ok(result);
+        }
+
+        return BadRequest(result);
+      }
+      catch (Exception ex)
+      {
+        throw new Exception($"Error: {ex.Message}");
+      }
     }
   }
 }

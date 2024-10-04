@@ -40,6 +40,8 @@ namespace server.Repositories
           TeacherId = x.TeacherId,
           biaSoDauBaiId = x.BiaSoDauBaiId,
           Status = x.Status,
+          DateCreated = x.DateCreated,
+          DateUpdated = x.DateUpdated
         }).ToList();
 
         return result;
@@ -113,14 +115,16 @@ namespace server.Repositories
           return new Data_Response<PC_GiangDay_BiaSDBDto>(409, "PC_GiangDay_BiaSDB already exists");
         }
 
-        var sqlInsert = @"INSERT INTO PhanCongGiangDay (TeacherId, biaSoDauBaiId, Status)
-                          VALUES (@TeacherId, @Status);
+        var sqlInsert = @"INSERT INTO PhanCongGiangDay (TeacherId, biaSoDauBaiId, Status, DateCreated, DateUpdated)
+                          VALUES (@TeacherId, @Status, @DateCreated, @DateUpdated);
                           SELECT CAST(SCOPE_IDENTITY() as int);";
 
         var insert = await _context.Database.ExecuteSqlRawAsync(sqlInsert,
           new SqlParameter("@TeacherId", model.TeacherId),
           new SqlParameter("@biaSoDauBaiId", model.biaSoDauBaiId),
-          new SqlParameter("@Status", model.Status)
+          new SqlParameter("@Status", model.Status),
+          new SqlParameter("@DateCreated", DateTime.Now),
+          new SqlParameter("@DateUpdated", DBNull.Value)
           );
 
         var result = new PC_GiangDay_BiaSDBDto
@@ -237,7 +241,9 @@ namespace server.Repositories
                   {
                     TeacherId = Convert.ToInt32(reader.GetValue(1)),
                     BiaSoDauBaiId = Convert.ToInt32(reader.GetValue(2)),
-                    Status = Convert.ToBoolean(reader.GetValue(2)),
+                    Status = Convert.ToBoolean(reader.GetValue(3)),
+                    DateCreated = DateTime.Now,
+                    DateUpdated = null
                   };
 
                   await _context.PhanCongGiangDays.AddAsync(myPhanCongGiangDay);
@@ -264,42 +270,61 @@ namespace server.Repositories
       {
         var find = "SELECT * FROM PhanCongGiangDay WHERE PhanCongGiangDayId = @id";
 
-        var getPhanCongGiangDay = await _context.PhanCongGiangDays
+        var existingPhanCongGiangDay = await _context.PhanCongGiangDays
           .FromSqlRaw(find, new SqlParameter("@id", id))
           .FirstOrDefaultAsync();
 
-        if (getPhanCongGiangDay is null)
+        if (existingPhanCongGiangDay is null)
         {
           return new Data_Response<PC_GiangDay_BiaSDBDto>(404, "Not found");
         }
 
-        var queryBuilder = new StringBuilder("UPDATE Class SET ");
-        var parameters = new List<SqlParameter>();
+        bool hasChanges = false;
 
-        if (model.TeacherId != 0 || model.biaSoDauBaiId != 0)
+        var parameters = new List<SqlParameter>();
+        var queryBuilder = new StringBuilder("UPDATE Class SET ");
+
+        if (model.TeacherId != 0 && model.TeacherId != existingPhanCongGiangDay.TeacherId)
         {
           queryBuilder.Append("TeacherId = @TeacherId, ");
           parameters.Add(new SqlParameter("@TeacherId", model.TeacherId));
+          hasChanges = true;
+        }
 
+        if (model.biaSoDauBaiId != 0 && model.biaSoDauBaiId != existingPhanCongGiangDay.BiaSoDauBaiId)
+        {
           queryBuilder.Append("biaSoDauBaiId = @biaSoDauBaiId, ");
           parameters.Add(new SqlParameter("@biaSoDauBaiId", model.biaSoDauBaiId));
+          hasChanges = true;
+        }
 
+        if (model.Status != existingPhanCongGiangDay.Status)
+        {
           queryBuilder.Append("Status = @Status, ");
           parameters.Add(new SqlParameter("@Status", model.Status));
+          hasChanges = true;
         }
 
-        if (queryBuilder[queryBuilder.Length - 2] == ',')
+        if (hasChanges)
         {
-          queryBuilder.Length -= 2;
+
+          if (queryBuilder[queryBuilder.Length - 2] == ',')
+          {
+            queryBuilder.Length -= 2;
+          }
+
+          queryBuilder.Append(" WHERE PhanCongGiangDayId = @id");
+          parameters.Add(new SqlParameter("@id", id));
+
+          var updateQuery = queryBuilder.ToString();
+          await _context.Database.ExecuteSqlRawAsync(updateQuery, [.. parameters]);
+
+          return new Data_Response<PC_GiangDay_BiaSDBDto>(200, "Updated");
         }
-
-        queryBuilder.Append(" WHERE PhanCongGiangDayId = @id");
-        parameters.Add(new SqlParameter("@id", id));
-
-        var updateQuery = queryBuilder.ToString();
-        await _context.Database.ExecuteSqlRawAsync(updateQuery, parameters.ToArray());
-
-        return new Data_Response<PC_GiangDay_BiaSDBDto>(200, "Updated");
+        else
+        {
+          return new Data_Response<PC_GiangDay_BiaSDBDto>(200, "No changes detected");
+        }
       }
       catch (Exception ex)
       {

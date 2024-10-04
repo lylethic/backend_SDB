@@ -1,8 +1,10 @@
-﻿using Microsoft.Data.SqlClient;
+﻿using ExcelDataReader;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using server.Data;
 using server.Dtos;
 using server.IService;
+using server.Models;
 using System.Text;
 
 namespace server.Repositories
@@ -22,7 +24,7 @@ namespace server.Repositories
       try
       {
         // check teacher
-        var findTeacher = "SELECT * FROM TEACHER WHERE TeacherId = @id";
+        var findTeacher = @"SELECT * FROM TEACHER WHERE TeacherId = @id";
         var teacherExists = await _context.Teachers
           .FromSqlRaw(findTeacher, new SqlParameter("@id", model.TeacherId))
           .FirstOrDefaultAsync();
@@ -54,14 +56,16 @@ namespace server.Repositories
           return new Data_Response<SubjectAssgmDto>(409, "This Subject Assignment already exists");
         }
 
-        var sqlInsert = @"INSERT INTO SubjectAssignment (teacherId, subjectId, description)
-                          VALUES (@teacherId, @subjectId, @description);
+        var sqlInsert = @"INSERT INTO SubjectAssignment (teacherId, subjectId, description, dateCreated, dateUpdated)
+                          VALUES (@teacherId, @subjectId, @description, @dateCreated, @dateUpdated);
                           SELECT CAST(SCOPE_IDENTITY() as int);";
 
         var insert = await _context.Database.ExecuteSqlRawAsync(sqlInsert,
-          new SqlParameter("@TeacherId", model.TeacherId),
-          new SqlParameter("@SubjectId", model.SubjectId),
-          new SqlParameter("@Description", model.Description)
+          new SqlParameter("@teacherId", model.TeacherId),
+          new SqlParameter("@subjectId", model.SubjectId),
+          new SqlParameter("@description", model.Description),
+          new SqlParameter("@dateCreated", DateTime.Now),
+          new SqlParameter("@dateUpdated", DBNull.Value)
           );
 
         var result = new SubjectAssgmDto
@@ -70,6 +74,8 @@ namespace server.Repositories
           TeacherId = model.TeacherId,
           SubjectId = model.SubjectId,
           Description = model.Description,
+          DateCreated = model.DateCreated,
+          DateUpdated = model.DateUpdated,
         };
 
         return new Data_Response<SubjectAssgmDto>(200, result);
@@ -109,9 +115,26 @@ namespace server.Repositories
     {
       try
       {
-        var find = "SELECT * FROM SUBJECTASSIGNMENT WHERE SubjectAssignmentId = @id";
+        var find = @"SELECT s.subjectName , sa.subjectId , sa.subjectAssignmentId, sa.teacherId 
+                      FROM 
+                            SUBJECTASSIGNMENT sa 
+                      LEFT JOIN 
+                            Subject s ON sa.subjectId = s.subjectId
+                      WHERE 
+                            SubjectAssignmentId = @id";
+
         var subjectAssgmt = await _context.SubjectAssignments
           .FromSqlRaw(find, new SqlParameter("@id", id))
+          .Select(static x => new SubjectAssignment
+          {
+            SubjectAssignmentId = x.SubjectAssignmentId,
+            SubjectId = x.SubjectId,
+            TeacherId = x.TeacherId,
+            Subject = new Subject
+            {
+              SubjectName = x.Subject.SubjectName,
+            }
+          })
           .FirstOrDefaultAsync();
 
         if (subjectAssgmt is null)
@@ -124,7 +147,7 @@ namespace server.Repositories
           SubjectAssignmentId = subjectAssgmt.SubjectAssignmentId,
           SubjectId = subjectAssgmt.SubjectId,
           TeacherId = subjectAssgmt.TeacherId,
-          Description = subjectAssgmt.Description,
+          SubjectName = subjectAssgmt.Subject.SubjectName,
         };
 
         return new Data_Response<SubjectAssgmDto>(200, result);
@@ -136,18 +159,21 @@ namespace server.Repositories
       }
     }
 
-    public async Task<List<SubjectAssgmDto>> GetSubjectAssgms()
+    public async Task<List<SubjectAssgmDto>> GetSubjectAssgms(int pageNumber, int pageSize)
     {
       try
       {
-        var find = "SELECT * FROM SUBJECTASSIGNMENT";
-        var subjectAssgmt = await _context.SubjectAssignments
-          .FromSqlRaw(find).ToListAsync();
+        var skip = (pageNumber - 1) * pageSize;
+        var find = @"SELECT * FROM SubjectAssignment 
+                      ORDER BY  SubjectAssignmentId 
+                      OFFSET @skip ROWS
+                      FETCH NEXT @pageSize ROWS ONLY;";
 
-        if (subjectAssgmt is null)
-        {
-          throw new Exception("Empty");
-        }
+        var subjectAssgmt = await _context.SubjectAssignments
+          .FromSqlRaw(find,
+          new SqlParameter("@skip", skip),
+          new SqlParameter("@pageSize", pageSize)
+          ).ToListAsync() ?? throw new Exception("Empty");
 
         var result = subjectAssgmt.Select(x => new SubjectAssgmDto
         {
@@ -155,14 +181,15 @@ namespace server.Repositories
           SubjectId = x.SubjectId,
           TeacherId = x.TeacherId,
           Description = x.Description,
+          DateCreated = x.DateCreated,
+          DateUpdated = x.DateUpdated,
         }).ToList();
 
         return result;
       }
       catch (Exception ex)
       {
-        Console.WriteLine(ex.Message);
-        throw;
+        throw new Exception($"Server Error: {ex.Message}");
       }
     }
 
@@ -212,6 +239,101 @@ namespace server.Repositories
       catch (Exception ex)
       {
         return new Data_Response<SubjectAssgmDto>(500, $"Server error: {ex.Message}");
+      }
+    }
+
+    public async Task<string> ImportExcel(IFormFile file)
+    {
+      try
+      {
+        Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+
+        if (file is not null && file.Length > 0)
+        {
+          var uploadsFolder = $"{Directory.GetCurrentDirectory()}\\Uploads";
+
+          if (!Directory.Exists(uploadsFolder))
+          {
+            Directory.CreateDirectory(uploadsFolder);
+          }
+
+          var filePath = Path.Combine(uploadsFolder, file.FileName);
+          using (var stream = new FileStream(filePath, FileMode.Create))
+          {
+            await file.CopyToAsync(stream);
+          }
+
+          using (var stream = File.Open(filePath, FileMode.Open, FileAccess.Read))
+          {
+            using var reader = ExcelReaderFactory.CreateReader(stream);
+
+            bool isHeaderSkipped = false;
+
+            do
+            {
+              while (reader.Read())
+              {
+                if (!isHeaderSkipped)
+                {
+                  isHeaderSkipped = true;
+                  continue;
+                }
+
+                var mySubjects = new Models.SubjectAssignment
+                {
+                  TeacherId = Convert.ToInt16(reader.GetValue(1)),
+                  SubjectId = Convert.ToInt16(reader.GetValue(2)),
+                  Description = reader.GetValue(3).ToString()?.Trim() ?? "null",
+                  DateCreated = DateTime.Now,
+                  DateUpdated = null
+                };
+
+                await _context.SubjectAssignments.AddAsync(mySubjects);
+                await _context.SaveChangesAsync();
+              }
+            } while (reader.NextResult());
+          }
+
+          return "Successfully inserted";
+        }
+        return "No file uploaded";
+      }
+      catch (Exception ex)
+      {
+        throw new Exception($"Error while uploading file: {ex.Message}");
+      }
+    }
+
+    public async Task<Data_Response<string>> BulkDelete(List<int> ids)
+    {
+      await using var transaction = await _context.Database.BeginTransactionAsync();
+
+      try
+      {
+        if (ids is null || ids.Count == 0)
+        {
+          return new Data_Response<string>(400, "No IDs provided.");
+        }
+
+        var idList = string.Join(",", ids);
+
+        var deleteQuery = $"DELETE FROM SubjectAssignments WHERE subjectAssignmentId IN ({idList})";
+
+        var delete = await _context.Database.ExecuteSqlRawAsync(deleteQuery);
+
+        if (delete == 0)
+        {
+          return new Data_Response<string>(404, "No subjectAssignmentId found to delete");
+        }
+
+        await transaction.CommitAsync();
+
+        return new Data_Response<string>(200, "Deleted");
+      }
+      catch (Exception ex)
+      {
+        await transaction.RollbackAsync();
+        return new Data_Response<string>(500, $"Server error: {ex.Message}");
       }
     }
   }

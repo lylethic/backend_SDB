@@ -19,46 +19,44 @@ namespace server.Repositories
 
     public async Task<Data_Response<ClassifyDto>> CreateClassify(ClassifyDto model)
     {
-      using (var transaction = await _context.Database.BeginTransactionAsync())
+      using var transaction = await _context.Database.BeginTransactionAsync();
+      try
       {
-        try
+        var find = "SELECT * FROM CLASSIFICATION WHERE classificationId = @id";
+        var classify = await _context.Classifications
+          .FromSqlRaw(find, new SqlParameter("@id", model.ClassificationId))
+          .FirstOrDefaultAsync();
+
+        if (classify is not null)
         {
-          var find = "SELECT * FROM CLASSIFICATION WHERE classificationId = @id";
-          var classify = await _context.Classifications
-            .FromSqlRaw(find, new SqlParameter("@id", model.ClassificationId))
-            .FirstOrDefaultAsync();
+          return new Data_Response<ClassifyDto>(409, "classificationId already exists");
+        }
 
-          if (classify is not null)
-          {
-            return new Data_Response<ClassifyDto>(409, "classificationId already exists");
-          }
-
-          var query = @"INSERT INTO CLASSIFICATION (classifyName, score) 
+        var query = @"INSERT INTO CLASSIFICATION (classifyName, score) 
                        VALUES (@classifyName, @score)";
 
-          var insert = await _context.Database.ExecuteSqlRawAsync(query,
-            new SqlParameter("@classifyName", model.ClassifyName),
-            new SqlParameter("@score", model.Score)
-            );
+        var insert = await _context.Database.ExecuteSqlRawAsync(query,
+          new SqlParameter("@classifyName", model.ClassifyName),
+          new SqlParameter("@score", model.Score)
+          );
 
-          await transaction.CommitAsync();
+        await transaction.CommitAsync();
 
-          var result = new ClassifyDto
-          {
-            ClassificationId = insert,
-            ClassifyName = model.ClassifyName,
-            Score = model.Score,
-          };
-
-          return new Data_Response<ClassifyDto>(200, result);
-
-        }
-        catch (Exception ex)
+        var result = new ClassifyDto
         {
-          await transaction.RollbackAsync();
+          ClassificationId = insert,
+          ClassifyName = model.ClassifyName,
+          Score = model.Score,
+        };
 
-          return new Data_Response<ClassifyDto>(200, $"Server error: {ex.Message}");
-        }
+        return new Data_Response<ClassifyDto>(200, result);
+
+      }
+      catch (Exception ex)
+      {
+        await transaction.RollbackAsync();
+
+        return new Data_Response<ClassifyDto>(200, $"Server error: {ex.Message}");
       }
     }
 

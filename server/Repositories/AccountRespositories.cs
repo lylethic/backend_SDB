@@ -98,14 +98,15 @@ namespace server.Repositories
     {
       try
       {
-        var query = @"SELECT acc.AccountId as Acc_AccountId, acc.roleId, acc.schoolId, acc.email, 
-                             tea.AccountId as Teacher_AccId, tea.teacherId, tea.fullname, tea.status
-                      FROM Account as acc 
-                      INNER JOIN Teacher as tea ON acc.AccountId = tea.AccountId
-                      WHERE acc.accountId = @id";
+        var query = @"
+            SELECT acc.AccountId, acc.RoleId, acc.SchoolId, acc.Email, 
+                   tea.TeacherId, tea.Fullname, tea.Status
+            FROM Account as acc 
+            LEFT JOIN Teacher as tea ON acc.AccountId = tea.AccountId
+            WHERE acc.AccountId = @id";
 
         var account = await _context.Accounts
-            .Include(a => a.Teachers)
+            .FromSqlRaw(query, new SqlParameter("@id", id))
             .Select(acc => new AccountDto
             {
               AccountId = acc.AccountId,

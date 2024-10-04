@@ -1,14 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using server.Data;
+﻿using Microsoft.AspNetCore.Mvc;
 using server.Dtos;
 using server.IService;
-using server.Models;
 
 namespace server.Controllers
 {
@@ -25,11 +17,11 @@ namespace server.Controllers
 
     // GET: api/AcademicYears1
     [HttpGet]
-    public async Task<IActionResult> GetSemesters()
+    public async Task<IActionResult> GetSemesters(int pageNumber = 1, int pageSize = 50)
     {
       try
       {
-        var academicYears = await _semester.GetSemesters();
+        var academicYears = await _semester.GetSemesters(pageNumber, pageSize);
         if (academicYears == null)
         {
           return NotFound(); // 404
@@ -97,6 +89,38 @@ namespace server.Controllers
       }
 
       return Ok(semester);
+    }
+
+    [HttpDelete("bulkdelete")]
+    public async Task<IActionResult> BulkDelete(List<int> ids)
+    {
+      var semester = await _semester.BulkDelete(ids);
+
+      if (semester.StatusCode != 200)
+      {
+        return BadRequest(semester);
+      }
+
+      return Ok(semester);
+    }
+
+    [HttpPost("upload")]
+    public async Task<IActionResult> ImportExcelFile(IFormFile file)
+    {
+      try
+      {
+        var result = await _semester.ImportExcelFile(file);
+        if (result.Contains("Successfully"))
+        {
+          return Ok(result);
+        }
+
+        return BadRequest(result);
+      }
+      catch (Exception ex)
+      {
+        throw new Exception($"Error: {ex.Message}");
+      }
     }
   }
 }

@@ -1,8 +1,10 @@
-﻿using Microsoft.Data.SqlClient;
+﻿using ExcelDataReader;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using server.Data;
 using server.Dtos;
 using server.IService;
+using server.Models;
 using System.Text;
 
 
@@ -85,10 +87,35 @@ namespace server.Repositories
     {
       try
       {
-        var find = "SELECT * FROM Subject WHERE subjectId = @id";
+        var find = @"SELECT s.subjectId, 
+			                     s.subjectName, 
+			                     a.academicYearId, 
+			                     a.displayAcademicYear_Name, 
+			                     FORMAT(a.yearStart, 'dd/MM/yyyy') AS formatDateStart, 
+			                     FORMAT(a.yearEnd, 'dd/MM/yyyy') AS formatDateEnd
+                    FROM 
+			                     dbo.SUBJECT s 
+                    RIGHT JOIN 
+			                     dbo.AcademicYear a 
+                    ON 
+			                     S.academicYearId = A.academicYearId
+                    WHERE  
+			                     S.subjectId = @id";
 
         var subject = await _context.Subjects
           .FromSqlRaw(find, new SqlParameter("@id", id))
+          .Select(static x => new Subject
+          {
+            SubjectId = x.SubjectId,
+            SubjectName = x.SubjectName,
+            AcademicYear = new AcademicYear
+            {
+              AcademicYearId = x.AcademicYearId,
+              DisplayAcademicYearName = x.AcademicYear.DisplayAcademicYearName,
+              YearStart = x.AcademicYear.YearStart,
+              YearEnd = x.AcademicYear.YearEnd,
+            }
+          })
           .FirstOrDefaultAsync();
 
         if (subject is null)
@@ -101,6 +128,9 @@ namespace server.Repositories
           SubjectId = id,
           AcademicYearId = subject.AcademicYearId,
           SubjectName = subject.SubjectName,
+          DisplayAcademicYear_Name = subject.AcademicYear.DisplayAcademicYearName,
+          YearStart = subject.AcademicYear.YearStart,
+          YearEnd = subject.AcademicYear.YearEnd
         };
 
         return new Data_Response<SubjectDto>(200, result);
@@ -111,18 +141,21 @@ namespace server.Repositories
       }
     }
 
-    public async Task<List<SubjectDto>> GetSubjects()
+    public async Task<List<SubjectDto>> GetSubjects(int pageNumber, int pageSize)
     {
       try
       {
-        var find = "SELECT * FROM Subject";
+        var skip = (pageNumber - 1) * pageSize;
 
-        var subject = await _context.Subjects.FromSqlRaw(find).ToListAsync();
+        var find = @"SELECT * 
+            FROM Subject ORDER BY SUBJECTNAME 
+            OFFSET @skip ROWS 
+            FETCH NEXT @pageSize ROWS ONLY;";
 
-        if (subject is null)
-        {
-          throw new Exception("Empty");
-        }
+        var subject = await _context.Subjects.FromSqlRaw(find,
+          new SqlParameter("@skip", skip),
+          new SqlParameter("@pageSize", pageSize)
+          ).ToListAsync() ?? throw new Exception("Empty");
 
         var result = subject.Select(subject => new SubjectDto
         {
@@ -183,6 +216,98 @@ namespace server.Repositories
       catch (Exception ex)
       {
         return new Data_Response<SubjectDto>(500, $"Server error: {ex.Message}");
+      }
+    }
+
+    public async Task<string> ImportExcelFile(IFormFile file)
+    {
+      try
+      {
+        Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+
+        if (file is not null && file.Length > 0)
+        {
+          var uploadsFolder = $"{Directory.GetCurrentDirectory()}\\Uploads";
+
+          if (!Directory.Exists(uploadsFolder))
+          {
+            Directory.CreateDirectory(uploadsFolder);
+          }
+
+          var filePath = Path.Combine(uploadsFolder, file.FileName);
+          using (var stream = new FileStream(filePath, FileMode.Create))
+          {
+            await file.CopyToAsync(stream);
+          }
+
+          using (var stream = File.Open(filePath, FileMode.Open, FileAccess.Read))
+          {
+            using var reader = ExcelReaderFactory.CreateReader(stream);
+
+            bool isHeaderSkipped = false;
+
+            do
+            {
+              while (reader.Read())
+              {
+                if (!isHeaderSkipped)
+                {
+                  isHeaderSkipped = true;
+                  continue;
+                }
+
+                var mySubjects = new Models.Subject
+                {
+                  AcademicYearId = Convert.ToInt16(reader.GetValue(1)),
+                  SubjectName = reader.GetValue(2).ToString() ?? "null"
+                };
+
+                await _context.Subjects.AddAsync(mySubjects);
+                await _context.SaveChangesAsync();
+              }
+            } while (reader.NextResult());
+          }
+
+          return "Successfully inserted";
+        }
+        return "No file uploaded";
+      }
+      catch (Exception ex)
+      {
+        throw new Exception($"Error while uploading file: {ex.Message}");
+      }
+    }
+
+    public async Task<Data_Response<string>> BulkDelete(List<int> ids)
+    {
+      await using var transaction = await _context.Database.BeginTransactionAsync();
+
+      try
+      {
+        if (ids is null || ids.Count == 0)
+        {
+          return new Data_Response<string>(400, "No IDs provided.");
+        }
+
+        var idList = string.Join(",", ids);
+
+        var deleteQuery = $"DELETE FROM Subject WHERE SubjectId IN ({idList})";
+
+        var delete = await _context.Database.ExecuteSqlRawAsync(deleteQuery);
+
+        if (delete == 0)
+        {
+          return new Data_Response<string>(404, "No SubjectId found to delete");
+        }
+
+        await transaction.CommitAsync();
+
+        return new Data_Response<string>(200, "Deleted");
+      }
+      catch (Exception ex)
+      {
+        await transaction.RollbackAsync();
+        return new Data_Response<string>(500, $"Server error: {ex.Message}");
       }
     }
   }

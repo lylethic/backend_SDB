@@ -21,11 +21,11 @@ namespace server.Controllers
 
     // GET: api/<SubjectAssmgtsController>
     [HttpGet]
-    public async Task<IActionResult> GetAll_SubjectAssignment()
+    public async Task<IActionResult> GetAll_SubjectAssignment(int pageNumber = 1, int pageSize = 50)
     {
       try
       {
-        var result = await _subject_Assgm.GetSubjectAssgms();
+        var result = await _subject_Assgm.GetSubjectAssgms(pageNumber, pageSize);
         if (result is null)
         {
           return NotFound();
@@ -85,7 +85,41 @@ namespace server.Controllers
       {
         return BadRequest(result);
       }
+
       return Ok(result);
+    }
+
+    [HttpDelete("bulkdelete")]
+    public async Task<IActionResult> BulkDelete(List<int> ids)
+    {
+      var result = await _subject_Assgm.BulkDelete(ids);
+
+      if (result.StatusCode != 200)
+      {
+        return BadRequest(result);
+      }
+
+      return Ok(result);
+    }
+
+    [HttpPost("upload")]
+    public async Task<IActionResult> ImportExcelFile(IFormFile file)
+    {
+      try
+      {
+        var result = await _subject_Assgm.ImportExcel(file);
+
+        if (result.Contains("Successfully"))
+        {
+          return Ok(result);
+        }
+
+        return BadRequest(result);
+      }
+      catch (Exception ex)
+      {
+        throw new Exception($"Error: {ex.Message}");
+      }
     }
   }
 }

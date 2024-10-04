@@ -3,6 +3,7 @@ using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using server.Data;
 using server.Dtos;
+using server.Models;
 using System.Text;
 
 namespace server.Repositories
@@ -99,9 +100,40 @@ namespace server.Repositories
     {
       try
       {
-        var findTeacher = "SELECT * FROM Teacher WHERE TeacherId = @id";
+        var findTeacher = @"SELECT 
+			                            t.teacherId, 
+                                  t.accountId, 
+                                  t.fullname, 
+                                  t.dateOfBirth, 
+                                  t.gender, 
+                                  t.address, 
+                                  t.status,
+			                            s.schoolId, 
+                                  s.nameSchcool, 
+                                  s.schoolType
+                            FROM TEACHER T
+                            LEFT JOIN SCHOOL S
+                            ON T.schoolId = S.schoolId
+                            WHERE T.teacherId = @id";
+
         var teacher = await _context.Teachers
           .FromSqlRaw(findTeacher, new SqlParameter("@id", id))
+          .Select(static x => new Teacher
+          {
+            TeacherId = x.TeacherId,
+            AccountId = x.AccountId,
+            Fullname = x.Fullname,
+            DateOfBirth = x.DateOfBirth,
+            Gender = x.Gender,
+            Address = x.Address,
+            Status = x.Status,
+            SchoolId = x.SchoolId,
+            School = new School
+            {
+              NameSchcool = x.School.NameSchcool,
+              SchoolType = x.School.SchoolType
+            }
+          })
           .FirstOrDefaultAsync();
 
         if (teacher is null)
@@ -114,14 +146,14 @@ namespace server.Repositories
         {
           TeacherId = id,
           AccountId = teacher.AccountId,
-          SchoolId = teacher.SchoolId,
           Fullname = teacher.Fullname,
           DateOfBirth = teacher.DateOfBirth,
           Gender = teacher.Gender,
           Address = teacher.Address,
           Status = teacher.Status,
-          DateCreate = teacher.DateCreate,
-          DateUpdate = teacher.DateUpdate
+          SchoolId = teacher.SchoolId,
+          NameSchool = teacher.School.NameSchcool,
+          SchoolType = teacher.School.SchoolType
         };
 
         return new Data_Response<TeacherDto>(200, result);
@@ -167,41 +199,6 @@ namespace server.Repositories
       {
         Console.WriteLine(ex.Message);
         throw new Exception($"Server error: {ex.Message}");
-      }
-    }
-
-    public async Task<List<TeacherDto>> GetTeachers()
-    {
-      try
-      {
-        var query = "SELECT * FROM Teacher";
-        var teachers = await _context.Teachers.FromSqlRaw(query).ToListAsync();
-
-        if (teachers is null)
-        {
-          throw new Exception("No content");
-        }
-
-        var result = teachers.Select(x => new TeacherDto
-        {
-          TeacherId = x.TeacherId,
-          AccountId = x.AccountId,
-          SchoolId = x.SchoolId,
-          Fullname = x.Fullname,
-          DateOfBirth = x.DateOfBirth,
-          Gender = x.Gender,
-          Address = x.Address,
-          Status = x.Status,
-          DateCreate = x.DateCreate,
-          DateUpdate = x.DateUpdate
-        }).ToList();
-
-        return result;
-      }
-      catch (Exception ex)
-      {
-        Console.WriteLine(ex.Message);
-        throw new Exception($"Error: {ex.Message}");
       }
     }
 
@@ -343,38 +340,37 @@ namespace server.Repositories
 
           using (var stream = File.Open(filePath, FileMode.Open, FileAccess.Read))
           {
-            using (var reader = ExcelReaderFactory.CreateReader(stream))
+            using var reader = ExcelReaderFactory.CreateReader(stream);
+
+            bool isHeaderSkipped = false;
+
+            do
             {
-              bool isHeaderSkipped = false;
-
-              do
+              while (reader.Read())
               {
-                while (reader.Read())
+                if (!isHeaderSkipped)
                 {
-                  if (!isHeaderSkipped)
-                  {
-                    isHeaderSkipped = true;
-                    continue;
-                  }
-
-                  var myTeachers = new Models.Teacher
-                  {
-                    AccountId = Convert.ToInt16(reader.GetValue(1)),
-                    SchoolId = Convert.ToInt16(reader.GetValue(2)),
-                    Fullname = reader.GetValue(3).ToString()?.Trim() ?? "Fullname",
-                    DateOfBirth = Convert.ToDateTime(reader.GetValue(4)),
-                    Gender = Convert.ToBoolean(reader.GetValue(5)),
-                    Address = reader.GetValue(6).ToString()?.Trim() ?? "address",
-                    Status = Convert.ToBoolean(reader.GetValue(7)),
-                    DateCreate = DateTime.Now,
-                    DateUpdate = null
-                  };
-
-                  await _context.Teachers.AddAsync(myTeachers);
-                  await _context.SaveChangesAsync();
+                  isHeaderSkipped = true;
+                  continue;
                 }
-              } while (reader.NextResult());
-            }
+
+                var myTeachers = new Models.Teacher
+                {
+                  AccountId = Convert.ToInt16(reader.GetValue(1)),
+                  SchoolId = Convert.ToInt16(reader.GetValue(2)),
+                  Fullname = reader.GetValue(3).ToString()?.Trim() ?? "Fullname",
+                  DateOfBirth = Convert.ToDateTime(reader.GetValue(4)),
+                  Gender = Convert.ToBoolean(reader.GetValue(5)),
+                  Address = reader.GetValue(6).ToString()?.Trim() ?? "address",
+                  Status = Convert.ToBoolean(reader.GetValue(7)),
+                  DateCreate = DateTime.Now,
+                  DateUpdate = null
+                };
+
+                await _context.Teachers.AddAsync(myTeachers);
+                await _context.SaveChangesAsync();
+              }
+            } while (reader.NextResult());
           }
 
           return "Successfully inserted";

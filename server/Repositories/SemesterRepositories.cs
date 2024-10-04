@@ -1,8 +1,11 @@
-﻿using Microsoft.Data.SqlClient;
+﻿using ExcelDataReader;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using server.Data;
 using server.Dtos;
+using server.Helpers;
 using server.IService;
+using server.Models;
 using System.Text;
 
 namespace server.Repositories
@@ -33,9 +36,9 @@ namespace server.Repositories
                           SELECT CAST(SCOPE_IDENTITY() as int);"
         ;
 
+        // DateOnly expects a specific format (ISO 8601, e.g., yyyy-MM-dd) to be correctly parsed during JSON deserialization. 
         var dateStart = new DateTime(model.DateStart.Year, model.DateStart.Month, model.DateStart.Day);
         var dateEnd = new DateTime(model.DateEnd.Year, model.DateEnd.Month, model.DateEnd.Day);
-
 
         var insert = await _context.Database.ExecuteSqlRawAsync(sqlInsert,
           new SqlParameter("@academicYearId", model.AcademicYearId),
@@ -92,9 +95,33 @@ namespace server.Repositories
     {
       try
       {
-        var find = "SELECT * FROM Semester WHERE SemesterId = @id";
+        var find = @"SELECT s.semesterId, 
+				s.semesterName, 
+				s.dateStart, 
+				s.dateEnd,
+				a.academicYearId, a.displayAcademicYear_Name, 
+				a.yearStart, 
+				a.yearEnd
+FROM Semester s INNER JOIN
+AcademicYear A ON S.academicYearId = A.academicYearId
+WHERE s.SemesterId = @id";
+
         var semester = await _context.Semesters
           .FromSqlRaw(find, new SqlParameter("@id", id))
+          .Select(static x => new Semester
+          {
+            SemesterId = x.SemesterId,
+            SemesterName = x.SemesterName,
+            DateStart = x.DateStart,
+            DateEnd = x.DateEnd,
+            AcademicYearId = x.AcademicYearId,
+            AcademicYear = new AcademicYear
+            {
+              DisplayAcademicYearName = x.AcademicYear.DisplayAcademicYearName,
+              YearStart = x.AcademicYear.YearStart,
+              YearEnd = x.AcademicYear.YearEnd,
+            }
+          })
           .FirstOrDefaultAsync();
 
         if (semester is null)
@@ -102,15 +129,16 @@ namespace server.Repositories
           return new Data_Response<SemesterDto>(404, "Semester not found");
         }
 
-
         var result = new SemesterDto
         {
           SemesterId = id,
-          AcademicYearId = semester.AcademicYearId,
           SemesterName = semester.SemesterName,
           DateStart = semester.DateStart,
           DateEnd = semester.DateEnd,
-          Description = semester.Description
+          AcademicYearId = semester.AcademicYearId,
+          DisplayAcademicYearName = semester.AcademicYear.DisplayAcademicYearName,
+          YearStart = semester.AcademicYear.YearStart,
+          YearEnd = semester.AcademicYear.YearEnd
         };
 
         return new Data_Response<SemesterDto>(200, result);
@@ -121,21 +149,26 @@ namespace server.Repositories
       }
     }
 
-    public async Task<List<SemesterDto>> GetSemesters()
+    public async Task<List<SemesterDto>> GetSemesters(int pageNumber, int pageSize)
     {
       try
       {
-        var query = "SELECT * FROM Semester";
-        var semester = await _context.Semesters.FromSqlRaw(query).ToListAsync();
+        var skip = (pageNumber - 1) * pageSize;
 
-        if (semester is null)
-        {
-          throw new Exception("No content");
-        }
+        var query = @"SELECT * FROM Semester 
+                      ORDER BY SEMESTERNAME
+                      OFFSET @skip ROWS
+                      FETCH NEXT @pageSize ROWS ONLY;";
+
+        var semester = await _context.Semesters.FromSqlRaw(query,
+              new SqlParameter("@skip", skip),
+              new SqlParameter("@pageSize", pageSize))
+          .ToListAsync();
 
         var result = semester.Select(x => new SemesterDto
         {
           SemesterId = x.SemesterId,
+          SemesterName = x.SemesterName,
           AcademicYearId = x.AcademicYearId,
           DateStart = x.DateStart,
           DateEnd = x.DateEnd,
@@ -147,7 +180,7 @@ namespace server.Repositories
       catch (Exception ex)
       {
         Console.WriteLine(ex.Message);
-        throw;
+        throw new Exception($"Error: {ex.Message}");
       }
     }
 
@@ -157,61 +190,178 @@ namespace server.Repositories
       {
         // Check if the teacher exists in the database
         var findQuery = "SELECT * FROM Semester WHERE semesterId = @id";
-        var existingTeacher = await _context.Semesters
+        var existingSemester = await _context.Semesters
             .FromSqlRaw(findQuery, new SqlParameter("@id", id))
             .FirstOrDefaultAsync();
 
-        if (existingTeacher is null)
+        if (existingSemester is null)
         {
           return new Data_Response<SemesterDto>(404, "Semester not found");
         }
 
-        // Build update query dynamically based on non-null fields
-        var queryBuilder = new StringBuilder("UPDATE Semester SET ");
-        var parameters = new List<SqlParameter>();
+        bool hasChanges = false;
 
-        if (model.AcademicYearId != 0)
+        var parameters = new List<SqlParameter>();
+        var queryBuilder = new StringBuilder("UPDATE Semester SET ");
+
+        if (model.AcademicYearId != 0 && model.AcademicYearId != existingSemester.AcademicYearId)
         {
           queryBuilder.Append("AcademicYearId = @AcademicYearId, ");
           parameters.Add(new SqlParameter("@AcademicYearId", model.AcademicYearId));
+          hasChanges = true;
         }
 
-        if (!string.IsNullOrEmpty(model.SemesterName))
+        if (!string.IsNullOrEmpty(model.SemesterName) && model.SemesterName != existingSemester.SemesterName)
         {
           queryBuilder.Append("SemesterName = @SemesterName, ");
           parameters.Add(new SqlParameter("@SemesterName", model.SemesterName));
+          hasChanges = true;
         }
 
-        queryBuilder.Append("DateStart = @DateStart, ");
-        parameters.Add(new SqlParameter("@DateStart", model.DateStart));
+        if (model.DateStart != existingSemester.DateStart)
+        {
+          queryBuilder.Append("DateStart = @DateStart, ");
+          parameters.Add(new SqlParameter("@DateStart", model.DateStart));
+          hasChanges = true;
+        }
 
-        queryBuilder.Append("DateEnd = @DateEnd, ");
-        parameters.Add(new SqlParameter("@DateEnd", model.DateEnd));
+        if (model.DateEnd != existingSemester.DateEnd)
+        {
+          queryBuilder.Append("DateEnd = @DateEnd, ");
+          parameters.Add(new SqlParameter("@DateEnd", model.DateEnd));
+          hasChanges = true;
+        }
 
-        if (!string.IsNullOrEmpty(model.Description))
+        if (!string.IsNullOrEmpty(model.Description) && model.Description != existingSemester.Description)
         {
           queryBuilder.Append("Description = @Description, ");
           parameters.Add(new SqlParameter("@Description", model.Description));
+          hasChanges = true;
         }
-        // Remove trailing comma from the query if necessary
-        if (queryBuilder[queryBuilder.Length - 2] == ',')
+
+        if (hasChanges)
         {
-          queryBuilder.Length -= 2;
+          if (queryBuilder[queryBuilder.Length - 2] == ',')
+          {
+            queryBuilder.Length -= 2;
+          }
+
+          queryBuilder.Append(" WHERE semesterId = @id");
+          parameters.Add(new SqlParameter("@id", id));
+
+          // Execute the update query
+          var updateQuery = queryBuilder.ToString();
+          await _context.Database.ExecuteSqlRawAsync(updateQuery, parameters.ToArray());
+
+          return new Data_Response<SemesterDto>(200, "Semester updated successfully");
         }
-
-        queryBuilder.Append(" WHERE semesterId = @id");
-        parameters.Add(new SqlParameter("@id", id));
-
-        // Execute the update query
-        var updateQuery = queryBuilder.ToString();
-        await _context.Database.ExecuteSqlRawAsync(updateQuery, parameters.ToArray());
-
-        return new Data_Response<SemesterDto>(200, "Semester updated successfully");
+        else
+        {
+          return new Data_Response<SemesterDto>(200, "No changes detected");
+        }
       }
       catch (Exception ex)
       {
         return new Data_Response<SemesterDto>(500, $"Server Error: {ex.Message}");
       }
     }
+
+    public async Task<string> ImportExcelFile(IFormFile file)
+    {
+      try
+      {
+        Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+
+        if (file is not null && file.Length > 0)
+        {
+          var uploadsFolder = $"{Directory.GetCurrentDirectory()}\\Uploads";
+
+          if (!Directory.Exists(uploadsFolder))
+          {
+            Directory.CreateDirectory(uploadsFolder);
+          }
+
+          var filePath = Path.Combine(uploadsFolder, file.FileName);
+          using (var stream = new FileStream(filePath, FileMode.Create))
+          {
+            await file.CopyToAsync(stream);
+          }
+
+          using (var stream = File.Open(filePath, FileMode.Open, FileAccess.Read))
+          {
+            using var reader = ExcelReaderFactory.CreateReader(stream);
+
+            bool isHeaderSkipped = false;
+
+            do
+            {
+              while (reader.Read())
+              {
+                if (!isHeaderSkipped)
+                {
+                  isHeaderSkipped = true;
+                  continue;
+                }
+
+                var mySemester = new Models.Semester
+                {
+                  AcademicYearId = Convert.ToInt16(reader.GetValue(1)),
+                  SemesterName = reader.GetValue(2).ToString() ?? "Semester name",
+                  DateStart = ExcelHelper.ConvertExcelDateToDateOnly(reader.GetValue(3))
+                  ?? DateOnly.FromDateTime(DateTime.Now),
+                  DateEnd = ExcelHelper.ConvertExcelDateToDateOnly(reader.GetValue(4))
+                  ?? DateOnly.FromDateTime(DateTime.Now),
+                  Description = reader.GetValue(5).ToString()
+                };
+
+                await _context.Semesters.AddAsync(mySemester);
+                await _context.SaveChangesAsync();
+              }
+            } while (reader.NextResult());
+          }
+
+          return "Successfully.";
+        }
+        return "No file uploaded";
+      }
+      catch (Exception ex)
+      {
+        throw new Exception($"Error while uploading file: {ex.Message}");
+      }
+    }
+
+    public async Task<Data_Response<string>> BulkDelete(List<int> ids)
+    {
+      await using var transaction = await _context.Database.BeginTransactionAsync();
+
+      try
+      {
+        if (ids is null || ids.Count == 0)
+        {
+          return new Data_Response<string>(400, "No IDs provided.");
+        }
+
+        var idList = string.Join(",", ids);
+
+        var deleteQuery = $"DELETE FROM SEMESTER WHERE SEMESTERID IN ({idList})";
+
+        var delete = await _context.Database.ExecuteSqlRawAsync(deleteQuery);
+
+        if (delete == 0)
+        {
+          return new Data_Response<string>(404, "No Semester found to delete");
+        }
+
+        await transaction.CommitAsync();
+
+        return new Data_Response<string>(200, "Deleted");
+      }
+      catch (Exception ex)
+      {
+        await transaction.RollbackAsync();
+        return new Data_Response<string>(500, $"Server error: {ex.Message}");
+      }
+    }
+
   }
 }
