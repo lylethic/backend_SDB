@@ -1,12 +1,13 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using server.Dtos;
 using server.IService;
-
 
 namespace server.Controllers
 {
   [Route("api/[controller]")]
   [ApiController]
+  [Authorize]
   public class TeachersController : ControllerBase
   {
     private readonly ITeacher _teacherRepo;

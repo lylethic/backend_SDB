@@ -45,11 +45,15 @@ namespace server.Repositories
         return new LoginResType(false, "Invalid password");
       }
 
+      var getRole = await _context.Roles.FirstOrDefaultAsync(r => r.RoleId == user.RoleId);
+      var role = getRole?.NameRole;
+
       // Generate JWT tokens
       // Information in JWT
       var claims = new List<Claim>()
       {
         new Claim(ClaimTypes.Email, model.Email),
+        new Claim(ClaimTypes.Role, role),
       };
 
       var accessToken = _tokenService.GenerateAccessToken(claims);

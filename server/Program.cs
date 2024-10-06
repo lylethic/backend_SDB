@@ -9,6 +9,9 @@ using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.Logging.ClearProviders();
+builder.Logging.AddConsole();
+
 // Add services to the container.
 
 builder.Services.AddControllers();
@@ -26,7 +29,7 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddCors(options => options.AddDefaultPolicy(policy =>
     policy.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader()));
 
-//Inject app Dependencies (Dependecy Injecteion)
+// Inject app Dependencies (Dependecy Injecteion)
 builder.Services.AddScoped<IAuth, AuthRepositories>();
 builder.Services.AddScoped<ITokenService, TokenRepositories>();
 builder.Services.AddScoped<IAccount, AccountRespositories>();
@@ -43,6 +46,7 @@ builder.Services.AddScoped<IClass, ClassRepositories>();
 builder.Services.AddScoped<IPC_GiangDay_BiaSDB, PC_GiangDay_BiaSDBRepositories>();
 builder.Services.AddScoped<IClassify, ClassifyRepositories>();
 builder.Services.AddScoped<IBiaSoDauBai, BiaSoDauBaiRepositories>();
+builder.Services.AddScoped<IWeek, WeekRepositories>();
 
 // Add AutoMapper and configure profiles
 builder.Services.AddAutoMapper(typeof(Program));

@@ -2,7 +2,8 @@
 {
   public static class ExcelHelper
   {
-    public static DateOnly? ConvertExcelDateToDateOnly(object value) // Helper method to convert Excel date (double) to DateOnly
+    // Helper method to convert Excel date (double) to DateOnly
+    public static DateOnly? ConvertExcelDateToDateOnly(object value)
     {
       if (value is double excelDate)
       {

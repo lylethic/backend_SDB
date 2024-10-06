@@ -7,7 +7,7 @@ namespace server.Controllers
 {
   [Route("api/[controller]")]
   [ApiController]
-  [Authorize]
+  [Authorize(Roles = "admin")]
   public class AccountController : ControllerBase
   {
     private readonly IAccount _acc;

@@ -340,6 +340,13 @@ namespace server.Repositories
                   continue;
                 }
 
+                // Check if there are no more rows or empty rows
+                if (reader.GetValue(1) == null && reader.GetValue(2) == null && reader.GetValue(3) == null)
+                {
+                  // Stop processing when an empty row is encountered
+                  break;
+                }
+
                 var myGrades = new Models.Grade
                 {
                   AcademicYearId = Convert.ToInt16(reader.GetValue(1)),
