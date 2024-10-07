@@ -60,11 +60,11 @@ namespace server.Repositories
       {
         var find = "SELECT * FROM Week WHERE WeekId = @id";
 
-        var week = await _context.Weeks
+        var existingWeek = await _context.Weeks
           .FromSqlRaw(find, new SqlParameter("@id", model.WeekId))
           .FirstOrDefaultAsync();
 
-        if (week is not null)
+        if (existingWeek is not null)
         {
           return new Data_Response<WeekDto>(409, "Week already exists");
         }
@@ -348,21 +348,6 @@ namespace server.Repositories
       {
         throw new Exception($"Error while uploading file: {dbEx.Message}");
       }
-    }
-
-    /// <summary>
-    /// Checks if the current row is empty by verifying all cells are null.
-    /// </summary>
-    public bool IsRowEmpty(IExcelDataReader reader)
-    {
-      for (int i = 0; i < reader.FieldCount; i++)
-      {
-        if (reader.GetValue(i) != null)
-        {
-          return false;
-        }
-      }
-      return true;
     }
 
     public async Task<Data_Response<WeekDto>> UpdateWeek(int id, WeekDto model)

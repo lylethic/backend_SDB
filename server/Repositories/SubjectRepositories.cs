@@ -10,7 +10,7 @@ using System.Text;
 
 namespace server.Repositories
 {
-  public class SubjectRepositories : ISubject
+    public class SubjectRepositories : ISubject
   {
     readonly SoDauBaiContext _context;
     public SubjectRepositories(SoDauBaiContext context)

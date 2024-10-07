@@ -23,11 +23,11 @@ namespace server.Repositories
       {
         var findTeacher = "SELECT * FROM Teacher WHERE teacherId = @id";
 
-        var taecher = await _context.Teachers
+        var teacher = await _context.Teachers
           .FromSqlRaw(findTeacher, new SqlParameter("@id", model.TeacherId))
           .FirstOrDefaultAsync();
 
-        if (taecher is not null)
+        if (teacher is not null)
         {
           return new Data_Response<TeacherDto>(409, "Teacher already exists");
         }

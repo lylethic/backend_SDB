@@ -11,7 +11,7 @@ using System.Text;
 
 namespace server.Repositories
 {
-  public class SemesterRepositories : ISemester
+    public class SemesterRepositories : ISemester
   {
     readonly SoDauBaiContext _context;
 

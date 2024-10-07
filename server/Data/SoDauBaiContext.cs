@@ -147,67 +147,60 @@ public partial class SoDauBaiContext : DbContext
 
     modelBuilder.Entity<ChiTietSoDauBai>(entity =>
     {
-      entity.HasKey(e => e.ChiTietSoDauBaiId).HasName("PK__ChiTietS__684F0A5B05F1C33D");
+      entity.HasKey(e => e.ChiTietSoDauBaiId).HasName("PK__ChiTietS__684F0A5BC75F8D8F");
 
       entity.ToTable("ChiTietSoDauBai");
 
+      entity.HasIndex(e => e.WeekId, "IDX_ChiTietSoDauBai_WeekId");
+
       entity.Property(e => e.ChiTietSoDauBaiId).HasColumnName("chiTietSoDauBaiId");
-      entity.Property(e => e.AcademicYearId).HasColumnName("academicYearId");
       entity.Property(e => e.Attend).HasColumnName("attend");
       entity.Property(e => e.BiaSoDauBaiId).HasColumnName("biaSoDauBaiId");
-      entity.Property(e => e.ClassId).HasColumnName("classId");
+      entity.Property(e => e.BuoiHoc)
+              .HasMaxLength(10)
+              .HasColumnName("buoiHoc");
       entity.Property(e => e.ClassificationId).HasColumnName("classificationId");
-      entity.Property(e => e.Comment)
-              .HasMaxLength(255)
-              .IsUnicode(false)
-              .HasColumnName("comment");
-      entity.Property(e => e.Content)
-              .HasMaxLength(100)
-              .HasColumnName("content");
       entity.Property(e => e.CreatedAt)
+              .HasDefaultValueSql("(getdate())")
               .HasColumnType("datetime")
               .HasColumnName("createdAt");
       entity.Property(e => e.CreatedBy).HasColumnName("createdBy");
       entity.Property(e => e.DaysOfTheWeek).HasMaxLength(10);
-      entity.Property(e => e.Ngay).HasColumnName("ngay");
-      entity.Property(e => e.Period).HasColumnName("period");
+      entity.Property(e => e.LessonContent).HasColumnName("lessonContent");
+      entity.Property(e => e.NoteComment)
+              .HasMaxLength(255)
+              .HasColumnName("noteComment");
       entity.Property(e => e.SemesterId).HasColumnName("semesterId");
-      entity.Property(e => e.Sesion)
-              .HasMaxLength(10)
-              .HasColumnName("sesion");
       entity.Property(e => e.SubjectId).HasColumnName("subjectId");
+      entity.Property(e => e.ThoiGian)
+              .HasColumnType("datetime")
+              .HasColumnName("thoiGian");
+      entity.Property(e => e.TietHoc).HasColumnName("tietHoc");
       entity.Property(e => e.UpdatedAt)
+              .HasDefaultValueSql("(NULL)")
               .HasColumnType("datetime")
               .HasColumnName("updatedAt");
       entity.Property(e => e.WeekId).HasColumnName("weekId");
 
-      entity.HasOne(d => d.AcademicYear).WithMany(p => p.ChiTietSoDauBais)
-              .HasForeignKey(d => d.AcademicYearId)
-              .HasConstraintName("FK__ChiTietSo__acade__7D439ABD");
-
       entity.HasOne(d => d.BiaSoDauBai).WithMany(p => p.ChiTietSoDauBais)
               .HasForeignKey(d => d.BiaSoDauBaiId)
-              .HasConstraintName("FK__ChiTietSo__biaSo__7B5B524B");
-
-      entity.HasOne(d => d.Class).WithMany(p => p.ChiTietSoDauBais)
-              .HasForeignKey(d => d.ClassId)
-              .HasConstraintName("FK__ChiTietSo__class__7C4F7684");
+              .HasConstraintName("FK__ChiTietSo__biaSo__2180FB33");
 
       entity.HasOne(d => d.Classification).WithMany(p => p.ChiTietSoDauBais)
               .HasForeignKey(d => d.ClassificationId)
-              .HasConstraintName("FK__ChiTietSo__class__01142BA1");
+              .HasConstraintName("FK__ChiTietSo__class__25518C17");
 
       entity.HasOne(d => d.Semester).WithMany(p => p.ChiTietSoDauBais)
               .HasForeignKey(d => d.SemesterId)
-              .HasConstraintName("FK__ChiTietSo__semes__7E37BEF6");
+              .HasConstraintName("FK__ChiTietSo__semes__22751F6C");
 
       entity.HasOne(d => d.Subject).WithMany(p => p.ChiTietSoDauBais)
               .HasForeignKey(d => d.SubjectId)
-              .HasConstraintName("FK__ChiTietSo__subje__00200768");
+              .HasConstraintName("FK__ChiTietSo__subje__245D67DE");
 
       entity.HasOne(d => d.Week).WithMany(p => p.ChiTietSoDauBais)
               .HasForeignKey(d => d.WeekId)
-              .HasConstraintName("FK__ChiTietSo__weekI__7F2BE32F");
+              .HasConstraintName("FK__ChiTietSo__weekI__236943A5");
     });
 
     modelBuilder.Entity<Class>(entity =>

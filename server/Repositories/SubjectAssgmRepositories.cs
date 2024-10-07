@@ -9,7 +9,7 @@ using System.Text;
 
 namespace server.Repositories
 {
-  public class SubjectAssgmRepositories : ISubject_Assgm
+    public class SubjectAssgmRepositories : ISubject_Assgm
   {
     readonly SoDauBaiContext _context;
 

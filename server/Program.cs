@@ -47,6 +47,7 @@ builder.Services.AddScoped<IPC_GiangDay_BiaSDB, PC_GiangDay_BiaSDBRepositories>(
 builder.Services.AddScoped<IClassify, ClassifyRepositories>();
 builder.Services.AddScoped<IBiaSoDauBai, BiaSoDauBaiRepositories>();
 builder.Services.AddScoped<IWeek, WeekRepositories>();
+builder.Services.AddScoped<IChiTietSoDauBai, ChiTietSoDauBaiRepositories>();
 
 // Add AutoMapper and configure profiles
 builder.Services.AddAutoMapper(typeof(Program));
