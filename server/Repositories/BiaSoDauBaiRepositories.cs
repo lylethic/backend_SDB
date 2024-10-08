@@ -19,57 +19,83 @@ namespace server.Repositories
 
     public async Task<Data_Response<BiaSoDauBaiDto>> CreateBiaSoDauBai(BiaSoDauBaiDto model)
     {
-      using (var transaction = await _context.Database.BeginTransactionAsync())
+      using var transaction = await _context.Database.BeginTransactionAsync();
+
+      try
       {
-        try
+        var find = "SELECT * FROM BiaSoDauBai WHERE BiaSoDauBaiId = @id";
+        var sodaubai = await _context.BiaSoDauBais
+            .FromSqlRaw(find, new SqlParameter("@id", model.BiaSoDauBaiId))
+            .FirstOrDefaultAsync();
+
+        if (sodaubai is not null)
         {
-          var find = "SELECT * FROM BiaSoDauBai WHERE BiaSoDauBaiId = @id";
-          var sodaubai = await _context.BiaSoDauBais
-              .FromSqlRaw(find, new SqlParameter("@id", model.BiaSoDauBaiId))
-              .FirstOrDefaultAsync();
+          return new Data_Response<BiaSoDauBaiDto>(409, "Sodaubai already exists");
+        }
 
-          if (sodaubai is not null)
-          {
-            return new Data_Response<BiaSoDauBaiDto>(409, "Sodaubai already exists");
-          }
+        // Check if schoolId exists
+        var schoolExists = await _context.Schools
+            .AnyAsync(c => c.SchoolId == model.SchoolId);
 
-          model.DateCreated = DateTime.Now;
-          model.DateUpdated = null;
+        if (!schoolExists)
+        {
+          return new Data_Response<BiaSoDauBaiDto>(404, "SchoolId not found");
+        }
 
-          var queryInsert = @"INSERT INTO BiaSoDauBai (schoolId, academicYearId, classId, status, dateCreated, dateUpdated)
+        // Check if academicYearId exists
+        var academicYearExists = await _context.AcademicYears
+            .AnyAsync(c => c.AcademicYearId == model.AcademicyearId);
+
+        if (!academicYearExists)
+        {
+          return new Data_Response<BiaSoDauBaiDto>(404, "academicYearId not found");
+        }
+
+        // Check if classId exists
+        var classExists = await _context.Classes
+            .AnyAsync(c => c.ClassId == model.ClassId);
+
+        if (!classExists)
+        {
+          return new Data_Response<BiaSoDauBaiDto>(404, "ClassId not found");
+        }
+
+        model.DateCreated = DateTime.Now;
+        model.DateUpdated = null;
+
+        var queryInsert = @"INSERT INTO BiaSoDauBai (schoolId, academicYearId, classId, status, dateCreated, dateUpdated)
                                 VALUES (@schoolId, @academicYearId, @classId, @status, @dateCreated, @dateUpdated);
                                 SELECT CAST(SCOPE_IDENTITY() AS INT);";
 
-          var insert = await _context.Database.ExecuteSqlRawAsync(queryInsert,
-              new SqlParameter("@schoolId", model.SchoolId),
-              new SqlParameter("@academicYearId", model.AcademicyearId),
-              new SqlParameter("@classId", model.ClassId),
-              new SqlParameter("@status", model.Status),
-              new SqlParameter("@dateCreated", model.DateCreated),
-              new SqlParameter("@dateUpdated", DBNull.Value)
-          );
+        var insert = await _context.Database.ExecuteSqlRawAsync(queryInsert,
+            new SqlParameter("@schoolId", model.SchoolId),
+            new SqlParameter("@academicYearId", model.AcademicyearId),
+            new SqlParameter("@classId", model.ClassId),
+            new SqlParameter("@status", model.Status),
+            new SqlParameter("@dateCreated", model.DateCreated),
+            new SqlParameter("@dateUpdated", DBNull.Value)
+        );
 
-          // Commit the transaction after the insert succeeds
-          await transaction.CommitAsync();
+        // Commit the transaction after the insert succeeds
+        await transaction.CommitAsync();
 
-          var result = new BiaSoDauBaiDto
-          {
-            SchoolId = model.SchoolId,
-            AcademicyearId = model.AcademicyearId,
-            ClassId = model.ClassId,
-            Status = model.Status,
-            DateCreated = model.DateCreated,
-            DateUpdated = model.DateUpdated,
-          };
-
-          return new Data_Response<BiaSoDauBaiDto>(200, result);
-        }
-        catch (Exception ex)
+        var result = new BiaSoDauBaiDto
         {
-          // Rollback the transaction if any exception occurs
-          await transaction.RollbackAsync();
-          return new Data_Response<BiaSoDauBaiDto>(500, $"Server Error: {ex.Message}");
-        }
+          SchoolId = model.SchoolId,
+          AcademicyearId = model.AcademicyearId,
+          ClassId = model.ClassId,
+          Status = model.Status,
+          DateCreated = model.DateCreated,
+          DateUpdated = model.DateUpdated,
+        };
+
+        return new Data_Response<BiaSoDauBaiDto>(200, result);
+      }
+      catch (Exception ex)
+      {
+        // Rollback the transaction if any exception occurs
+        await transaction.RollbackAsync();
+        return new Data_Response<BiaSoDauBaiDto>(500, $"Server Error: {ex.Message}");
       }
     }
 

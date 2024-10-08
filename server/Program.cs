@@ -6,7 +6,6 @@ using server;
 using server.IService;
 using server.Repositories;
 using System.Text;
-
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Logging.ClearProviders();
@@ -48,6 +47,7 @@ builder.Services.AddScoped<IClassify, ClassifyRepositories>();
 builder.Services.AddScoped<IBiaSoDauBai, BiaSoDauBaiRepositories>();
 builder.Services.AddScoped<IWeek, WeekRepositories>();
 builder.Services.AddScoped<IChiTietSoDauBai, ChiTietSoDauBaiRepositories>();
+builder.Services.AddScoped<IPC_ChuNhiem, PCChuNhiemRepositories>();
 
 // Add AutoMapper and configure profiles
 builder.Services.AddAutoMapper(typeof(Program));

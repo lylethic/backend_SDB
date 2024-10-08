@@ -268,7 +268,7 @@ namespace server.Repositories
 
         if (model.Status != existingTeacher.Status)
         {
-          queryBuilder.Append("Status = @Status ");
+          queryBuilder.Append("Status = @Status, ");
           parameters.Add(new SqlParameter("@Status", model.Status));
           hasChanges = true;
         }
@@ -279,15 +279,12 @@ namespace server.Repositories
           parameters.Add(new SqlParameter("@DateCreate", model.DateCreate.Value));
         }
 
-        if (model.DateUpdate != existingTeacher.DateUpdate)
-        {
-          queryBuilder.Append("DateUpdate = @DateUpdate, ");
-          parameters.Add(new SqlParameter("@DateUpdate", model.DateUpdate));
-          hasChanges = true;
-        }
+        queryBuilder.Append("DateUpdate = @DateUpdate, ");
+        parameters.Add(new SqlParameter("@DateUpdate", DateTime.Now));
 
         if (hasChanges)
         {
+          // Xoa dau phay o cuoi cau lenh
           if (queryBuilder[^2] == ',')
           {
             queryBuilder.Length -= 2;

@@ -19,7 +19,7 @@ namespace server.Controllers
     }
 
     [HttpGet]
-    public async Task<IActionResult> GetAllWeek(int pageNumber, int pageSize)
+    public async Task<IActionResult> GetAllWeek(int pageNumber = 1, int pageSize = 50)
     {
       try
       {

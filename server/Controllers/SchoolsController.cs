@@ -17,7 +17,7 @@ namespace server.Controllers
     }
 
     [HttpGet]
-    public async Task<IActionResult> GetSchools(int pageNumber = 1, int pageSize = 10)
+    public async Task<IActionResult> GetSchools(int pageNumber = 1, int pageSize = 50)
     {
       try
       {
