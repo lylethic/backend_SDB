@@ -158,7 +158,7 @@ namespace server.Repositories
       };
       try
       {
-        _httpContextAccessor.HttpContext.Response.Cookies.Append("jwtCookie", token, cookieOptions);
+        _httpContextAccessor.HttpContext.Response.Cookies.Append("sessionToken", token, cookieOptions);
       }
       catch (Exception ex)
       {
@@ -196,7 +196,7 @@ namespace server.Repositories
       };
       try
       {
-        _httpContextAccessor.HttpContext.Response.Cookies.Append("jwtCookie", "", cookieOptions);
+        _httpContextAccessor.HttpContext.Response.Cookies.Append("sessionToken", "", cookieOptions);
       }
       catch (Exception ex)
       {

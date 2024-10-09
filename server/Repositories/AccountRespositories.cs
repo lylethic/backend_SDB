@@ -59,8 +59,8 @@ namespace server.Repositories
          which is crucial for getting the AccountId after the insertion.
         */
         string sqlInsert = @"
-            INSERT INTO Account (Email, RoleId, SchoolId, Password, PasswordSalt, DateCreated, DateUpdated)
-            VALUES (@Email, @RoleId, @SchoolId, @Password, @PasswordSalt, @DateCreated, @DateUpdated);
+            INSERT INTO Account (Email, RoleId, SchoolId, matKhau, PasswordSalt, DateCreated, DateUpdated)
+            VALUES (@Email, @RoleId, @SchoolId, @matKhau, @PasswordSalt, @DateCreated, @DateUpdated);
             SELECT CAST(SCOPE_IDENTITY() as int);
         ";
 
@@ -71,7 +71,7 @@ namespace server.Repositories
             new SqlParameter("@Email", acc.Email),
             new SqlParameter("@RoleId", acc.RoleId),
             new SqlParameter("@SchoolId", acc.SchoolId),
-            new SqlParameter("@Password", passwordHash),
+            new SqlParameter("@matKhau", passwordHash),
             new SqlParameter("@PasswordSalt", passwordSalt),
             new SqlParameter("@DateCreated", acc.DateCreated),
             new SqlParameter("@DateUpdated", DBNull.Value)

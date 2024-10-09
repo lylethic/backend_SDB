@@ -24,9 +24,17 @@ builder.Services.AddDbContext<server.Data.SoDauBaiContext>(options =>
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-// Cors
-builder.Services.AddCors(options => options.AddDefaultPolicy(policy =>
-    policy.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader()));
+// **CORS Configuration**
+builder.Services.AddCors(options =>
+{
+  options.AddPolicy("MyCors", policy =>
+  {
+    policy.WithOrigins("http://localhost:3000") // Specify your frontend origin
+            .AllowAnyMethod()
+            .AllowAnyHeader()
+            .AllowCredentials(); // Allow credentials
+  });
+});
 
 // Inject app Dependencies (Dependecy Injecteion)
 builder.Services.AddScoped<IAuth, AuthRepositories>();
@@ -82,7 +90,6 @@ builder.Services.AddAuthentication(options =>
   };
 });
 
-
 //
 var app = builder.Build();
 
@@ -96,7 +103,7 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-app.UseCors();
+app.UseCors("MyCors");
 
 app.UseRouting();
 app.UseMiddleware<JWTHeaderMiddleware>();
