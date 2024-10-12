@@ -17,10 +17,10 @@ namespace server
       _logger = logger;
     }
 
-    public async Task Invoke(HttpContext context)
+    public async Task Invoke(HttpContext httpContext)
     {
-      var cookieName = "sessionToken";
-      var jwtToken = context.Request.Cookies[cookieName];
+      var cookieName = "jwtCookie";
+      var jwtToken = httpContext.Request.Cookies[cookieName];
 
       if (!string.IsNullOrEmpty(jwtToken))
       {
@@ -51,9 +51,9 @@ namespace server
               jwtSecurityToken.Header.Alg.Equals(SecurityAlgorithms.HmacSha256, StringComparison.InvariantCultureIgnoreCase))
           {
             // If token is valid, append the Authorization header
-            if (!context.Request.Headers.ContainsKey("Authorization"))
+            if (!httpContext.Request.Headers.ContainsKey("Authorization"))
             {
-              context.Request.Headers.Append("Authorization", "Bearer " + jwtToken);
+              httpContext.Request.Headers.Append("Authorization", "Bearer " + jwtToken);
             }
           }
         }
@@ -62,21 +62,22 @@ namespace server
           _logger.LogError($"JWT token expired: {ex.Message}");
 
           // Token has expired, return 401 Unauthorized with a specific message
-          context.Response.StatusCode = StatusCodes.Status401Unauthorized;
-          await context.Response.WriteAsync("JWT token has expired.");
+          httpContext.Response.StatusCode = StatusCodes.Status401Unauthorized;
+          httpContext.Response.Headers.Append("JWT token has expired", ex.Message);
+          await httpContext.Response.WriteAsync("JWT token has expired.");
           return;
         }
         catch (SecurityTokenException ex)
         {
-          _logger.LogError($"Invalid JWT token: {ex.Message}");
+          _logger.LogError("Invalid JWT token: {Message}", ex.Message);
 
           // Token is invalid, return 401 Unauthorized
-          context.Response.StatusCode = StatusCodes.Status401Unauthorized;
-          await context.Response.WriteAsync("Invalid JWT token.");
+          httpContext.Response.StatusCode = StatusCodes.Status401Unauthorized;
+          await httpContext.Response.WriteAsync("Invalid JWT token. Please sign in again!");
           return;
         }
       }
-      await _next(context);
+      await _next(httpContext);
     }
   }
 }

@@ -77,73 +77,55 @@ namespace server.Repositories
       return principal;
     }
 
-    public async Task<ResponseDto> RefreshToken(TokenApiDto model)
+    public async Task<ResponseDto> RefreshToken()
     {
-      if (model is null)
+      // Retrieve the access token from the cookie
+      var accessToken = _httpContextAccessor.HttpContext?.Request.Cookies["jwtCookie"];
+      if (string.IsNullOrEmpty(accessToken))
       {
-        return new ResponseDto
-        {
-          IsSuccess = false,
-          Message = "Invalid client reqest",
-        };
+        return new ResponseDto(false, "Invalid client request. Access token not found in cookie.");
       }
 
       try
       {
-        string accessToken = model.AccessToken;
-        string refreshToken = model.RefreshToken;
-
-        // AccessToken => Sap het han chua
+        // Validate AccessToken => Sap het han chua
         var principal = GetPrincipalFromExpiredToken(accessToken);
+        var accountId = principal.FindFirst("AccountId")?.Value;
 
-        var email = principal.FindFirst(ClaimTypes.Email)?.Value; // map to claims
+        var tokenStored = _context.Sessions
+                         .Where(id => id.AccountId == Convert.ToInt16(accountId))
+                         .OrderByDescending(s => s.ExpiresAt)
+                         .FirstOrDefault();
 
-        var user = _context.Accounts.SingleOrDefault(id => id.Email == email);
-
-        var tokenStored = _context.Sessions.FirstOrDefault(id => id.AccountId == user.AccountId);
 
         if (tokenStored is null)
         {
-          return new ResponseDto
-          {
-            IsSuccess = false,
-            Message = "Session not found",
-          };
+          return new ResponseDto(false, "Session not found");
+
         }
-        if (user is null || tokenStored.Token != refreshToken || tokenStored.ExpiresAt <= DateTime.Now)
+        // Check if the stored refresh token is still valid (not expired)
+        if (tokenStored.ExpiresAt <= DateTime.Now)
         {
-          return new ResponseDto
-          {
-            IsSuccess = false,
-            Message = "Invalid client request",
-          };
+          return new ResponseDto(false, "Refresh token has expired");
         }
 
+        // Generate new access and refresh tokens
         var newAccessToken = GenerateAccessToken(principal.Claims);
         var newRefreshToken = GenerateRefreshToken();
 
+        // Update refresh token in the database
         tokenStored.Token = newRefreshToken;
         tokenStored.ExpiresAt = DateTime.Now.AddDays(3);
         await _context.SaveChangesAsync();
 
+        // Luu vao cookies (Server-side-ren)
         SetJWTCookie(newAccessToken);
-        SetRefreshTokenCookie(newRefreshToken);
 
-        return new ResponseDto
-        {
-          IsSuccess = true,
-          Message = "Token refreshed successfully",
-          AccessToken = newAccessToken,
-          RefreshToken = newRefreshToken
-        };
+        return new ResponseDto(true, "Token refreshed successfully", newAccessToken);
       }
       catch (Exception ex)
       {
-        return new ResponseDto
-        {
-          IsSuccess = false,
-          Message = ex.Message,
-        };
+        return new ResponseDto(false, ex.Message);
       }
     }
 
@@ -158,11 +140,11 @@ namespace server.Repositories
       };
       try
       {
-        _httpContextAccessor.HttpContext.Response.Cookies.Append("sessionToken", token, cookieOptions);
+        _httpContextAccessor.HttpContext?.Response.Cookies.Append("jwtCookie", token, cookieOptions);
       }
       catch (Exception ex)
       {
-        throw new Exception("Failed to set JWT cookie", ex);
+        throw new Exception($"Failed to set JWT cookie: ${ex.Message}");
       }
     }
 
@@ -177,11 +159,11 @@ namespace server.Repositories
       };
       try
       {
-        _httpContextAccessor.HttpContext.Response.Cookies.Append("refreshToken", refreshToken, cookieOptions);
+        _httpContextAccessor.HttpContext?.Response.Cookies.Append("refreshToken", refreshToken, cookieOptions);
       }
       catch (Exception ex)
       {
-        throw new Exception("Failed to set refresh token cookie", ex);
+        throw new Exception($"Failed to set refresh token cookie: {ex.Message}");
       }
     }
 
@@ -196,11 +178,11 @@ namespace server.Repositories
       };
       try
       {
-        _httpContextAccessor.HttpContext.Response.Cookies.Append("sessionToken", "", cookieOptions);
+        _httpContextAccessor.HttpContext?.Response.Cookies.Append("jwtCookie", "", cookieOptions);
       }
       catch (Exception ex)
       {
-        throw new Exception("Failed to clear JWT cookie", ex);
+        throw new Exception($"Failed to clear JWT cookie: {ex.Message}");
       }
     }
 
@@ -215,13 +197,12 @@ namespace server.Repositories
       };
       try
       {
-        _httpContextAccessor.HttpContext.Response.Cookies.Append("refreshToken", "", cookieOptions);
+        _httpContextAccessor.HttpContext?.Response.Cookies.Append("refreshToken", "", cookieOptions);
       }
       catch (Exception ex)
       {
-        throw new Exception("Failed to clear refresh token cookie", ex);
+        throw new Exception($"Failed to clear refresh token cookie: {ex.Message}");
       }
     }
-
   }
 }

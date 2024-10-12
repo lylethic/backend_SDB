@@ -5,7 +5,7 @@
     public int StatusCode { get; set; }
     public string Message { get; set; } = string.Empty;
 
-    public T Data { get; set; }
+    public T? Data { get; set; }
 
     public Data_Response()
     {
@@ -13,8 +13,8 @@
 
     public Data_Response(int statusCode, string message)
     {
-      StatusCode = statusCode;
-      Message = message;
+      this.StatusCode = statusCode;
+      this.Message = message;
     }
 
     public Data_Response(int statusCode, T data)

@@ -99,12 +99,12 @@ namespace server.Repositories
     {
       try
       {
-        var query = @"
-            SELECT acc.AccountId, acc.RoleId, acc.SchoolId, acc.Email, 
-                   tea.TeacherId, tea.Fullname, tea.Status
-            FROM Account as acc 
-            LEFT JOIN Teacher as tea ON acc.AccountId = tea.AccountId
-            WHERE acc.AccountId = @id";
+        var query = @"SELECT
+                            acc.AccountId, acc.RoleId, acc.SchoolId, acc.Email, 
+                            tea.TeacherId, tea.Fullname, tea.Status
+                        FROM Account as acc 
+                        LEFT JOIN Teacher as tea ON acc.AccountId = tea.AccountId
+                        WHERE acc.AccountId = @id";
 
         var account = await _context.Accounts
             .FromSqlRaw(query, new SqlParameter("@id", id))
@@ -134,7 +134,7 @@ namespace server.Repositories
           RoleId = account.RoleId,
           SchoolId = account.SchoolId,
           Email = account.Email,
-          TeacherId = account.Teacher.TeacherId,
+          TeacherId = account.Teacher!.TeacherId,
           FullName = account.Teacher.Fullname,
           StatusTeacher = account.Teacher.Status
         };

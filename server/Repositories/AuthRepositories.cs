@@ -45,22 +45,26 @@ namespace server.Repositories
         return new LoginResType(false, "Invalid password");
       }
 
+      // Lay ten role
       var getRole = await _context.Roles.FirstOrDefaultAsync(r => r.RoleId == user.RoleId);
       var role = getRole?.NameRole;
 
-      // Generate JWT tokens
-      // Information in JWT
+      // Add additional claims
       var claims = new List<Claim>()
       {
-        new Claim(ClaimTypes.Email, model.Email),
-        new Claim(ClaimTypes.Role, role),
+        new Claim("AccountId", user.AccountId.ToString()),
+        new Claim(ClaimTypes.Email, model.Email!),
+        new Claim(ClaimTypes.Role, role!),
+        new Claim("SchoolId", user.SchoolId.ToString()!),
       };
 
+      // Generate JWT tokens
       var accessToken = _tokenService.GenerateAccessToken(claims);
       var refreshToken = _tokenService.GenerateRefreshToken();
 
+      // Set cookies
       _tokenService.SetJWTCookie(accessToken);
-      _tokenService.SetRefreshTokenCookie(refreshToken);
+      // _tokenService.SetRefreshTokenCookie(refreshToken); No save this in cookies
 
       var session = new Session
       {
@@ -78,11 +82,6 @@ namespace server.Repositories
         IsSuccess = true,
         Message = "Login successful",
         AccessToken = accessToken,
-        RefreshToken = refreshToken,
-        Email = user.Email,
-        AccountId = user.AccountId,
-        RoleId = user.RoleId,
-        SchoolId = user.SchoolId,
       };
     }
 
@@ -90,8 +89,8 @@ namespace server.Repositories
     {
       try
       {
-        // Get email in Claims
-        var userStored = _httpContextAccessor.HttpContext.User.FindFirst(ClaimTypes.Email)?.Value;
+        // Get email in Claims jwt
+        var userStored = _httpContextAccessor.HttpContext?.User.FindFirst(ClaimTypes.Email)?.Value;
 
         if (string.IsNullOrEmpty(userStored))
         {
@@ -117,7 +116,7 @@ namespace server.Repositories
 
         // Clear cookies
         _tokenService.ClearJWTCookie();
-        _tokenService.ClearRefreshTokenCookie();
+        // _tokenService.ClearRefreshTokenCookie();
 
         return new ResponseDto(true, "Logout successful");
       }
@@ -170,10 +169,16 @@ namespace server.Repositories
       _context.Accounts.Add(user);
       await _context.SaveChangesAsync();
 
+
       // Optionally, log the user in after registering (generate tokens)
+      var getRole = await _context.Roles.FirstOrDefaultAsync(r => r.RoleId == user.RoleId);
+      var role = getRole?.NameRole;
       var claims = new List<Claim>
       {
+        new Claim("AccountId", user.AccountId.ToString()),
         new Claim(ClaimTypes.Email, user.Email),
+        new Claim(ClaimTypes.Role, role!),
+        new Claim("SchoolId", user.SchoolId.ToString()!),
       };
 
       var accessToken = _tokenService.GenerateAccessToken(claims);
@@ -197,7 +202,6 @@ namespace server.Repositories
         IsSuccess = true,
         Message = "Registration successful",
         AccessToken = accessToken,
-        RefreshToken = refreshToken
       };
     }
 

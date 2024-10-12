@@ -48,15 +48,14 @@ namespace server.Controllers
         success = result.IsSuccess,
         message = result.Message,
         accessToken = result.AccessToken,
-        refreshToken = result.RefreshToken
       });
     }
 
     [HttpPost, Route("refresh")]
     [AllowAnonymous]
-    public async Task<ActionResult<ResponseDto>> RefreshToken(TokenApiDto tokenApiModel)
+    public async Task<ActionResult<ResponseDto>> RefreshToken()
     {
-      var result = await _tokenService.RefreshToken(tokenApiModel);
+      var result = await _tokenService.RefreshToken();
       if (!result.IsSuccess)
       {
         return BadRequest(new { Message = "Có lỗi: " + result.Message });

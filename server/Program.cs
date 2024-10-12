@@ -57,12 +57,6 @@ builder.Services.AddScoped<IWeek, WeekRepositories>();
 builder.Services.AddScoped<IChiTietSoDauBai, ChiTietSoDauBaiRepositories>();
 builder.Services.AddScoped<IPC_ChuNhiem, PCChuNhiemRepositories>();
 
-// Add AutoMapper and configure profiles
-builder.Services.AddAutoMapper(typeof(Program));
-
-builder.Services.AddAuthorization();
-builder.Services.AddIdentityApiEndpoints<IdentityUser>().AddEntityFrameworkStores<server.Data.SoDauBaiContext>();
-
 // Load configuration from appsettings.json
 var configuration = new ConfigurationBuilder()
     .SetBasePath(builder.Environment.ContentRootPath)
@@ -89,6 +83,13 @@ builder.Services.AddAuthentication(options =>
     IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(configuration["JwtSettings:SecretKey"]!))
   };
 });
+
+
+// Add AutoMapper and configure profiles
+builder.Services.AddAutoMapper(typeof(Program));
+
+builder.Services.AddAuthorization();
+builder.Services.AddIdentityApiEndpoints<IdentityUser>().AddEntityFrameworkStores<server.Data.SoDauBaiContext>();
 
 //
 var app = builder.Build();

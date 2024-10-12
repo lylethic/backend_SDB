@@ -12,10 +12,10 @@
 
     public int AcademicyearId { get; set; }
 
-    public string ClassName { get; set; }
+    public string? ClassName { get; set; }
 
     public int TeacherId { get; set; }
 
-    public string TeacherFullName { get; set; }
+    public string? TeacherFullName { get; set; }
   }
 }

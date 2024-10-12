@@ -6,7 +6,7 @@ public class ChiTiet_WeekResType
 
   public int WeekId { get; set; }
 
-  public string WeekName { get; set; }
+  public string? WeekName { get; set; }
 
   public bool Status { get; set; }
 

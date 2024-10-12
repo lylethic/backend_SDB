@@ -8,8 +8,6 @@
 
     public string AccessToken { get; set; } = String.Empty;
 
-    public string RefreshToken { get; set; } = String.Empty;
-
     public ResponseDto()
     {
     }
@@ -18,6 +16,13 @@
     {
       this.IsSuccess = isSuccess;
       this.Message = mess;
+    }
+
+    public ResponseDto(bool isSuccess, string mess, string accessToken)
+    {
+      this.IsSuccess = isSuccess;
+      this.Message = mess;
+      this.AccessToken = accessToken;
     }
   }
 }

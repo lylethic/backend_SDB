@@ -11,7 +11,7 @@ namespace server.IService
 
     ClaimsPrincipal GetPrincipalFromExpiredToken(string token);
 
-    Task<ResponseDto> RefreshToken(TokenApiDto model);
+    Task<ResponseDto> RefreshToken();
 
     void SetJWTCookie(string token);
 
