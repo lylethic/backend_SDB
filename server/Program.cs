@@ -88,7 +88,41 @@ builder.Services.AddAuthentication(options =>
 // Add AutoMapper and configure profiles
 builder.Services.AddAutoMapper(typeof(Program));
 
-builder.Services.AddAuthorization();
+// Add authorization with a custom policy to check RoleId
+builder.Services.AddAuthorization(options =>
+{
+  options.AddPolicy("SuperAdmin", policy =>
+  {
+    policy.RequireClaim("RoleId", "7");
+  });
+
+  options.AddPolicy("Admin", policy =>
+  {
+    policy.RequireClaim("RoleId", "6");
+  });
+
+  options.AddPolicy("Teacher", policy =>
+  {
+    policy.RequireClaim("RoleId", "2");
+  });
+
+  options.AddPolicy("Student", policy =>
+  {
+    policy.RequireClaim("RoleId", "1");
+  });
+
+  options.AddPolicy("AdminAndTeacher", policy =>
+  {
+    policy.RequireClaim("RoleId", "2", "6");
+  });
+
+  options.AddPolicy("SuperAdminAndAdmin", policy =>
+  {
+    policy.RequireClaim("RoleId", "6", "7");
+  });
+});
+
+
 builder.Services.AddIdentityApiEndpoints<IdentityUser>().AddEntityFrameworkStores<server.Data.SoDauBaiContext>();
 
 //

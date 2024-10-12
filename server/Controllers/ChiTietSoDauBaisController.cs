@@ -1,14 +1,13 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using server.Dtos;
 using server.IService;
-
-// For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 
 namespace server.Controllers
 {
   [Route("api/[controller]")]
   [ApiController]
-  //[Authorize("Admin, Teacher")]
+  [Authorize]
   public class ChiTietSoDauBaisController : ControllerBase
   {
     readonly IChiTietSoDauBai _detail;
@@ -58,6 +57,72 @@ namespace server.Controllers
         return StatusCode(500, $"Error: {ex.Message}");
       }
     }
+
+    // GET:: 
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="id"></param>
+    /// <returns></returns>
+    /* {
+      "statusCode": 200,
+      "message": "",
+      "data": {
+        "chiTietSoDauBaiId": 2,
+        "weekId": 1,
+        "weekName": "Tuần 1",
+        "status": true,
+        "xepLoaiId": 1,
+        "tenXepLoai": "A",
+        "soDiem": 10
+      }
+    }
+   } */
+    [HttpGet("GetChiTiet_Week")]
+    public async Task<IActionResult> GetChiTiet_Week(int id)
+    {
+      var result = await _detail.GetChiTiet_Week_XepLoai(id);
+
+      if (result is null)
+      {
+        return BadRequest(result);
+      }
+
+      return Ok(result);
+    }
+
+    /// <summary>
+    /// Connect 4 table: Chitietsodaubai + BiaSodaubai + Class + Teacher
+    /// <param name="id">Id cua chiTietSoDauBai</param>
+    /// <returns>
+    /// {
+    //  "statusCode": 200,
+    //  "message": "",
+    //  "data": {
+    //    "chiTietSoDauBaiId": 1,
+    //    "biaSoDauBaiId": 1,
+    //    "classId": 1,
+    //    "schoolId": 1,
+    //    "academicyearId": 0,
+    //    "className": "Lớp 10A1",
+    //    "teacherId": 29,
+    //    "teacherFullName": "Phùng Minh Tú"
+    //  }
+    //}
+    /// </returns>
+    /// </summary>
+    [HttpGet("getChiTiet_Bia_Class_Teacher")]
+    public async Task<IActionResult> GetChiTiet_Bia_Class_Teacher(int id)
+    {
+      var result = await _detail.GetChiTiet_Bia_Class_Teacher(id);
+      if (result is null)
+      {
+        return BadRequest(result);
+      }
+
+      return Ok(result);
+    }
+
 
     // POST api/<ChiTietSoDauBaisController>
     /*
@@ -135,6 +200,7 @@ namespace server.Controllers
       }
     }
 
+    [Authorize(Policy = "SuperAdminAndAdmin")]
     [HttpDelete("bulkdelete")]
     public async Task<IActionResult> BulkDelete(List<int> ids)
     {
@@ -154,6 +220,7 @@ namespace server.Controllers
       }
     }
 
+    [Authorize(Policy = "SuperAdminAndAdmin")]
     [HttpPost("upload")]
     public async Task<IActionResult> ImportExcelFile(IFormFile file)
     {
@@ -167,71 +234,5 @@ namespace server.Controllers
       return BadRequest(result);
     }
 
-    /// <summary>
-    /// Connect 4 table: Chitietsodaubai + BiaSodaubai + Class + Teacher
-    /*
-    /// <param name="id">Id cua chiTietSoDauBai</param>
-    /// <returns></returns>
-     {
-      "statusCode": 200,
-      "message": "",
-      "data": {
-        "chiTietSoDauBaiId": 1,
-        "biaSoDauBaiId": 1,
-        "classId": 1,
-        "schoolId": 1,
-        "academicyearId": 0,
-        "className": "Lớp 10A1",
-        "teacherId": 29,
-        "teacherFullName": "Phùng Minh Tú"
-      }
-    }
-     */
-    /// </summary>
-    [HttpGet("getChiTiet_Bia_Class_Teacher")]
-    public async Task<IActionResult> GetChiTiet_Bia_Class_Teacher(int id)
-    {
-      var result = await _detail.GetChiTiet_Bia_Class_Teacher(id);
-      if (result is null)
-      {
-        return BadRequest(result);
-      }
-
-      return Ok(result);
-    }
-
-    /// <summary>
-    /// 
-    /// </summary>
-    /// <param name="id"></param>
-    /// <returns></returns>
-    /*
-    {
-      "statusCode": 200,
-      "message": "",
-      "data": {
-        "chiTietSoDauBaiId": 2,
-        "weekId": 1,
-        "weekName": "Tuần 1",
-        "status": true,
-        "xepLoaiId": 1,
-        "tenXepLoai": "A",
-        "soDiem": 10
-      }
-    }
-   }
-    */
-    [HttpGet("GetChiTiet_Week")]
-    public async Task<IActionResult> GetChiTiet_Week(int id)
-    {
-      var result = await _detail.GetChiTiet_Week_XepLoai(id);
-
-      if (result is null)
-      {
-        return BadRequest(result);
-      }
-
-      return Ok(result);
-    }
   }
 }

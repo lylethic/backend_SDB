@@ -66,6 +66,51 @@ namespace server.Controllers
       return Ok(subject);
     }
 
+    // PUT api/<WeeksController>/5
+    [Authorize(Policy = "SuperAdminAndAdmin")]
+    [HttpPut("{id}")]
+    public async Task<IActionResult> UpdateWeek(int id, WeekDto model)
+    {
+      var subject = await _week.UpdateWeek(id, model);
+
+      if (subject.StatusCode != 200)
+      {
+        return BadRequest(subject);
+      }
+
+      return Ok(subject);
+    }
+
+    // DELETE api/<WeeksController>/5
+    [Authorize(Policy = "SuperAdminAndAdmin")]
+    [HttpDelete("{id}")]
+    public async Task<IActionResult> DeleteWeek(int id)
+    {
+      var subject = await _week.DeleteWeek(id);
+
+      if (subject.StatusCode != 200)
+      {
+        return BadRequest(subject);
+      }
+
+      return Ok(subject);
+    }
+
+    [Authorize(Policy = "SuperAdminAndAdmin")]
+    [HttpDelete("bulk-delete")]
+    public async Task<IActionResult> BulkDelete([FromBody] List<int> ids)
+    {
+      var subject = await _week.BulkDelete(ids);
+
+      if (subject.StatusCode != 200)
+      {
+        return BadRequest(subject);
+      }
+
+      return Ok(subject);
+    }
+
+    [Authorize(Policy = "SuperAdminAndAdmin")]
     [HttpPost("upload")]
     public async Task<IActionResult> ImportExcelFile(IFormFile file)
     {
@@ -86,46 +131,6 @@ namespace server.Controllers
       }
     }
 
-    // PUT api/<WeeksController>/5
-    [HttpPut("{id}")]
-    public async Task<IActionResult> UpdateWeek(int id, WeekDto model)
-    {
-      var subject = await _week.UpdateWeek(id, model);
-
-      if (subject.StatusCode != 200)
-      {
-        return BadRequest(subject);
-      }
-
-      return Ok(subject);
-    }
-
-    // DELETE api/<WeeksController>/5
-    [HttpDelete("{id}")]
-    public async Task<IActionResult> DeleteWeek(int id)
-    {
-      var subject = await _week.DeleteWeek(id);
-
-      if (subject.StatusCode != 200)
-      {
-        return BadRequest(subject);
-      }
-
-      return Ok(subject);
-    }
-
-    [HttpDelete("bulk-delete")]
-    public async Task<IActionResult> BulkDelete([FromBody] List<int> ids)
-    {
-      var subject = await _week.BulkDelete(ids);
-
-      if (subject.StatusCode != 200)
-      {
-        return BadRequest(subject);
-      }
-
-      return Ok(subject);
-    }
   }
 }
 

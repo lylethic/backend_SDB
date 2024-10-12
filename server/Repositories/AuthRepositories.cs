@@ -47,14 +47,14 @@ namespace server.Repositories
 
       // Lay ten role
       var getRole = await _context.Roles.FirstOrDefaultAsync(r => r.RoleId == user.RoleId);
-      var role = getRole?.NameRole;
+      var role = getRole?.RoleId;
 
       // Add additional claims
       var claims = new List<Claim>()
       {
         new Claim("AccountId", user.AccountId.ToString()),
-        new Claim(ClaimTypes.Email, model.Email!),
-        new Claim(ClaimTypes.Role, role!),
+        new Claim("Email", model.Email!),
+        new Claim("RoleId", role.ToString()!),
         new Claim("SchoolId", user.SchoolId.ToString()!),
       };
 
@@ -85,23 +85,23 @@ namespace server.Repositories
       };
     }
 
-    public async Task<ResponseDto> Logout()
+    public async Task<LogoutResType> Logout()
     {
       try
       {
         // Get email in Claims jwt
-        var userStored = _httpContextAccessor.HttpContext?.User.FindFirst(ClaimTypes.Email)?.Value;
+        var userStored = _httpContextAccessor.HttpContext?.User.FindFirst("Email")?.Value;
 
         if (string.IsNullOrEmpty(userStored))
         {
-          return new ResponseDto(true, "User not found in the current session");
+          return new LogoutResType(true, "User not found in the current session");
         }
 
         var user = await _context.Accounts.FirstOrDefaultAsync(u => u.Email == userStored);
 
         if (user == null)
         {
-          return new ResponseDto(true, "User not found");
+          return new LogoutResType(true, "User not found");
         }
 
         // Remove refresh token in DB
@@ -118,12 +118,12 @@ namespace server.Repositories
         _tokenService.ClearJWTCookie();
         // _tokenService.ClearRefreshTokenCookie();
 
-        return new ResponseDto(true, "Logout successful");
+        return new LogoutResType(true, "Logout successful");
       }
       catch (Exception ex)
       {
         // Log the exception if necessary
-        return new ResponseDto(false, "An error occurred while logging out: " + ex.Message);
+        return new LogoutResType(false, "An error occurred while logging out: " + ex.Message);
       }
     }
 

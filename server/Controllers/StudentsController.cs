@@ -52,6 +52,7 @@ namespace server.Controllers
     }
 
     // PUT: api/Students/5
+    [Authorize(Policy = "SuperAdminAndAdmin")]
     [HttpPut("{id}")]
     public async Task<IActionResult> PutStudent(int id, StudentDto model)
     {
@@ -65,6 +66,7 @@ namespace server.Controllers
     }
 
     // POST: api/Students
+    [Authorize(Policy = "SuperAdminAndAdmin")]
     [HttpPost]
     public async Task<ActionResult<Student>> PostStudent(StudentDto model)
     {
@@ -78,6 +80,7 @@ namespace server.Controllers
     }
 
     // DELETE: api/Students/5
+    [Authorize(Policy = "SuperAdminAndAdmin")]
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeleteStudent(int id)
     {
@@ -90,6 +93,7 @@ namespace server.Controllers
       return Ok(result);
     }
 
+    [Authorize(Policy = "SuperAdminAndAdmin")]
     [HttpDelete("bulkdelete")]
     public async Task<IActionResult> BulkDelete(List<int> ids)
     {
@@ -102,6 +106,7 @@ namespace server.Controllers
       return Ok(result);
     }
 
+    [Authorize(Policy = "SuperAdminAndAdmin")]
     [HttpPost("upload")]
     public async Task<IActionResult> UploadExcelFile(IFormFile file)
     {

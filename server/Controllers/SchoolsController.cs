@@ -15,6 +15,7 @@ namespace server.Controllers
     {
       this._school = school;
     }
+    [Authorize(Policy = "SuperAdminAndAdmin")]
 
     [HttpGet]
     public async Task<IActionResult> GetSchools(int pageNumber = 1, int pageSize = 50)
@@ -48,6 +49,7 @@ namespace server.Controllers
       return Ok(result);
     }
 
+    [Authorize(Policy = "SuperAdmin")]
     [HttpPost]
     public async Task<IActionResult> CreateSchool(SchoolDto model)
     {
@@ -59,6 +61,7 @@ namespace server.Controllers
       return Ok(result);
     }
 
+    [Authorize(Policy = "SuperAdmin")]
     [HttpPut("{id}")]
     public async Task<IActionResult> Update(int id, SchoolDto model)
     {
@@ -70,6 +73,7 @@ namespace server.Controllers
       return Ok(result);
     }
 
+    [Authorize(Policy = "SuperAdmin")]
     [HttpDelete("{id}")]
     public async Task<IActionResult> Delete(int id)
     {
@@ -81,6 +85,7 @@ namespace server.Controllers
       return Ok(result);
     }
 
+    [Authorize(Policy = "SuperAdmin")]
     [HttpDelete("bulkdelete")]
     public async Task<IActionResult> BulKDelete(List<int> ids)
     {
@@ -94,6 +99,7 @@ namespace server.Controllers
       return Ok(result);
     }
 
+    [Authorize(Policy = "SuperAdmin")]
     [HttpPost("upload")]
     public async Task<IActionResult> ImportExcelFile(IFormFile file)
     {

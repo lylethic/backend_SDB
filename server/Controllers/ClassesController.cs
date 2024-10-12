@@ -54,6 +54,7 @@ namespace server.Controllers
 
     // POST api/<ClassesController>
     [HttpPost]
+    [Authorize(Policy = "SuperAdminAndAdmin")]
     public async Task<IActionResult> CreateClass(ClassDto model)
     {
       var result = await _func.CreateClass(model);
@@ -67,6 +68,7 @@ namespace server.Controllers
     }
 
     // PUT api/<ClassesController>/5
+    [Authorize(Policy = "SuperAdminAndAdmin")]
     [HttpPut("{id}")]
     public async Task<IActionResult> UpdateClass(int id, ClassDto model)
     {
@@ -81,6 +83,7 @@ namespace server.Controllers
     }
 
     // DELETE api/<ClassesController>/5
+    [Authorize(Policy = "SuperAdminAndAdmin")]
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeleteClass(int id)
     {
@@ -94,6 +97,7 @@ namespace server.Controllers
       return Ok(result);
     }
 
+    [Authorize(Policy = "SuperAdminAndAdmin")]
     [HttpPost("upload")]
     public async Task<IActionResult> UploadExcelFile(IFormFile file)
     {
@@ -114,6 +118,7 @@ namespace server.Controllers
       }
     }
 
+    [Authorize(Policy = "SuperAdminAndAdmin")]
     [HttpDelete("bulkdelete")]
     public async Task<IActionResult> BulkDelete(List<int> ids)
     {

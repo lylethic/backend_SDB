@@ -161,8 +161,43 @@ namespace server.Repositories
       }
       catch (Exception ex)
       {
+        throw new Exception($"Server error: {ex.Message}");
+      }
+    }
+
+    public async Task<List<BiaSoDauBaiDto>> GetBiaSoDauBaisBySchoolId(int pageNumber, int pageSize, int schoolId)
+    {
+      try
+      {
+        var skip = (pageNumber - 1) * pageSize;
+
+        var query = _context.BiaSoDauBais
+            .AsNoTracking() // Optional: Improves performance for read-only queries
+            .Where(x => x.SchoolId == schoolId)
+            .OrderBy(x => x.DateCreated); // Ensure consistent ordering
+
+        var biaSoDauBai = await query
+            .Skip(skip)     // Skip the first (pageNumber - 1) * pageSize records
+            .Take(pageSize) // Take pageSize records
+            .ToListAsync();
+
+        var result = biaSoDauBai.Select(x => new BiaSoDauBaiDto
+        {
+          BiaSoDauBaiId = x.BiaSoDauBaiId,
+          SchoolId = x.SchoolId,
+          AcademicyearId = x.AcademicyearId,
+          ClassId = x.ClassId,
+          Status = x.Status,
+          DateCreated = x.DateCreated,
+          DateUpdated = x.DateUpdated,
+        }).ToList();
+
+        return result;
+      }
+      catch (Exception ex)
+      {
         Console.WriteLine(ex.Message);
-        throw;
+        throw new Exception($"Server error: {ex.Message}");
       }
     }
 
@@ -386,6 +421,42 @@ namespace server.Repositories
       {
         throw new Exception($"Error while uploading file: {ex.Message}");
       }
+    }
+
+    public async Task<List<BiaSoDauBaiDto>> SearchBiaSoDauBais(int? schoolId = null, int? classId = null)
+    {
+      var query = _context.BiaSoDauBais
+          .AsNoTracking()
+          .Include(b => b.School)  // Assuming School navigation property exists
+          .AsQueryable();
+
+      if (schoolId.HasValue)
+      {
+        query = query.Where(x => x.SchoolId == schoolId.Value);
+      }
+
+      if (classId.HasValue)
+      {
+        query = query.Where(x => x.ClassId == classId.Value);
+      }
+
+      // Execute the query and map the results to DTO
+      var biaSoDauBai = await query
+          .OrderBy(x => x.DateCreated)
+          .ToListAsync();
+
+      var result = biaSoDauBai.Select(x => new BiaSoDauBaiDto
+      {
+        BiaSoDauBaiId = x.BiaSoDauBaiId,
+        SchoolId = x.SchoolId,
+        AcademicyearId = x.AcademicyearId,
+        ClassId = x.ClassId,
+        Status = x.Status,
+        DateCreated = x.DateCreated,
+        DateUpdated = x.DateUpdated,
+      }).ToList();
+
+      return result;
     }
   }
 }

@@ -52,6 +52,7 @@ namespace server.Controllers
     }
 
     // POST api/<ClassificationsController>
+    [Authorize(Policy = "SuperAdminAndAdmin")]
     [HttpPost]
     public async Task<IActionResult> Create(ClassifyDto model)
     {
@@ -66,6 +67,7 @@ namespace server.Controllers
     }
 
     // PUT api/<ClassificationsController>/5
+    [Authorize(Policy = "SuperAdminAndAdmin")]
     [HttpPut("{id}")]
     public async Task<IActionResult> Update(int id, ClassifyDto model)
     {
@@ -80,6 +82,7 @@ namespace server.Controllers
     }
 
     // DELETE api/<ClassificationsController>/5
+    [Authorize(Policy = "SuperAdminAndAdmin")]
     [HttpDelete("{id}")]
     public async Task<IActionResult> Delete(int id)
     {
@@ -93,6 +96,7 @@ namespace server.Controllers
       return Ok(result);
     }
 
+    [Authorize(Policy = "SuperAdminAndAdmin")]
     [HttpDelete("bulkdelete")]
     public async Task<IActionResult> BulkDelete(List<int> ids)
     {
@@ -106,6 +110,7 @@ namespace server.Controllers
       return Ok(result);
     }
 
+    [Authorize(Policy = "SuperAdminAndAdmin")]
     [HttpPost("upload")]
     public async Task<IActionResult> UploadExcelFile(IFormFile file)
     {

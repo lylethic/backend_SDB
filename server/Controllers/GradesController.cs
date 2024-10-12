@@ -54,6 +54,7 @@ namespace server.Controllers
     }
 
     // POST api/<GradesController>
+    [Authorize(Policy = "SuperAdminAndAdmin")]
     [HttpPost]
     public async Task<IActionResult> CreateGrade(GradeDto model)
     {
@@ -68,6 +69,7 @@ namespace server.Controllers
     }
 
     // PUT api/<GradesController>/5
+    [Authorize(Policy = "SuperAdminAndAdmin")]
     [HttpPut("{id}")]
     public async Task<IActionResult> UpdateGrade(int id, GradeDto model)
     {
@@ -82,6 +84,7 @@ namespace server.Controllers
     }
 
     // DELETE api/<GradesController>/5
+    [Authorize(Policy = "SuperAdminAndAdmin")]
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeleteGrade(int id)
     {
@@ -108,6 +111,7 @@ namespace server.Controllers
       return Ok(result);
     }
 
+    [Authorize(Policy = "SuperAdminAndAdmin")]
     [HttpPost("upload")]
     public async Task<IActionResult> ImportExcelFile(IFormFile file)
     {

@@ -15,5 +15,9 @@
     public DateTime? DateCreated { get; set; }
 
     public DateTime? DateUpdated { get; set; }
+
+    public BiaSoDauBaiDto()
+    {
+    }
   }
 }

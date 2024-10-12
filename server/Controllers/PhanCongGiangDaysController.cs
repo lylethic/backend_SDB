@@ -55,6 +55,7 @@ namespace server.Controllers
     }
 
     // POST api/<PhanCongGiangDaysController>
+    [Authorize(Policy = "AdmiSuperAdminAndAdminn")]
     [HttpPost]
     public async Task<IActionResult> Create(PC_GiangDay_BiaSDBDto model)
     {
@@ -69,6 +70,7 @@ namespace server.Controllers
     }
 
     // PUT api/<PhanCongGiangDaysController>/5
+    [Authorize(Policy = "SuperAdminAndAdmin")]
     [HttpPut("{id}")]
     public async Task<IActionResult> Update(int id, PC_GiangDay_BiaSDBDto model)
     {
@@ -83,6 +85,7 @@ namespace server.Controllers
     }
 
     // DELETE api/<PhanCongGiangDaysController>/5
+    [Authorize(Policy = "SuperAdminAndAdmin")]
     [HttpDelete("{id}")]
     public async Task<IActionResult> Delete(int id)
     {
@@ -96,6 +99,7 @@ namespace server.Controllers
       return Ok(result);
     }
 
+    [Authorize(Policy = "SuperAdminAndAdmin")]
     [HttpDelete("BulkDelete")]
     public async Task<IActionResult> BulkDelete(List<int> ids)
     {
@@ -109,6 +113,7 @@ namespace server.Controllers
       return Ok(result);
     }
 
+    [Authorize(Policy = "AdSuperAdminAndAdminmin")]
     [HttpPost("upload")]
     public async Task<IActionResult> ImportExcel(IFormFile file)
     {

@@ -50,7 +50,27 @@ namespace server.Controllers
       return Ok(result.Data);
     }
 
+    [HttpGet("getbyschool")]
+    public async Task<IActionResult> GetBiaSoDauBaisBySchool(int pageNumber, int pageSize, int schoolId)
+    {
+      try
+      {
+        var result = await _biaSodaubai.GetBiaSoDauBaisBySchoolId(pageNumber, pageSize, schoolId);
+        if (result is null || !result.Any())
+        {
+          return NotFound("Khong co ket qua"); // 404
+        }
+
+        return Ok(result);
+      }
+      catch (Exception ex)
+      {
+        throw new Exception($"Error: {ex.Message}");
+      }
+    }
+
     // POST api/<BiaSoDauBaisController>
+    [Authorize(Policy = "SuperAdminAndAdmin")]
     [HttpPost]
     public async Task<IActionResult> Create(BiaSoDauBaiDto model)
     {
@@ -65,6 +85,7 @@ namespace server.Controllers
     }
 
     // PUT api/<BiaSoDauBaisController>/5
+    [Authorize(Policy = "SuperAdminAndAdmin")]
     [HttpPut("{id}")]
     public async Task<IActionResult> Update(int id, BiaSoDauBaiDto model)
     {
@@ -79,6 +100,7 @@ namespace server.Controllers
     }
 
     // DELETE api/<BiaSoDauBaisController>/5
+    [Authorize(Policy = "SuperAdminAndAdmin")]
     [HttpDelete("{id}")]
     public async Task<IActionResult> Delete(int id)
     {
@@ -92,6 +114,7 @@ namespace server.Controllers
       return Ok(result.Data);
     }
 
+    [Authorize(Policy = "SuperAdminAndAdmin")]
     [HttpDelete("bulkdelete")]
     public async Task<IActionResult> BulkDelete(List<int> ids)
     {
@@ -105,6 +128,7 @@ namespace server.Controllers
       return Ok(result.Data);
     }
 
+    [Authorize(Policy = "SuperAdminAndAdmin")]
     [HttpPost("upload")]
     public async Task<IActionResult> ImportExcel(IFormFile file)
     {
@@ -123,6 +147,21 @@ namespace server.Controllers
       {
         return StatusCode(500, $"Server Error: {ex.Message}");
       }
+    }
+
+    //GET /api/BiaSoDauBais/Search? schoolName = ABC & schoolId = 1 & classId = 2
+    /* Search keywords: Schoolname, SchoolId, classId */
+    [HttpGet("Search")]
+    public async Task<IActionResult> SearchBiaSoDauBais(int? schoolId, int? classId)
+    {
+      var result = await _biaSodaubai.SearchBiaSoDauBais(schoolId, classId);
+
+      if (result == null || !result.Any())
+      {
+        return NotFound("No results found.");
+      }
+
+      return Ok(result);
     }
   }
 }

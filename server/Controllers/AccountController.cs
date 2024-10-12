@@ -7,7 +7,7 @@ namespace server.Controllers
 {
   [Route("api/[controller]")]
   [ApiController]
-  [Authorize(Roles = "admin")]
+  [Authorize]
   public class AccountController : ControllerBase
   {
     private readonly IAccount _acc;
@@ -70,6 +70,7 @@ namespace server.Controllers
     }
 
     // PUT: api/Auth/5
+    [Authorize(Policy = "SuperAdminAndAdmin")]
     [HttpPut, Route("{id}")]
     public async Task<IActionResult> PutAccount(int id, AccountDto account)
     {
@@ -82,6 +83,7 @@ namespace server.Controllers
     }
 
     // POST: api/Auth
+    [Authorize(Policy = "SuperAdminAndAdmin")]
     [HttpPost]
     public async Task<IActionResult> CreateAccount(RegisterDto account)
     {
@@ -94,6 +96,7 @@ namespace server.Controllers
     }
 
     // DELETE: api/Auth/5
+    [Authorize(Policy = "SuperAdminAndAdmin")]
     [HttpDelete, Route("{id}")]
     public async Task<IActionResult> DeleteAccount(int id)
     {
@@ -106,6 +109,7 @@ namespace server.Controllers
       return Ok(result);
     }
 
+    [Authorize(Policy = "AdSuperAdminAndAdminmin")]
     [HttpDelete, Route("bulkdelete")]
     public async Task<IActionResult> BulkDelete(List<int> ids)
     {
@@ -118,6 +122,7 @@ namespace server.Controllers
       return Ok(result);
     }
 
+    [Authorize(Policy = "SuperAdminAndAdmin")]
     [HttpPost, Route("upload")]
     public async Task<IActionResult> ImportExcel(IFormFile file)
     {

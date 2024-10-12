@@ -66,6 +66,7 @@ namespace server.Controllers
     }
 
     // POST: api/Teachers
+    [Authorize(Policy = "SuperAdminAndAdmin")]
     [HttpPost]
     public async Task<IActionResult> PostTeacher(TeacherDto model)
     {
@@ -93,6 +94,7 @@ namespace server.Controllers
       return Ok(teacher);
     }
 
+    [Authorize(Policy = "SuperAdminAndAdmin")]
     [HttpDelete("bulkdelete")]
     public async Task<IActionResult> BulkDelete(List<int> ids)
     {
@@ -106,6 +108,7 @@ namespace server.Controllers
       return Ok(teacher);
     }
 
+    [Authorize(Policy = "SuperAdminAndAdmin")]
     [HttpPost, Route("upload")]
     public async Task<IActionResult> ImportExcelFile(IFormFile file)
     {

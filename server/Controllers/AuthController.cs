@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using server.Dtos;
 using server.IService;
+using server.Types;
 
 namespace server.Controllers
 {
@@ -65,7 +66,7 @@ namespace server.Controllers
     }
 
     [HttpPost, Route("logout"), Authorize]
-    public async Task<ActionResult<ResponseDto>> Logout()
+    public async Task<ActionResult<LogoutResType>> Logout()
     {
       var result = await _authRepo.Logout();
       if (!result.IsSuccess)

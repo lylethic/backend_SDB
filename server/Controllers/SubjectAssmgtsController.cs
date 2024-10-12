@@ -53,6 +53,7 @@ namespace server.Controllers
     }
 
     // POST api/<SubjectAssmgtsController>
+    [Authorize(Policy = "SuperAdminAndAdmin")]
     [HttpPost]
     public async Task<IActionResult> CreateSubjectAssignment(SubjectAssgmDto model)
     {
@@ -65,6 +66,7 @@ namespace server.Controllers
     }
 
     // PUT api/<SubjectAssmgtsController>/5
+    [Authorize(Policy = "SuperAdminAndAdmin")]
     [HttpPut("{id}")]
     public async Task<IActionResult> UpdateSubjectAssignment(int id, SubjectAssgmDto model)
     {
@@ -77,6 +79,7 @@ namespace server.Controllers
     }
 
     // DELETE api/<SubjectAssmgtsController>/5
+    [Authorize(Policy = "SuperAdminAndAdmin")]
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeleteSubjectAssignment(int id)
     {
@@ -89,6 +92,7 @@ namespace server.Controllers
       return Ok(result);
     }
 
+    [Authorize(Policy = "SuperAdminAndAdmin")]
     [HttpDelete("bulkdelete")]
     public async Task<IActionResult> BulkDelete(List<int> ids)
     {
@@ -102,6 +106,7 @@ namespace server.Controllers
       return Ok(result);
     }
 
+    [Authorize(Policy = "SuperAdminAndAdmin")]
     [HttpPost("upload")]
     public async Task<IActionResult> ImportExcelFile(IFormFile file)
     {

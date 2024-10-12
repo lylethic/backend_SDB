@@ -53,6 +53,7 @@ namespace server.Controllers
     }
 
     // POST api/<PCChuNhiemsController>
+    [Authorize(Policy = "SuperAdminAndAdmin")]
     [HttpPost]
     public async Task<IActionResult> CreatePC_ChuNhiem(PC_ChuNhiemDto model)
     {
@@ -66,6 +67,7 @@ namespace server.Controllers
       return Ok(result);
     }
 
+    [Authorize(Policy = "SuperAdminAndAdmin")]
     [HttpPost("upload")]
     public async Task<IActionResult> ImportExcelFile(IFormFile file)
     {
@@ -88,6 +90,7 @@ namespace server.Controllers
 
 
     // PUT api/<PCChuNhiemsController>/5
+    [Authorize(Policy = "SuperAdminAndAdmin")]
     [HttpPut("{id}")]
     public async Task<IActionResult> UpdatePC_ChuNhiem(int id, PC_ChuNhiemDto model)
     {
@@ -102,6 +105,7 @@ namespace server.Controllers
     }
 
     // DELETE api/<PCChuNhiemsController>/5
+    [Authorize(Policy = "SuperAdminAndAdmin")]
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeletePC_ChuNhiem(int id)
     {
@@ -115,6 +119,7 @@ namespace server.Controllers
       return Ok(result);
     }
 
+    [Authorize(Policy = "SuperAdminAndAdmin")]
     [HttpDelete("bulk-delete")]
     public async Task<IActionResult> BulkDelete(List<int> ids)
     {
