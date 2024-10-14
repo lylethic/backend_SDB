@@ -123,6 +123,23 @@ namespace server.Controllers
       return Ok(result);
     }
 
+    /// <summary>
+    /// Get Chi Tiet by schoolId, weekId, biaId, classId
+    /// </summary>
+    /// <param name="model"></param>
+    /// <returns></returns>
+    [HttpGet("GetChiTietBySchool")]
+    public async Task<IActionResult> GetChiTietBySchool([FromQuery] int schoolId, [FromQuery] int weekId, [FromQuery] int biaId, [FromQuery] int classId, [FromQuery] int pageNumber, [FromQuery] int pageSize)
+    {
+      var result = await _detail.GetChiTietBySchool(schoolId, weekId, biaId, classId, pageNumber, pageSize);
+
+      if (result is null)
+      {
+        return BadRequest(result);
+      }
+
+      return Ok(result);
+    }
 
     // POST api/<ChiTietSoDauBaisController>
     /*

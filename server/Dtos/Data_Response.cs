@@ -22,5 +22,12 @@
       this.StatusCode = statusCode;
       this.Data = data;
     }
+
+    public Data_Response(int statusCode, string message, T data)
+    {
+      this.StatusCode = statusCode;
+      this.Message = message;
+      this.Data = data;
+    }
   }
 }

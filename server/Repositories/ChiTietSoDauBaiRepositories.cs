@@ -213,6 +213,7 @@ namespace server.Repositories
         return new Data_Response<ChiTietSoDauBaiDto>(500, $"Server error: {ex.Message}");
       }
     }
+
     public async Task<Data_Response<ChiTietSoDauBaiDto>> GetChiTietSoDauBai(int id)
     {
       try
@@ -644,6 +645,85 @@ namespace server.Repositories
 
       }
       catch (Exception ex)
+      {
+        throw new Exception($"Server Error: {ex.Message}");
+      }
+    }
+
+    public async Task<Data_Response<IEnumerable<ChiTietSDBResType>>> GetChiTietBySchool(int schoolId, int weekId, int biaId, int classId, int pageNumber, int pageSize)
+    {
+      try
+      {
+        // Total count query
+        var countQuery = @"SELECT COUNT(*) 
+                           FROM dbo.ChiTietSoDauBai as ct
+                           LEFT JOIN dbo.BiaSoDauBai as b ON ct.biaSoDauBaiId = b.biaSoDauBaiId 
+                           WHERE b.schoolId = @schoolId and ct.weekId = @weekId and ct.biaSoDauBaiId = @biaId and b.classId = @classId";
+
+        var totalCount = await _context.Database.ExecuteSqlRawAsync(countQuery,
+            new SqlParameter("@schoolId", schoolId),
+            new SqlParameter("@weekId", weekId),
+            new SqlParameter("@biaId", biaId),
+            new SqlParameter("@classId", classId)
+        );
+
+        var skip = (pageNumber - 1) * pageSize;
+
+        var query = @"SELECT ct.*, 
+                            c.className, 
+                            t.teacherId, 
+                            t.fullname
+                      FROM dbo.ChiTietSoDauBai as ct
+                      LEFT JOIN dbo.BiaSoDauBai as b ON ct.biaSoDauBaiId = b.biaSoDauBaiId 
+                      LEFT JOIN dbo.Class as c ON b.classId = c.classId 
+                      LEFT JOIN dbo.Teacher as t ON c.teacherId = t.teacherId
+                      WHERE b.schoolId = @schoolId and ct.weekId = @weekId and ct.biaSoDauBaiId = @biaId and b.classId = @classId
+                      ORDER BY ct.ChiTietSoDauBaiId
+                      OFFSET @skip ROWS 
+                      FETCH NEXT @pageSize ROWS ONLY
+                      ";
+
+        var chitietSoDauBai = await _context.ChiTietSoDauBais.FromSqlRaw(query,
+        new SqlParameter("@schoolId", schoolId),
+        new SqlParameter("@weekId", weekId),
+        new SqlParameter("@biaId", biaId),
+        new SqlParameter("@classId", classId),
+        new SqlParameter("@skip", skip),
+        new SqlParameter("@pageSize", pageSize)
+        )
+        .Select(ct => new ChiTietSDBResType
+        {
+          ChiTietSoDauBaiId = ct.ChiTietSoDauBaiId,
+          BiaSoDauBaiId = ct.BiaSoDauBaiId,
+          SemesterId = ct.SemesterId,
+          WeekId = ct.WeekId,
+          SubjectId = ct.SubjectId,
+          ClassificationId = ct.ClassificationId,
+          DaysOfTheWeek = ct.DaysOfTheWeek,
+          ThoiGian = ct.ThoiGian,
+          BuoiHoc = ct.BuoiHoc,
+          TietHoc = ct.TietHoc,
+          LessonContent = ct.LessonContent,
+          Attend = ct.Attend,
+          NoteComment = ct.NoteComment,
+          CreatedBy = ct.CreatedBy,
+          CreatedAt = ct.CreatedAt,
+          UpdatedAt = ct.UpdatedAt,
+          ClassName = ct.BiaSoDauBai.Class.ClassName,
+          TeacherId = ct.BiaSoDauBai.Class.TeacherId,
+          TeacherName = ct.BiaSoDauBai.Class.Teacher.Fullname
+        })
+        .ToListAsync();
+
+        if (chitietSoDauBai is null || chitietSoDauBai.Count == 0)
+        {
+          return new Data_Response<IEnumerable<ChiTietSDBResType>>(404, "No results");
+        }
+
+        return new Data_Response<IEnumerable<ChiTietSDBResType>>(200, chitietSoDauBai);
+
+      }
+      catch (System.Exception ex)
       {
         throw new Exception($"Server Error: {ex.Message}");
       }

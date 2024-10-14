@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using server.Data;
 using server.Dtos;
 using server.IService;
+using server.Types;
 using System.Text;
 
 namespace server.Repositories
@@ -426,6 +427,11 @@ namespace server.Repositories
         await transaction.RollbackAsync();
         return new Data_Response<string>(500, $"Server error: {ex.Message}");
       }
+    }
+
+    public async Task<Data_Response<IEnumerable<ClassResType>>> GetClassBySchool(int schoolId)
+    {
+      return null;
     }
   }
 }

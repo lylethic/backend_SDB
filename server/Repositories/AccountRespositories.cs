@@ -6,6 +6,7 @@ using server.Dtos;
 using server.IService;
 using server.Models;
 using server.Types;
+using System.Data;
 using System.Text;
 using System.Text.RegularExpressions;
 
@@ -134,9 +135,9 @@ namespace server.Repositories
           RoleId = account.RoleId,
           SchoolId = account.SchoolId,
           Email = account.Email,
-          TeacherId = account.Teacher!.TeacherId,
-          FullName = account.Teacher.Fullname,
-          StatusTeacher = account.Teacher.Status
+          TeacherId = account.Teacher?.TeacherId ?? 0,
+          FullName = account.Teacher?.Fullname,
+          StatusTeacher = account.Teacher?.Status
         };
 
         return new Data_Response<AccountResType>(200, result);
@@ -147,46 +148,14 @@ namespace server.Repositories
       }
     }
 
-    //public async Task<Data_Response<AccountDto>> GetAccount(int accountId)
-    //{
-    //  try
-    //  {
-    //    var query = "SELECT * FROM ACCOUNT WHERE AccountId = @accountId";
-
-    //    var acc = await _context.Accounts
-    //        .FromSqlRaw(query, new SqlParameter("@accountId", accountId))
-    //        .FirstOrDefaultAsync();
-
-    //    if (acc is null)
-    //    {
-    //      return new Data_Response<AccountDto>(404, "Account not founnd");
-    //    }
-
-    //    var result = new AccountDto
-    //    {
-    //      AccountId = acc.AccountId,
-    //      RoleId = acc.RoleId,
-    //      SchoolId = acc.SchoolId,
-    //      Email = acc.Email,
-    //      DateCreated = acc.DateCreated,
-    //      DateUpdated = acc.DateUpdated
-    //    };
-
-    //    return new Data_Response<AccountDto>(200, result);
-    //  }
-    //  catch (Exception ex)
-    //  {
-    //    return new Data_Response<AccountDto>(500, $"Server error: {ex.Message}");
-    //  }
-    //}
-
     public async Task<List<AccountDto>> GetAccounts(int pageNumber, int pageSize)
     {
       try
       {
         var skip = (pageNumber - 1) * pageSize;
 
-        var query = @"SELECT * FROM ACCOUNT 
+        var query = @"SELECT *
+                      FROM ACCOUNT 
                       ORDER BY EMAIL 
                       OFFSET @skip ROWS
                       FETCH NEXT @pageSize ROWS ONLY;";
@@ -211,7 +180,7 @@ namespace server.Repositories
       }
       catch (Exception ex)
       {
-        Console.WriteLine(ex.Message);
+        Console.WriteLine($"Error occurred: {ex.Message}, Inner Exception: {ex.InnerException?.Message}");
         throw new Exception($"Server error: {ex.Message}");
       }
     }
@@ -240,9 +209,7 @@ namespace server.Repositories
           AccountId = acc.AccountId,
           RoleId = acc.RoleId,
           SchoolId = acc.SchoolId,
-          Email = acc.Email,
-          DateCreated = acc.DateCreated,
-          DateUpdated = acc.DateUpdated
+          Email = acc.Email
         }).ToList();
 
         return result;
@@ -364,8 +331,7 @@ namespace server.Repositories
       }
       catch (Exception ex)
       {
-        Console.WriteLine(ex.Message);
-        return new Data_Response<AccountDto>(500, $"Error deleting account: {ex.Message}");
+        return new Data_Response<AccountDto>(500, $"Server error deleting account: {ex.Message}");
       }
     }
 
@@ -392,76 +358,74 @@ namespace server.Repositories
 
           using (var stream = System.IO.File.Open(filePath, FileMode.Open, FileAccess.Read))
           {
-            using (var reader = ExcelReaderFactory.CreateReader(stream))
+            using var reader = ExcelReaderFactory.CreateReader(stream);
+            bool isHeaderSkipped = false;
+
+            do
             {
-              bool isHeaderSkipped = false;
-
-              do
+              while (reader.Read())
               {
-                while (reader.Read())
+                if (!isHeaderSkipped)
                 {
-                  if (!isHeaderSkipped)
-                  {
-                    isHeaderSkipped = true;
-                    continue;
-                  }
-
-                  // Check if there are no more rows or empty rows
-                  if (reader.GetValue(1) == null && reader.GetValue(2) == null && reader.GetValue(3) == null && reader.GetValue(4) == null)
-                  {
-                    // Stop processing when an empty row is encountered
-                    break;
-                  }
-
-                  var accountDto = new Dtos.RegisterDto
-                  {
-                    RoleId = Convert.ToInt16(reader.GetValue(1)),
-                    SchoolId = Convert.ToInt16(reader.GetValue(2)),
-                    Email = reader.GetValue(3).ToString() ?? "email",
-                    Password = reader.GetValue(4)?.ToString() ?? string.Empty,
-                    DateCreated = DateTime.Now,
-                    DateUpdated = null
-                  };
-
-                  if (!IsValidEmail(accountDto.Email))
-                  {
-                    continue;
-                  }
-
-                  var query = "SELECT * FROM ACCOUNT WHERE Email = @email";
-
-                  var existingAccount = await _context.Accounts
-                      .FromSqlRaw(query, new SqlParameter("@email", accountDto.Email))
-                      .FirstOrDefaultAsync();
-
-                  if (existingAccount is not null)
-                  {
-                    // Skip account if it already exists
-                    continue;
-                    throw new Exception("Email already exists");
-                  }
-
-                  // Hash the password
-                  byte[] passwordHash, passwordSalt;
-                  _auth.GenerateHash(accountDto.Password, out passwordHash, out passwordSalt);
-
-                  var newAccount = new Account
-                  {
-                    RoleId = accountDto.RoleId,
-                    SchoolId = accountDto.SchoolId,
-                    Email = accountDto.Email,
-                    MatKhau = passwordHash,
-                    PasswordSalt = passwordSalt,
-                    DateCreated = accountDto.DateCreated,
-                    DateUpdated = accountDto.DateUpdated,
-                  };
-
-
-                  await _context.Accounts.AddAsync(newAccount);
-                  await _context.SaveChangesAsync();
+                  isHeaderSkipped = true;
+                  continue;
                 }
-              } while (reader.NextResult());
-            }
+
+                // Check if there are no more rows or empty rows
+                if (reader.GetValue(1) == null && reader.GetValue(2) == null && reader.GetValue(3) == null && reader.GetValue(4) == null)
+                {
+                  // Stop processing when an empty row is encountered
+                  break;
+                }
+
+                var accountDto = new Dtos.RegisterDto
+                {
+                  RoleId = Convert.ToInt16(reader.GetValue(1)),
+                  SchoolId = Convert.ToInt16(reader.GetValue(2)),
+                  Email = reader.GetValue(3).ToString() ?? "email",
+                  Password = reader.GetValue(4)?.ToString() ?? string.Empty,
+                  DateCreated = DateTime.Now,
+                  DateUpdated = null
+                };
+
+                if (!IsValidEmail(accountDto.Email))
+                {
+                  continue;
+                }
+
+                var query = "SELECT * FROM ACCOUNT WHERE Email = @email";
+
+                var existingAccount = await _context.Accounts
+                    .FromSqlRaw(query, new SqlParameter("@email", accountDto.Email))
+                    .FirstOrDefaultAsync();
+
+                if (existingAccount is not null)
+                {
+                  // Skip account if it already exists
+                  continue;
+                  throw new Exception("Email already exists");
+                }
+
+                // Hash the password
+                byte[] passwordHash, passwordSalt;
+                _auth.GenerateHash(accountDto.Password, out passwordHash, out passwordSalt);
+
+                var newAccount = new Account
+                {
+                  RoleId = accountDto.RoleId,
+                  SchoolId = accountDto.SchoolId,
+                  Email = accountDto.Email,
+                  MatKhau = passwordHash,
+                  PasswordSalt = passwordSalt,
+                  DateCreated = accountDto.DateCreated,
+                  DateUpdated = accountDto.DateUpdated,
+                };
+
+
+                await _context.Accounts.AddAsync(newAccount);
+                await _context.SaveChangesAsync();
+              }
+            } while (reader.NextResult());
           }
 
           return "Successfully inserted";
@@ -505,6 +469,95 @@ namespace server.Repositories
       {
         await transaction.RollbackAsync();
         return new Data_Response<string>(500, $"Server error: {ex.Message}");
+      }
+    }
+
+    public async Task<List<AccountDto>> GetAccountsBySchoolId(int pageNumber, int pageSize, int schoolId)
+    {
+      try
+      {
+        var skip = (pageNumber - 1) * pageSize;
+
+        var query = @"SELECT * 
+                      FROM ACCOUNT 
+                      WHERE SchoolId = @schoolId
+                      ORDER BY EMAIL 
+                      OFFSET @skip ROWS
+                      FETCH NEXT @pageSize ROWS ONLY;";
+
+        var accsList = await _context.Accounts
+            .FromSqlRaw(query,
+                        new SqlParameter("@schoolId", schoolId),
+                        new SqlParameter("@skip", skip),
+                        new SqlParameter("@pageSize", pageSize)
+            ).ToListAsync() ?? throw new Exception("Empty");
+
+        var result = accsList.Select(acc => new AccountDto
+        {
+          AccountId = acc.AccountId,
+          RoleId = acc.RoleId,
+          SchoolId = acc.SchoolId,
+          Email = acc.Email,
+          DateCreated = acc.DateCreated,
+          DateUpdated = acc.DateUpdated
+        }).ToList();
+
+        return result;
+      }
+      catch (Exception ex)
+      {
+        Console.WriteLine(ex.Message);
+        throw new Exception($"Server error: {ex.Message}");
+      }
+    }
+
+    public async Task<List<AccountResType>> RelativeSearchAccounts(string? TeacherName, int? schoolId, int? roleId, int pageNumber, int pageSize)
+    {
+      try
+      {
+        var query = _context.Accounts
+          .AsNoTracking()
+          .Include(t => t.Teachers) // gia su bao gom Bnag GiaoVien
+          .AsQueryable();
+
+
+        if (schoolId.HasValue)
+        {
+          query = query.Where(x => x.SchoolId == schoolId.Value);
+        }
+
+        if (roleId.HasValue)
+        {
+          query = query.Where(x => x.RoleId == roleId.Value);
+        }
+
+        if (!string.IsNullOrEmpty(TeacherName))
+        {
+          var lowerdTeaherName = TeacherName.ToLower();
+          query = query.Where(t => t.Teachers
+          .Any(t => EF.Functions.Like(t.Fullname.ToLower(), $"%{lowerdTeaherName}%")));
+        }
+
+        query = query.Skip((pageNumber - 1) * pageSize).Take(pageSize);
+
+        var results = await query
+          .Select(a => new AccountResType
+          {
+            AccountId = a.AccountId,
+            RoleId = a.RoleId,
+            SchoolId = a.SchoolId,
+            Email = a.Email,
+            TeacherId = a.Teachers.Select(a => a.TeacherId).FirstOrDefault(),
+            FullName = a.Teachers.Select(a => a.Fullname).FirstOrDefault(),
+            StatusTeacher = a.Teachers.Select(a => a.Status).FirstOrDefault()
+          })
+          .ToListAsync();
+
+        return results;
+      }
+      catch (Exception ex)
+      {
+        throw new Exception($"Server error: {ex.Message}");
       }
     }
   }

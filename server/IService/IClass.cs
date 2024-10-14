@@ -1,4 +1,5 @@
 ﻿using server.Dtos;
+using server.Types;
 
 namespace server.IService
 {
@@ -17,5 +18,7 @@ namespace server.IService
     Task<string> ImportExcel(IFormFile file);
 
     Task<Data_Response<string>> BulkDelete(List<int> ids);
+
+    Task<Data_Response<IEnumerable<ClassResType>>> GetClassBySchool(int schoolId);
   }
 }

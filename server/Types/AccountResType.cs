@@ -11,7 +11,7 @@
     public string Email { get; set; } = null!;
 
     // Teacher table
-    public int TeacherId { get; set; }
+    public int? TeacherId { get; set; }
 
     public string? FullName { get; set; }
 

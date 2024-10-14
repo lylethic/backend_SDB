@@ -24,9 +24,9 @@ namespace server.Controllers
       try
       {
         var accounts = await _acc.GetAccounts(pageNumber, pageSize);
-        if (accounts == null)
+        if (accounts == null || accounts.Count == 0)
         {
-          return NotFound(); // 404
+          return NotFound("No results"); // 404
         }
         return Ok(accounts); // 200
       }
@@ -43,9 +43,28 @@ namespace server.Controllers
       try
       {
         var accounts = await _acc.GetAccountsByRole(pageNumber, pageSize, roleId);
-        if (accounts == null)
+        if (accounts == null || accounts.Count == 0)
         {
-          return NotFound(); // 404
+          return NotFound("No results"); // 404
+        }
+        return Ok(accounts); // 200
+      }
+      catch (Exception ex)
+      {
+        Console.WriteLine(ex.Message);
+        return StatusCode(500, "Server error"); // 500
+      }
+    }
+
+    [HttpGet, Route("GetAccountsBySchool")]
+    public async Task<IActionResult> GetAccountsBySchool(int pageNumber, int pageSize, int schoolId)
+    {
+      try
+      {
+        var accounts = await _acc.GetAccountsBySchoolId(pageNumber, pageSize, schoolId);
+        if (accounts == null || accounts.Count == 0)
+        {
+          return NotFound("No results"); // 404
         }
         return Ok(accounts); // 200
       }
@@ -58,7 +77,7 @@ namespace server.Controllers
 
     // GET: api/Auth/5
     [HttpGet, Route("{id}")]
-    public async Task<IActionResult> GetAccount(int id)
+    public async Task<IActionResult> GetAccountById(int id)
     {
       var account = await _acc.GetAccount(id);
 
@@ -67,6 +86,32 @@ namespace server.Controllers
         return BadRequest(account);
       }
       return Ok(account);
+    }
+
+    [HttpGet("search")]
+    public async Task<IActionResult> RelativeSearchAccounts([FromQuery] string? TeacherName, [FromQuery] int? schoolId, [FromQuery] int? roleId, [FromQuery] int pageNumber, [FromQuery] int pageSize)
+    {
+      try
+      {
+        if (pageNumber < 1 || pageSize < 1)
+        {
+          return BadRequest("Page number and page size must be positive integers.");
+        }
+
+        var results = await _acc.RelativeSearchAccounts(TeacherName, schoolId, roleId, pageNumber, pageSize);
+
+        if (results == null || !results.Any())
+        {
+          return NotFound("No accounts found matching the criteria."); // 404 if no results
+        }
+
+        return Ok(results); // return 200 with the search results
+      }
+      catch (Exception ex)
+      {
+        // return a 500 Internal Server Error in case of any exceptions
+        return StatusCode(500, $"Internal server error: {ex.Message}");
+      }
     }
 
     // PUT: api/Auth/5

@@ -32,6 +32,36 @@ namespace server.IService
     /// <returns></returns>
     Task<Data_Response<ChiTiet_BiaSoDauBaiResType>> GetChiTiet_Bia_Class_Teacher(int chiTietId);
 
+    /// <summary>Get chitietid show info Week</summary>
+    /// <param name="chiTietId"></param>
+    /// <returns>
+    /// {
+    ///  "statusCode": 200,
+    /// "message": "",
+    ///  "data": {
+    ///   "chiTietSoDauBaiId": 2,
+    ///    "weekId": 1,
+    ///    "weekName": "Tuần 1",
+    ///    "status": true,
+    ///    "xepLoaiId": 1,
+    ///    "tenXepLoai": "A",
+    ///    "soDiem": 10
+    ///  }
+    ///}
+    /// </returns>
     Task<Data_Response<ChiTiet_WeekResType>> GetChiTiet_Week_XepLoai(int chiTietId);
+
+    /// <summary>
+    /// Get chi tiet sdb by SchoolId and weekId and BiaSoDauBaiId and ClassId
+    /// </summary>
+    /// <param name="schoolId"></param>
+    /// <param name="weekId"></param>
+    /// <returns>chiTiet.*, 
+    ///  c.className, 
+    ///  t.teacherId, 
+    ///  t.fullname
+    ///  </returns>
+    Task<Data_Response<IEnumerable<ChiTietSDBResType>>> GetChiTietBySchool(int schoolId, int weekId, int biaId, int classId, int pageNumber, int pageSize);
+
   }
 }

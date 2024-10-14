@@ -20,5 +20,10 @@ namespace server.IService
     Task<string> ImportExcel(IFormFile file);
 
     Task<Data_Response<string>> BulkDelete(List<int> ids);
+
+    Task<List<AccountDto>> GetAccountsBySchoolId(int pageNumber, int pageSize, int schoolId);
+
+    Task<List<AccountResType>> RelativeSearchAccounts(string? TeacherName, int? schoolId, int? roleId, int pageNumber, int pageSize);
+
   }
 }
