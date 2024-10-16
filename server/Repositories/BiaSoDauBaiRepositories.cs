@@ -60,7 +60,7 @@ namespace server.Repositories
           return new Data_Response<BiaSoDauBaiDto>(404, "ClassId not found");
         }
 
-        model.DateCreated = DateTime.Now;
+        model.DateCreated = DateTime.UtcNow;
         model.DateUpdated = null;
 
         var queryInsert = @"INSERT INTO BiaSoDauBai (schoolId, academicYearId, classId, status, dateCreated, dateUpdated)
@@ -256,7 +256,7 @@ namespace server.Repositories
           parameters.Add(new SqlParameter("@DateCreated", model.DateCreated.Value));
         }
 
-        var currentDate = DateTime.Now;
+        var currentDate = DateTime.UtcNow;
         if (currentDate != existingBiaSoDaiBai.DateUpdated)
         {
           queryBuilder.Append("DateUpdated = @DateUpdated, ");
@@ -400,7 +400,7 @@ namespace server.Repositories
                     AcademicyearId = Convert.ToInt32(reader.GetValue(2)),
                     ClassId = Convert.ToInt32(reader.GetValue(3)),
                     Status = Convert.ToBoolean(reader.GetValue(4)),
-                    DateCreated = DateTime.Now,
+                    DateCreated = DateTime.UtcNow,
                     DateUpdated = null
                   };
 

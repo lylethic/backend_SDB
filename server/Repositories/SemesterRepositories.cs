@@ -316,9 +316,9 @@ namespace server.Repositories
                   AcademicYearId = Convert.ToInt16(reader.GetValue(1)),
                   SemesterName = reader.GetValue(2).ToString() ?? "Semester name",
                   DateStart = ExcelHelper.ConvertExcelDateToDateOnly(reader.GetValue(3))
-                  ?? DateOnly.FromDateTime(DateTime.Now),
+                  ?? DateOnly.FromDateTime(DateTime.UtcNow),
                   DateEnd = ExcelHelper.ConvertExcelDateToDateOnly(reader.GetValue(4))
-                  ?? DateOnly.FromDateTime(DateTime.Now),
+                  ?? DateOnly.FromDateTime(DateTime.UtcNow),
                   Description = reader.GetValue(5).ToString()
                 };
 

@@ -123,7 +123,7 @@ namespace server.Repositories
           new SqlParameter("@TeacherId", model.TeacherId),
           new SqlParameter("@biaSoDauBaiId", model.biaSoDauBaiId),
           new SqlParameter("@Status", model.Status),
-          new SqlParameter("@DateCreated", DateTime.Now),
+          new SqlParameter("@DateCreated", DateTime.UtcNow),
           new SqlParameter("@DateUpdated", DBNull.Value)
           );
 
@@ -249,7 +249,7 @@ namespace server.Repositories
                     TeacherId = Convert.ToInt32(reader.GetValue(1)),
                     BiaSoDauBaiId = Convert.ToInt32(reader.GetValue(2)),
                     Status = Convert.ToBoolean(reader.GetValue(3)),
-                    DateCreated = DateTime.Now,
+                    DateCreated = DateTime.UtcNow,
                     DateUpdated = null
                   };
 

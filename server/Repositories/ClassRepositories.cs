@@ -82,7 +82,7 @@ namespace server.Repositories
                           VALUES (@gradeId, @teacherId, @academicYearId, @schoolId, @className, @status, @description, @dateCreated, @dateUpdated);
                           SELECT CAST(SCOPE_IDENTITY() as int);";
 
-        var currentDate = DateTime.Now;
+        var currentDate = DateTime.UtcNow;
 
         var insert = await _context.Database.ExecuteSqlRawAsync(sqlInsert,
           new SqlParameter("@gradeId", model.GradeId),
@@ -288,7 +288,7 @@ namespace server.Repositories
         {
           // Always update DateUpdated
           queryBuilder.Append("DateUpdated = @DateUpdated ");
-          parameters.Add(new SqlParameter("@DateUpdated", DateTime.Now));
+          parameters.Add(new SqlParameter("@DateUpdated", DateTime.UtcNow));
 
           // Remove the last comma and space if present
           if (queryBuilder[queryBuilder.Length - 2] == ',')
@@ -373,7 +373,7 @@ namespace server.Repositories
                   ClassName = reader.GetValue(5)?.ToString() ?? "Unknown",
                   Status = Convert.ToBoolean(reader.GetValue(6)),
                   Description = reader.GetValue(7)?.ToString(),
-                  DateCreated = DateTime.Now,
+                  DateCreated = DateTime.UtcNow,
                   DateUpdated = null
                 };
 

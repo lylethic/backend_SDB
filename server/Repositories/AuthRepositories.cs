@@ -24,6 +24,25 @@ namespace server.Repositories
       _tokenService = tokenService;
     }
 
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="model"></param>
+    /// <returns>
+    //    /// export const RegisterRes = z.object({
+    //    data: z.object ({
+    //		token: z.string (),
+    //		expiresAt: z.string (),
+    //		account: z.object ({
+    //			id: z.number(),
+    //			roleIdId: z.number(),
+    //			schoolId: z.number(),
+    //			email: z.string (),
+    //		}),
+    //	}),
+    //	message: z.string(),
+    //});
+    //</returns>
     public async Task<LoginResType> Login(AuthDto model)
     {
       if (model is null)
@@ -64,24 +83,39 @@ namespace server.Repositories
 
       // Set cookies
       _tokenService.SetJWTCookie(accessToken);
-      // _tokenService.SetRefreshTokenCookie(refreshToken); No save this in cookies
+      _tokenService.SetRefreshTokenCookie(refreshToken);
 
       var session = new Session
       {
         AccountId = user.AccountId,
         Token = refreshToken,
-        ExpiresAt = DateTime.Now.AddDays(3),
-        CreatedAt = DateTime.Now,
+        ExpiresAt = DateTime.UtcNow.AddDays(5), // Expires của refreshToken 
+        CreatedAt = DateTime.UtcNow,
       };
 
       await _context.Sessions.AddAsync(session);
       await _context.SaveChangesAsync();
 
+      // Construct the account data to be returned
+      var accountData = new AccountData
+      {
+        Id = user.AccountId,
+        RoleIdId = user.RoleId,
+        SchoolId = user?.SchoolId,
+        Email = user?.Email
+      };
+
       return new LoginResType
       {
         IsSuccess = true,
         Message = "Login successful",
-        AccessToken = accessToken,
+        Data = new LoginResData
+        {
+          Token = accessToken,
+          RefreshToken = refreshToken,
+          ExpiresAt = DateTime.UtcNow.AddDays(3).ToString(),
+          //Account = accountData
+        }
       };
     }
 
@@ -116,7 +150,7 @@ namespace server.Repositories
 
         // Clear cookies
         _tokenService.ClearJWTCookie();
-        // _tokenService.ClearRefreshTokenCookie();
+        _tokenService.ClearRefreshTokenCookie();
 
         return new LogoutResType(true, "Logout successful");
       }
@@ -190,8 +224,8 @@ namespace server.Repositories
       {
         AccountId = user.AccountId,
         Token = refreshToken,
-        ExpiresAt = DateTime.Now.AddDays(2),
-        CreatedAt = DateTime.Now,
+        ExpiresAt = DateTime.UtcNow.AddDays(5),
+        CreatedAt = DateTime.UtcNow,
       };
 
       await _context.Sessions.AddAsync(tokenResult);

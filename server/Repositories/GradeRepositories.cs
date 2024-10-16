@@ -206,7 +206,7 @@ namespace server.Repositories
         if (model.DateUpdated != existingGrade.DateUpdated)
         {
           queryBuilder.Append("DateUpdated = @DateUpdated, ");
-          parameters.Add(new SqlParameter("@DateUpdated", DateTime.Now));
+          parameters.Add(new SqlParameter("@DateUpdated", DateTime.UtcNow));
           hasChanges = true;
         }
 
@@ -352,7 +352,7 @@ namespace server.Repositories
                   AcademicYearId = Convert.ToInt16(reader.GetValue(1)),
                   GradeName = reader.GetValue(2).ToString()?.Trim() ?? "Khoi lop",
                   Description = reader.GetValue(3).ToString()?.Trim() ?? "Mo Ta",
-                  DateCreated = DateTime.Now,
+                  DateCreated = DateTime.UtcNow,
                   DateUpdated = null
                 };
 

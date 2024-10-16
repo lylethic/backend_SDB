@@ -36,7 +36,7 @@ namespace server.Repositories
                           VALUES (@AccountId, @SchoolId, @Fullname, @DateOfBirth, @Gender, @Address, @Status, @DateCreate, @DateUpdate);
                           SELECT CAST(SCOPE_IDENTITY() as int);";
 
-        var currentdate = DateTime.Now;
+        var currentdate = DateTime.UtcNow;
 
         var insert = await _context.Database.ExecuteSqlRawAsync(sqlInsert,
           new SqlParameter("@AccountId", model.AccountId),
@@ -280,7 +280,7 @@ namespace server.Repositories
         }
 
         queryBuilder.Append("DateUpdate = @DateUpdate, ");
-        parameters.Add(new SqlParameter("@DateUpdate", DateTime.Now));
+        parameters.Add(new SqlParameter("@DateUpdate", DateTime.UtcNow));
 
         if (hasChanges)
         {
@@ -368,7 +368,7 @@ namespace server.Repositories
                   Gender = Convert.ToBoolean(reader.GetValue(5)),
                   Address = reader.GetValue(6).ToString()?.Trim() ?? "address",
                   Status = Convert.ToBoolean(reader.GetValue(7)),
-                  DateCreate = DateTime.Now,
+                  DateCreate = DateTime.UtcNow,
                   DateUpdate = null
                 };
 

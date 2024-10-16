@@ -33,7 +33,7 @@ namespace server.Repositories
         audience: _config["JwtSettings:Audience"],
         claims: claims,
         signingCredentials: signinCredentials,
-        expires: DateTime.Now.AddDays(3)
+        expires: DateTime.UtcNow.AddDays(3)
         );
 
       var tokenString = new JwtSecurityTokenHandler().WriteToken(tokeOptions);
@@ -104,7 +104,7 @@ namespace server.Repositories
 
         }
         // Check if the stored refresh token is still valid (not expired)
-        if (tokenStored.ExpiresAt <= DateTime.Now)
+        if (tokenStored.ExpiresAt <= DateTime.UtcNow)
         {
           return new ResponseDto(false, "Refresh token has expired");
         }
@@ -115,11 +115,12 @@ namespace server.Repositories
 
         // Update refresh token in the database
         tokenStored.Token = newRefreshToken;
-        tokenStored.ExpiresAt = DateTime.Now.AddDays(3);
+        tokenStored.ExpiresAt = DateTime.UtcNow.AddDays(1);
         await _context.SaveChangesAsync();
 
         // Luu vao cookies (Server-side-ren)
         SetJWTCookie(newAccessToken);
+        SetRefreshTokenCookie(newRefreshToken);
 
         return new ResponseDto(true, "Token refreshed successfully", newAccessToken);
       }
@@ -136,7 +137,7 @@ namespace server.Repositories
         HttpOnly = true,
         Secure = true,
         SameSite = SameSiteMode.Strict, // Prevent CSRF attacks
-        Expires = DateTime.Now.AddDays(3),
+        Expires = DateTime.UtcNow.AddDays(3),
       };
       try
       {
@@ -155,7 +156,7 @@ namespace server.Repositories
         HttpOnly = true,
         Secure = true,
         SameSite = SameSiteMode.Strict,
-        Expires = DateTime.Now.AddDays(5),
+        Expires = DateTime.UtcNow.AddDays(5),
       };
       try
       {
@@ -174,7 +175,7 @@ namespace server.Repositories
         HttpOnly = true,
         Secure = true,
         SameSite = SameSiteMode.Strict,
-        Expires = DateTime.Now.AddDays(-1) // Set expiration date to the past
+        Expires = DateTime.UtcNow.AddDays(-1) // Set expiration date to the past
       };
       try
       {
@@ -193,7 +194,7 @@ namespace server.Repositories
         HttpOnly = true,
         Secure = true,
         SameSite = SameSiteMode.Strict,
-        Expires = DateTime.Now.AddDays(-1) // Set expiration date to the past
+        Expires = DateTime.UtcNow.AddDays(-1) // Set expiration date to the past
       };
       try
       {

@@ -138,7 +138,7 @@ namespace server.Repositories
                                     @noteComment, @createdBy, @createdAt, @updatedAt);
                            SELECT CAST(SCOPE_IDENTITY() AS int);";
 
-        var currentDate = DateTime.Now;
+        var currentDate = DateTime.UtcNow;
 
         var insertChiTietSoDauBai = await _context.Database.ExecuteSqlRawAsync(insertdata,
           new SqlParameter("@biaSoDauBaiId", model.BiaSoDauBaiId),
@@ -366,7 +366,7 @@ namespace server.Repositories
                   Attend = Convert.ToInt16((int)reader.GetValue(11)),
                   NoteComment = reader.GetValue(12).ToString() ?? "Ghi chú",
                   CreatedBy = Convert.ToInt16(reader.GetValue(13)),
-                  CreatedAt = DateTime.Now,
+                  CreatedAt = DateTime.UtcNow,
                   UpdatedAt = null
                 };
 
@@ -500,7 +500,7 @@ namespace server.Repositories
           parameters.Add(new SqlParameter("@CreatedAt", model.CreatedAt.Value));
         }
 
-        var update = DateTime.Now;
+        var update = DateTime.UtcNow;
 
         queryBuilder.Append("UpdatedAt = @UpdatedAt, ");
         parameters.Add(new SqlParameter("@UpdatedAt", update));

@@ -65,7 +65,7 @@ namespace server.Repositories
           return new Data_Response<PC_ChuNhiemDto>(404, "SemesterId not found");
         }
 
-        model.DateCreated = DateTime.Now;
+        model.DateCreated = DateTime.UtcNow;
         model.DateUpdated = null;
 
         var queryInsert = @"INSERT INTO PhanCongChuNhiem 

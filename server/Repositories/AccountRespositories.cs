@@ -65,7 +65,7 @@ namespace server.Repositories
             SELECT CAST(SCOPE_IDENTITY() as int);
         ";
 
-        acc.DateCreated = DateTime.Now;
+        acc.DateCreated = DateTime.UtcNow;
         acc.DateUpdated = null;
 
         var accountId = await _context.Database.ExecuteSqlRawAsync(sqlInsert,
@@ -274,7 +274,7 @@ namespace server.Repositories
           hasChanges = true;
         }
 
-        var currentDate = DateTime.Now;
+        var currentDate = DateTime.UtcNow;
         if (currentDate != model.DateUpdated)
         {
           queryBuilder.Append("DateUpdated = @DateUpdated, ");
@@ -384,7 +384,7 @@ namespace server.Repositories
                   SchoolId = Convert.ToInt16(reader.GetValue(2)),
                   Email = reader.GetValue(3).ToString() ?? "email",
                   Password = reader.GetValue(4)?.ToString() ?? string.Empty,
-                  DateCreated = DateTime.Now,
+                  DateCreated = DateTime.UtcNow,
                   DateUpdated = null
                 };
 

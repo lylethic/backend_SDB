@@ -34,7 +34,7 @@ namespace server.Repositories
                           VALUES (@ClassId, @GradeId, @AccountId, @Fullname, @Status, @Description, @DateCreated, @DateUpdated);
                           SELECT CAST(SCOPE_IDENTITY() as int);";
 
-        var currentdate = DateTime.Now;
+        var currentdate = DateTime.UtcNow;
 
         var insert = await _context.Database.ExecuteSqlRawAsync(sqlInsert,
           new SqlParameter("@ClassId", model.ClassId),
@@ -337,8 +337,8 @@ namespace server.Repositories
                   AccountId = Convert.ToInt32(reader.GetValue(3)),
                   Fullname = reader.GetValue(4).ToString() ?? "Undefined",
                   Status = Convert.ToBoolean(reader.GetValue(5)),
-                  Description = reader.GetValue(6)?.ToString() ?? $"{DateTime.Now}",
-                  DateCreated = DateTime.Now,
+                  Description = reader.GetValue(6)?.ToString() ?? $"{DateTime.UtcNow}",
+                  DateCreated = DateTime.UtcNow,
                   DateUpdated = null
                 };
 

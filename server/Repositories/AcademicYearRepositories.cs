@@ -262,9 +262,9 @@ namespace server.Repositories
                   {
                     DisplayAcademicYearName = reader.GetValue(1).ToString() ?? "null",
                     YearStart = ExcelHelper.ConvertExcelDateToDateOnly(reader.GetValue(2))
-                    ?? DateOnly.FromDateTime(DateTime.Now),
+                    ?? DateOnly.FromDateTime(DateTime.UtcNow),
                     YearEnd = ExcelHelper.ConvertExcelDateToDateOnly(reader.GetValue(3))
-                    ?? DateOnly.FromDateTime(DateTime.Now),
+                    ?? DateOnly.FromDateTime(DateTime.UtcNow),
                     Description = reader.GetValue(4).ToString() ?? "null"
                   };
 

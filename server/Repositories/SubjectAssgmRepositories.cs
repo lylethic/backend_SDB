@@ -64,7 +64,7 @@ namespace server.Repositories
           new SqlParameter("@teacherId", model.TeacherId),
           new SqlParameter("@subjectId", model.SubjectId),
           new SqlParameter("@description", model.Description),
-          new SqlParameter("@dateCreated", DateTime.Now),
+          new SqlParameter("@dateCreated", DateTime.UtcNow),
           new SqlParameter("@dateUpdated", DBNull.Value)
           );
 
@@ -291,7 +291,7 @@ namespace server.Repositories
                   TeacherId = Convert.ToInt16(reader.GetValue(1)),
                   SubjectId = Convert.ToInt16(reader.GetValue(2)),
                   Description = reader.GetValue(3).ToString()?.Trim() ?? "null",
-                  DateCreated = DateTime.Now,
+                  DateCreated = DateTime.UtcNow,
                   DateUpdated = null
                 };
 
