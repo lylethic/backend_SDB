@@ -13,11 +13,11 @@ namespace server.IService
 
     Task<ResponseDto> RefreshToken();
 
-    void SetJWTCookie(string token);
+    void SetJWTTokenCookie(string token);
 
     void SetRefreshTokenCookie(string refreshToken);
 
-    void ClearJWTCookie();
+    void ClearJWTTokenCookie();
 
     void ClearRefreshTokenCookie();
   }

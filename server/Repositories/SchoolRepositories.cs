@@ -1,8 +1,10 @@
-﻿using ExcelDataReader;
+﻿using ClosedXML.Excel;
+using ExcelDataReader;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using server.Dtos;
 using server.IService;
+using server.Types;
 using System.Text;
 
 namespace server.Repositories
@@ -16,7 +18,7 @@ namespace server.Repositories
       this._context = context;
     }
 
-    public async Task<Data_Response<SchoolDto>> CreateSchool(SchoolDto model)
+    public async Task<SchoolResType> CreateSchool(SchoolDto model)
     {
       try
       {
@@ -27,7 +29,15 @@ namespace server.Repositories
 
         if (shoolExists is not null)
         {
-          return new Data_Response<SchoolDto>(409, "School already exists");
+          return new SchoolResType
+          {
+            StatusCode = 409,
+            Message = "Lỗi xảy ra khi xác thực dữ liệu...",
+            Errors =
+            [
+              new("NameSchool", "Trường học đã tồn tại")
+            ]
+          };
         }
 
         var queryInsert = @"INSERT INTO SCHOOL (provinceId, districtId, nameSchcool, address, phoneNumber, schoolType, description) 
@@ -55,15 +65,15 @@ namespace server.Repositories
           Description = model.Description
         };
 
-        return new Data_Response<SchoolDto>(200, result);
+        return new SchoolResType(200, "Thành công", result);
       }
       catch (Exception ex)
       {
-        return new Data_Response<SchoolDto>(200, $"Server error: {ex.Message}");
+        return new SchoolResType(500, $"Server error: {ex.Message}");
       }
     }
 
-    public async Task<Data_Response<SchoolDto>> DeleteSchool(int id)
+    public async Task<SchoolResType> DeleteSchool(int id)
     {
       try
       {
@@ -76,7 +86,15 @@ namespace server.Repositories
         // Check null??
         if (schoolExists is null)
         {
-          return new Data_Response<SchoolDto>(404, "Account not found!");
+          return new SchoolResType
+          {
+            StatusCode = 404,
+            Message = "Lỗi xảy ra khi xác thực dữ liệu...",
+            Errors =
+            [
+              new("SchoolId", "Không tìm thấy Trường học")
+            ]
+          }; ;
         }
 
         // Delete query
@@ -84,16 +102,16 @@ namespace server.Repositories
         await _context.Database
           .ExecuteSqlRawAsync(deleteQuery, new SqlParameter("@id", id));
 
-        return new Data_Response<SchoolDto>(200, "Deleted");
+        return new SchoolResType(200, "Xóa thành công");
       }
       catch (Exception ex)
       {
         Console.WriteLine(ex.Message);
-        return new Data_Response<SchoolDto>(500, $"Error deleting: {ex.Message}");
+        return new SchoolResType(500, $"Server error deleting: {ex.Message}");
       }
     }
 
-    public async Task<Data_Response<SchoolDto>> GetSchool(int id)
+    public async Task<SchoolResType> GetSchool(int id)
     {
       try
       {
@@ -105,7 +123,15 @@ namespace server.Repositories
 
         if (school is null)
         {
-          return new Data_Response<SchoolDto>(404, "School not founnd");
+          return new SchoolResType
+          {
+            StatusCode = 404,
+            Message = "Lỗi xảy ra khi xác thực dữ liệu...",
+            Errors =
+            [
+              new ("SchoolId", "Không tìm thấy")
+            ]
+          };
         }
 
         var result = new SchoolDto
@@ -120,15 +146,15 @@ namespace server.Repositories
           Description = school.Description
         };
 
-        return new Data_Response<SchoolDto>(200, result);
+        return new SchoolResType(200, "Thành công", result);
       }
       catch (Exception ex)
       {
-        return new Data_Response<SchoolDto>(500, $"Server error: {ex.Message}");
+        return new SchoolResType(500, $"Server error: {ex.Message}");
       }
     }
 
-    public async Task<List<SchoolDto>> GetSchools(int pageNumber, int pageSize)
+    public async Task<SchoolResType> GetSchools(int pageNumber, int pageSize)
     {
       try
       {
@@ -157,16 +183,15 @@ namespace server.Repositories
           Description = x.Description
         }).ToList();
 
-        return result;
+        return new SchoolResType(200, "Thành công", result);
       }
       catch (Exception ex)
       {
-        Console.WriteLine(ex.Message);
-        throw;
+        return new SchoolResType(500, $"Có lỗi: {ex.Message}");
       }
     }
 
-    public async Task<Data_Response<SchoolDto>> UpdateSchool(int id, SchoolDto model)
+    public async Task<SchoolResType> UpdateSchool(int id, SchoolDto model)
     {
       try
       {
@@ -178,7 +203,15 @@ namespace server.Repositories
 
         if (existingSchool is null)
         {
-          return new Data_Response<SchoolDto>(404, "School not found");
+          return new SchoolResType
+          {
+            StatusCode = 404,
+            Message = "Lỗi xảy ra khi xác thực dữ liệu...",
+            Errors =
+             [
+               new("SchoolId", "Không tìm thấy trường học")
+             ]
+          };
         }
 
         bool hasChanges = false;
@@ -248,16 +281,16 @@ namespace server.Repositories
           var updateQuery = queryBuilder.ToString();
           await _context.Database.ExecuteSqlRawAsync(updateQuery, parameters.ToArray());
 
-          return new Data_Response<SchoolDto>(200, "Updated");
+          return new SchoolResType(200, "Cập nhật thành công");
         }
         else
         {
-          return new Data_Response<SchoolDto>(200, "No changes detected");
+          return new SchoolResType(200, "No changes detected");
         }
       }
       catch (Exception ex)
       {
-        return new Data_Response<SchoolDto>(500, $"Server Error: {ex.Message}");
+        return new SchoolResType(500, $"Server Error: {ex.Message}");
       }
     }
 
@@ -265,7 +298,13 @@ namespace server.Repositories
     {
       try
       {
-        Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+        System.Text.Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+
+        if (file == null || file.Length == 0)
+        {
+          return "No file uploaded";
+        }
+
 
         if (file is not null && file.Length > 0)
         {
@@ -298,23 +337,35 @@ namespace server.Repositories
                   continue;
                 }
 
+                Console.WriteLine($"ProvinceId: {reader.GetValue(1)}");
+                Console.WriteLine($"DistrictId: {reader.GetValue(2)}");
+                Console.WriteLine($"NameSchcool: {reader.GetValue(3)}");
+                Console.WriteLine($"Address: {reader.GetValue(4)}");
+                Console.WriteLine($"PhoneNumber: {reader.GetValue(5)}");
+                Console.WriteLine($"SchoolType: {reader.GetValue(6)}");
+                Console.WriteLine($"Description: {reader.GetValue(7)}");
+
                 // Check if there are no more rows or empty rows
-                if (reader.GetValue(1) == null && reader.GetValue(2) == null && reader.GetValue(3) == null && reader.GetValue(4) == null && reader.GetValue(5) == null && reader.GetValue(6) == null && reader.GetValue(7) == null)
+                if (reader.GetValue(1) == null && reader.GetValue(2) == null && reader.GetValue(3) == null && reader.GetValue(4) == null
+                  && reader.GetValue(5) == null && reader.GetValue(6) == null && reader.GetValue(7) == null)
                 {
-                  // Stop processing when an empty row is encountered
                   break;
                 }
 
+                var provinceIdValue = reader.GetValue(1);
+                var districtIdValue = reader.GetValue(2);
+
                 var mySchool = new Models.School
                 {
-                  ProvinceId = Convert.ToByte(reader.GetValue(1)),
-                  DistrictId = Convert.ToByte(reader.GetValue(2)),
-                  NameSchcool = reader.GetValue(3).ToString()?.Trim() ?? "Ten truong hoc?",
-                  Address = reader.GetValue(4).ToString()?.Trim() ?? "Dia chi truong hoc?",
-                  PhoneNumber = reader.GetValue(5).ToString()?.Trim() ?? "So dien thoai truong hoc?",
-                  SchoolType = Convert.ToBoolean(reader.GetValue(6)),
-                  Description = reader.GetValue(7).ToString()?.Trim() ?? "Mo ta cho truong hoc",
+                  ProvinceId = provinceIdValue != null ? (byte)Math.Min(255, Math.Max(0, Convert.ToInt32(provinceIdValue))) : (byte)0,
+                  DistrictId = districtIdValue != null ? (byte)Math.Min(255, Math.Max(0, Convert.ToInt32(districtIdValue))) : (byte)0,
+                  NameSchcool = reader.GetValue(3).ToString()! ?? "Default School Name",
+                  Address = reader.GetValue(4).ToString()!.Trim() ?? "Default Address",
+                  PhoneNumber = reader.GetValue(5).ToString()!.Trim() ?? "Default Phone",
+                  SchoolType = reader.GetValue(6) != null ? Convert.ToBoolean(reader.GetValue(6)) : false,
+                  Description = reader.GetValue(7).ToString()?.Trim() ?? "Default Description",
                 };
+
 
                 await _context.Schools.AddAsync(mySchool);
                 await _context.SaveChangesAsync();
@@ -328,7 +379,7 @@ namespace server.Repositories
       }
       catch (Exception ex)
       {
-        throw new Exception($"Error while uploading file: {ex.Message}");
+        throw new Exception($"Error while uploading file: {ex.Message}, Inner Exception: {ex.InnerException?.Message}");
       }
     }
 
@@ -361,6 +412,69 @@ namespace server.Repositories
       catch (Exception ex)
       {
         await transaction.RollbackAsync();
+        return new Data_Response<string>(500, $"Server error: {ex.Message}");
+      }
+    }
+
+    public async Task<Data_Response<string>> ExportSchoolsExcel(List<int> ids, string filePath)
+    {
+      try
+      {
+        if (ids is null || ids.Count == 0)
+        {
+          return new Data_Response<string>(400, "Không có id nào!");
+        }
+
+        Console.WriteLine($"ID: {string.Join(",", ids)}");
+
+        var schools = await _context.Schools
+          .Where(x => ids.Contains(x.SchoolId))
+          .ToListAsync();
+
+        if (schools is null || !schools.Any())
+        {
+          return new Data_Response<string>(404, "Không tìm thấy id");
+        }
+
+        using (var workbook = new XLWorkbook())
+        {
+          var worksheet = workbook.Worksheets.Add("Schools");
+
+          // Add headers: 1 row => 3 columns
+          worksheet.Cell(1, 1).Value = "Mã trường học";
+          worksheet.Cell(1, 2).Value = "Mã tỉnh";
+          worksheet.Cell(1, 3).Value = "Mã huyện";
+          worksheet.Cell(1, 4).Value = "Tên trường học";
+          worksheet.Cell(1, 5).Value = "Địa chỉ trường học";
+          worksheet.Cell(1, 6).Value = "Số điện thoại";
+          worksheet.Cell(1, 7).Value = "Loại trường";
+          worksheet.Cell(1, 8).Value = "Mô tả";
+
+          // Add body data: by row
+          for (int i = 0; i < schools.Count; i++)
+          {
+            var role = schools[i];
+            worksheet.Cell(i + 2, 1).Value = role.SchoolId;
+            worksheet.Cell(i + 2, 2).Value = role.ProvinceId;
+            worksheet.Cell(i + 2, 3).Value = role.DistrictId;
+            worksheet.Cell(i + 2, 4).Value = role.NameSchcool;
+            worksheet.Cell(i + 2, 5).Value = role.Address;
+            worksheet.Cell(i + 2, 6).Value = role.PhoneNumber;
+            worksheet.Cell(i + 2, 7).Value = role.SchoolType;
+            worksheet.Cell(i + 2, 8).Value = role.Description;
+          }
+
+          // Fit columns
+          worksheet.Columns().AdjustToContents();
+
+          // Save
+          workbook.SaveAs(filePath);
+        }
+
+        return new Data_Response<string>(200, "Successfull");
+      }
+      catch (Exception ex)
+      {
         return new Data_Response<string>(500, $"Server error: {ex.Message}");
       }
     }

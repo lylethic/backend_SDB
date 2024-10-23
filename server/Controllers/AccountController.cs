@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using server.Dtos;
 using server.IService;
+using server.Types;
 
 namespace server.Controllers
 {
@@ -17,6 +18,14 @@ namespace server.Controllers
       _acc = acc;
     }
 
+    [HttpGet("count-number-of-accounts")]
+    public async Task<IActionResult> getCountAccounts()
+    {
+      var result = await _acc.GetCountAccounts();
+      return Ok(result);
+    }
+
+
     // GET: api/Auth
     [HttpGet]
     public async Task<IActionResult> GetAccounts(int pageNumber = 1, int pageSize = 50)
@@ -24,16 +33,26 @@ namespace server.Controllers
       try
       {
         var accounts = await _acc.GetAccounts(pageNumber, pageSize);
-        if (accounts == null || accounts.Count == 0)
+        if (accounts.IsSuccess == false)
         {
-          return NotFound("No results"); // 404
+          return NotFound(new AccountsResType
+          {
+            IsSuccess = false,
+            StatusCode = 404,
+            Message = "No results found"
+          });
         }
         return Ok(accounts); // 200
       }
       catch (Exception ex)
       {
         Console.WriteLine(ex.Message);
-        return StatusCode(500, "Server error"); // 500
+        return StatusCode(500, new AccountsResType
+        {
+          IsSuccess = false,
+          StatusCode = 500,
+          Message = $"An error occurred while retrieving accounts: {ex.Message}"
+        });
       }
     }
 
@@ -133,11 +152,43 @@ namespace server.Controllers
     public async Task<IActionResult> CreateAccount(RegisterDto account)
     {
       var result = await _acc.AddAccount(account);
-      if (result.StatusCode != 200)
+
+      if (result.StatusCode == 422)
       {
-        return BadRequest(result);
+        return StatusCode(422, new
+        {
+          message = result.Message,
+          errors = result.Errors,
+          statusCode = result.StatusCode,
+
+        });
       }
-      return Ok(result);
+
+      if (result.StatusCode == 409)
+      {
+        return StatusCode(409, new
+        {
+          message = result.Message,
+          errors = result.Errors,
+          statusCode = result.StatusCode,
+        });
+      }
+
+      if (result.StatusCode == 200)
+      {
+        return Ok(new
+        {
+          statusCode = result.StatusCode,
+          message = result.Message,
+          data = result.AccountAddResType
+        });
+      }
+
+      return StatusCode(500, new
+      {
+        statusCode = result.StatusCode,
+        message = result.Message,
+      });
     }
 
     // DELETE: api/Auth/5
@@ -146,15 +197,30 @@ namespace server.Controllers
     public async Task<IActionResult> DeleteAccount(int id)
     {
       var result = await _acc.DeleteAccount(id);
-      if (result.StatusCode != 200)
+
+      if (result.StatusCode == 404)
       {
-        return BadRequest(result);
+        return NotFound(new
+        {
+          message = result.Message,
+        });
       }
 
-      return Ok(result);
+      if (result.StatusCode == 200)
+      {
+        return Ok(new
+        {
+          message = result.Message,
+        });
+      }
+
+      return StatusCode(500, new
+      {
+        message = result.Message,
+      });
     }
 
-    [Authorize(Policy = "AdSuperAdminAndAdminmin")]
+    [Authorize(Policy = "SuperAdminAndAdmin")]
     [HttpDelete, Route("bulkdelete")]
     public async Task<IActionResult> BulkDelete(List<int> ids)
     {

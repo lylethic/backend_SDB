@@ -1,21 +1,24 @@
 ﻿using server.Dtos;
+using server.Types;
 
 namespace server.IService
 {
   public interface ISchool
   {
-    Task<Data_Response<SchoolDto>> CreateSchool(SchoolDto model);
+    Task<SchoolResType> CreateSchool(SchoolDto model);
 
-    Task<Data_Response<SchoolDto>> GetSchool(int id);
+    Task<SchoolResType> GetSchool(int id);
 
-    Task<List<SchoolDto>> GetSchools(int pageNumber, int pageSize);
+    Task<SchoolResType> GetSchools(int pageNumber, int pageSize);
 
-    Task<Data_Response<SchoolDto>> DeleteSchool(int id);
+    Task<SchoolResType> DeleteSchool(int id);
 
-    Task<Data_Response<SchoolDto>> UpdateSchool(int id, SchoolDto model);
+    Task<SchoolResType> UpdateSchool(int id, SchoolDto model);
 
     Task<Data_Response<string>> BulkDelete(List<int> ids);
 
     Task<string> ImportExcelFile(IFormFile file);
+
+    Task<Data_Response<string>> ExportSchoolsExcel(List<int> ids, string filePath);
   }
 }

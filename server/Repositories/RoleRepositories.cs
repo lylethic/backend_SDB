@@ -1,9 +1,11 @@
-﻿using ExcelDataReader;
+﻿using ClosedXML.Excel;
+using ExcelDataReader;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using server.Data;
 using server.Dtos;
 using server.IService;
+using server.Types;
 using System.Text;
 
 namespace server.Repositories
@@ -17,15 +19,13 @@ namespace server.Repositories
       this._context = context;
     }
 
-    public async Task<Data_Response<RoleDto>> GetRole(int id)
+    public async Task<RoleResType> GetRole(int id)
     {
       try
       {
         var query = @"SELECT * 
                       FROM ROLE 
-                      WHERE RoleId = @id ORDERBY ROLEID 
-                      OFFSET @skip ROWS 
-                      FETCH NEXT @pageSize ROWS ONLY";
+                      WHERE RoleId = @id";
 
         var role = await _context.Roles
           .FromSqlRaw(query, new SqlParameter("@id", id))
@@ -33,7 +33,15 @@ namespace server.Repositories
 
         if (role is null)
         {
-          return new Data_Response<RoleDto>(404, "Role not found");
+          return new RoleResType
+          {
+            StatusCode = 404,
+            Message = "Lỗi xảy ra khi xác thực dữ liệu...",
+            Errors =
+             [
+               new("RoleId", "Không tìm thấy")
+             ]
+          };
         }
 
         var result = new RoleDto
@@ -43,15 +51,15 @@ namespace server.Repositories
           Description = role.Description,
         };
 
-        return new Data_Response<RoleDto>(200, result);
+        return new RoleResType(200, "Successful", result);
       }
       catch (Exception ex)
       {
-        return new Data_Response<RoleDto>(500, $"Server error: {ex.Message}");
+        return new RoleResType(500, $"Server error: {ex.Message}");
       }
     }
 
-    public async Task<List<RoleDto>> GetRoles(int pageNumber, int pageSize)
+    public async Task<RoleResType> GetRoles(int pageNumber, int pageSize)
     {
       try
       {
@@ -75,15 +83,15 @@ namespace server.Repositories
           Description = x.Description,
         }).ToList();
 
-        return result;
+        return new RoleResType(200, "Thành công", result);
       }
       catch (Exception ex)
       {
-        throw new Exception($"Server error: {ex.Message}");
+        return new RoleResType(500, $"Có lỗi: {ex.Message}");
       }
     }
 
-    public async Task<Data_Response<RoleDto>> AddRole(RoleDto model)
+    public async Task<RoleResType> AddRole(RoleDto model)
     {
       try
       {
@@ -95,7 +103,15 @@ namespace server.Repositories
 
         if (role is not null)
         {
-          return new Data_Response<RoleDto>(409, "Role already exists");
+          return new RoleResType
+          {
+            StatusCode = 409,
+            Message = "Lỗi xảy ra khi xác thực dữ liệu...",
+            Errors =
+            [
+              new("NameRole", "Vai trò đã tồn tại")
+            ]
+          };
         }
 
         var sqlInsert = @"INSERT INTO ROLE (NameRole, Description) 
@@ -114,15 +130,15 @@ namespace server.Repositories
           Description = model.Description,
         };
 
-        return new Data_Response<RoleDto>(200, result);
+        return new RoleResType(200, "Successful", result);
       }
       catch (Exception ex)
       {
-        return new Data_Response<RoleDto>(200, $"Server error: {ex.Message}");
+        return new RoleResType(200, $"Server error: {ex.Message}");
       }
     }
 
-    public async Task<Data_Response<RoleDto>> DeleteRole(int id)
+    public async Task<RoleResType> DeleteRole(int id)
     {
       try
       {
@@ -133,62 +149,126 @@ namespace server.Repositories
 
         if (role is null)
         {
-          return new Data_Response<RoleDto>(404, "Role not found");
+          return new RoleResType
+          {
+            StatusCode = 404,
+            Message = "Lỗi xảy ra khi xác thực dữ liệu...",
+            Errors =
+             [
+               new("RoleId", "Vai trò không tìm thấy")
+             ]
+          };
         }
 
         var deleteQuery = "DELETE FROM ROLE WHERE RoleId = @id";
         await _context.Database.ExecuteSqlRawAsync(deleteQuery, new SqlParameter("@id", id));
-        return new Data_Response<RoleDto>(200, "Deleted");
+        return new RoleResType(200, "Xóa thành công");
       }
       catch (Exception ex)
       {
-        return new Data_Response<RoleDto>(500, $"Server error: {ex.Message}");
+        return new RoleResType(500, $"Server error: {ex.Message}");
       }
     }
 
-    public async Task<Data_Response<RoleDto>> UpdateRole(int id, RoleDto model)
+    public async Task<RoleResType> UpdateRole(int id, RoleDto model)
     {
       try
       {
         var findRole = "SELECT * FROM ROLE WHERE RoleId = @id";
-        var roleIdExists = await _context.Roles
+        var existingRole = await _context.Roles
           .FromSqlRaw(findRole, new SqlParameter("@id", id))
           .FirstOrDefaultAsync();
 
-        if (roleIdExists is null)
+        if (existingRole is null)
         {
-          return new Data_Response<RoleDto>(404, "Role not found");
+          return new RoleResType
+          {
+            StatusCode = 404,
+            Message = "Lỗi xảy ra khi xác thực dữ liệu...",
+            Errors =
+             [
+               new("RoleId", "Vai trò không tìm thấy")
+             ]
+          };
         }
+
+        // flag
+        bool hasChanges = false;
 
         var queryBuilder = new StringBuilder("UPDATE ROLE SET ");
         var parameters = new List<SqlParameter>();
 
-        if (!string.IsNullOrEmpty(model.NameRole))
+        if (!string.IsNullOrEmpty(model.NameRole) && model.NameRole != existingRole.NameRole)
         {
           queryBuilder.Append("NameRole = @NameRole, ");
           parameters.Add(new SqlParameter("@NameRole", model.NameRole));
+          hasChanges = true;
+        }
 
+        if (existingRole.Description != model.Description)
+        {
           queryBuilder.Append("Description = @Description, ");
           parameters.Add(new SqlParameter("@Description", model.Description));
+          hasChanges = true;
         }
 
-        // Remove the last comma and space
-        if (queryBuilder.Length > 0)
+        if (hasChanges)
         {
-          queryBuilder.Length -= 2; // Remove the trailing comma and space
+          // Remove the last comma and space
+          if (queryBuilder.Length > 0)
+          {
+            queryBuilder.Length -= 2;
+          }
+
+          queryBuilder.Append(" WHERE RoleId = @id");
+          parameters.Add(new SqlParameter("@id", id));
+
+          var updateQuery = queryBuilder.ToString();
+          await _context.Database.ExecuteSqlRawAsync(updateQuery, [.. parameters]);
+
+          return new RoleResType(200, "Cập nhật thành công");
         }
-
-        queryBuilder.Append(" WHERE RoleId = @id");
-        parameters.Add(new SqlParameter("@id", id));
-
-        var updateQuery = queryBuilder.ToString();
-        await _context.Database.ExecuteSqlRawAsync(updateQuery, parameters.ToArray());
-
-        return new Data_Response<RoleDto>(200, "Updated");
+        else
+        {
+          return new RoleResType(200, "No changes detected");
+        }
       }
       catch (Exception ex)
       {
-        return new Data_Response<RoleDto>(500, $"Server Error: {ex.Message}");
+        return new RoleResType(500, $"Server Error: {ex.Message}");
+      }
+    }
+
+    public async Task<Data_Response<string>> BulkDelete(List<int> ids)
+    {
+      await using var transaction = await _context.Database.BeginTransactionAsync();
+
+      try
+      {
+        if (ids is null || ids.Count == 0)
+        {
+          return new Data_Response<string>(400, "No IDs provided.");
+        }
+
+        var idList = string.Join(",", ids);
+
+        var deleteQuery = $"DELETE FROM Role WHERE RoleId IN ({idList})";
+
+        var delete = await _context.Database.ExecuteSqlRawAsync(deleteQuery);
+
+        if (delete == 0)
+        {
+          return new Data_Response<string>(404, "No RoleId found to delete");
+        }
+
+        await transaction.CommitAsync();
+
+        return new Data_Response<string>(200, "Deleted succesfully");
+      }
+      catch (Exception ex)
+      {
+        await transaction.RollbackAsync();
+        return new Data_Response<string>(500, $"Server error: {ex.Message}");
       }
     }
 
@@ -261,35 +341,55 @@ namespace server.Repositories
       }
     }
 
-    public async Task<Data_Response<string>> BulkDelete(List<int> ids)
+    public async Task<Data_Response<string>> ExportRolesExcel(List<int> ids, string filePath)
     {
-      await using var transaction = await _context.Database.BeginTransactionAsync();
-
       try
       {
         if (ids is null || ids.Count == 0)
         {
-          return new Data_Response<string>(400, "No IDs provided.");
+          return new Data_Response<string>(400, "Không có id nào!");
         }
 
-        var idList = string.Join(",", ids);
+        Console.WriteLine($"ID: {string.Join(",", ids)}");
 
-        var deleteQuery = $"DELETE FROM Role WHERE RoleId IN ({idList})";
+        var roles = await _context.Roles
+          .Where(x => ids.Contains(x.RoleId))
+          .ToListAsync();
 
-        var delete = await _context.Database.ExecuteSqlRawAsync(deleteQuery);
-
-        if (delete == 0)
+        if (roles is null || !roles.Any())
         {
-          return new Data_Response<string>(404, "No RoleId found to delete");
+          return new Data_Response<string>(404, "Không tìm thấy id");
         }
 
-        await transaction.CommitAsync();
+        using (var workbook = new XLWorkbook())
+        {
+          var worksheet = workbook.Worksheets.Add("Roles");
 
-        return new Data_Response<string>(200, "Deleted succesfully");
+          // Add headers: 1 row => 3 columns
+          worksheet.Cell(1, 1).Value = "Mã vai trò";
+          worksheet.Cell(1, 2).Value = "Tên vai trò";
+          worksheet.Cell(1, 3).Value = "Mô tả";
+
+          // Add body data: by row
+          for (int i = 0; i < roles.Count; i++)
+          {
+            var role = roles[i];
+            worksheet.Cell(i + 2, 1).Value = role.RoleId;
+            worksheet.Cell(i + 2, 2).Value = role.NameRole;
+            worksheet.Cell(i + 2, 3).Value = role.Description;
+          }
+
+          // Fit columns
+          worksheet.Columns().AdjustToContents();
+
+          // Save
+          workbook.SaveAs(filePath);
+        }
+
+        return new Data_Response<string>(200, "Successfull");
       }
       catch (Exception ex)
       {
-        await transaction.RollbackAsync();
         return new Data_Response<string>(500, $"Server error: {ex.Message}");
       }
     }

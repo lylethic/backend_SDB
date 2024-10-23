@@ -54,14 +54,33 @@ namespace server.Repositories
 
       if (user is null)
       {
-        return new LoginResType(false, "Invalid email");
+        return new LoginResType
+        {
+          Message = "Lỗi xảy ra khi xác thực dữ liệu...",
+          Errors = new List<Error>
+            {
+                new Error("Email", "Email hoặc mật khẩu không đúng")
+            },
+          StatusCode = 422,
+          IsSuccess = false
+        };
+
       }
 
       // Validate password
       bool isPasswordValid = ValidateHash(model.Password!, user.MatKhau, user.PasswordSalt);
       if (!isPasswordValid)
       {
-        return new LoginResType(false, "Invalid password");
+        return new LoginResType
+        {
+          Message = "Lỗi xảy ra khi xác thực dữ liệu...",
+          Errors = new List<Error>
+            {
+                new Error("Password", "Email hoặc mật khẩu không đúng")
+            },
+          StatusCode = 422,
+          IsSuccess = false
+        };
       }
 
       // Lay ten role
@@ -82,7 +101,7 @@ namespace server.Repositories
       var refreshToken = _tokenService.GenerateRefreshToken();
 
       // Set cookies
-      _tokenService.SetJWTCookie(accessToken);
+      _tokenService.SetJWTTokenCookie(accessToken);
       _tokenService.SetRefreshTokenCookie(refreshToken);
 
       var session = new Session
@@ -128,14 +147,14 @@ namespace server.Repositories
 
         if (string.IsNullOrEmpty(userStored))
         {
-          return new LogoutResType(true, "User not found in the current session");
+          return new LogoutResType(404, false, "User not found in the current session");
         }
 
         var user = await _context.Accounts.FirstOrDefaultAsync(u => u.Email == userStored);
 
         if (user == null)
         {
-          return new LogoutResType(true, "User not found");
+          return new LogoutResType(404, false, "User not found");
         }
 
         // Remove refresh token in DB
@@ -149,15 +168,15 @@ namespace server.Repositories
         }
 
         // Clear cookies
-        _tokenService.ClearJWTCookie();
+        _tokenService.ClearJWTTokenCookie();
         _tokenService.ClearRefreshTokenCookie();
 
-        return new LogoutResType(true, "Logout successful");
+        return new LogoutResType(200, true, "Logout successfully");
       }
       catch (Exception ex)
       {
         // Log the exception if necessary
-        return new LogoutResType(false, "An error occurred while logging out: " + ex.Message);
+        return new LogoutResType(500, false, "An error occurred while logging out: " + ex.Message);
       }
     }
 
@@ -217,7 +236,7 @@ namespace server.Repositories
 
       var accessToken = _tokenService.GenerateAccessToken(claims);
       var refreshToken = _tokenService.GenerateRefreshToken();
-      _tokenService.SetJWTCookie(accessToken);
+      _tokenService.SetJWTTokenCookie(accessToken);
 
       // Save token into table TokenStored
       var tokenResult = new Session

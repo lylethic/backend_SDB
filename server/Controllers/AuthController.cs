@@ -27,10 +27,21 @@ namespace server.Controllers
       var result = await _authRepo.Login(model);
       if (!result.IsSuccess)
       {
-        return Unauthorized(result.Message);
+        return StatusCode(result.StatusCode, new
+        {
+          message = result.Message,
+          errors = result.Errors,
+          statusCode = result.StatusCode,
+        });
       }
 
-      return Ok(result);
+      return Ok(new
+      {
+        isSuccess = result.IsSuccess,
+        statusCode = result.StatusCode,
+        message = result.Message,
+        data = result.Data
+      });
     }
 
     // POST: api/Register
@@ -41,7 +52,7 @@ namespace server.Controllers
       var result = await _authRepo.Register(model);
       if (!result.IsSuccess)
       {
-        return Unauthorized(result.Message);
+        return StatusCode(422, result);
       }
 
       return Ok(new
@@ -59,22 +70,28 @@ namespace server.Controllers
       var result = await _tokenService.RefreshToken();
       if (!result.IsSuccess)
       {
-        return BadRequest(new { Message = "Có lỗi: " + result.Message });
+        return StatusCode(422, result);
       }
 
       return Ok(result);
     }
 
     [HttpPost, Route("logout"), Authorize]
-    public async Task<ActionResult<LogoutResType>> Logout()
+    public async Task<IActionResult> Logout()
     {
       var result = await _authRepo.Logout();
       if (!result.IsSuccess)
       {
-        return BadRequest(new { Message = "Có lỗi: " + result.Message });
+        return StatusCode(422, new
+        {
+          message = result.Message,
+        });
       }
 
-      return Ok(result);
+      return Ok(new
+      {
+        message = result.Message,
+      });
     }
   }
 }

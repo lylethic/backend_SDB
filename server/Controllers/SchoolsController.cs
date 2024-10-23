@@ -119,5 +119,33 @@ namespace server.Controllers
         throw new Exception($"Server Error: {ex.Message}");
       }
     }
+
+    [Authorize(Policy = "SuperAdmin")]
+    [HttpPost("export")]
+    public async Task<IActionResult> ExportSchools([FromBody] List<int> ids)
+    {
+      var exportFolder = Path.Combine(Directory.GetCurrentDirectory(), "Exports");
+
+      // Ensure the directory exists
+      if (!Directory.Exists(exportFolder))
+      {
+        Directory.CreateDirectory(exportFolder);
+      }
+
+      var filePath = Path.Combine(exportFolder, "Schools.xlsx");
+
+      var result = await _school.ExportSchoolsExcel(ids, filePath);
+
+      if (result.StatusCode != 200)
+      {
+        return BadRequest(result);
+      }
+
+      // Return file for download after successful export
+      var fileBytes = await System.IO.File.ReadAllBytesAsync(filePath);
+      var fileName = "Schools.xlsx";
+
+      return File(fileBytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", fileName);
+    }
   }
 }

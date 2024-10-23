@@ -31,13 +31,22 @@ namespace server.Repositories
       return Regex.IsMatch(email, regex);
     }
 
-    public async Task<Data_Response<AccountDto>> AddAccount(RegisterDto acc)
+    public async Task<AccountsResType> AddAccount(RegisterDto acc)
     {
       try
       {
         if (!IsValidEmail(acc.Email))
         {
-          return new Data_Response<AccountDto>(400, "Invalid Email format");
+          return new AccountsResType
+          {
+            Message = "Lỗi xảy ra khi xác thực dữ liệu...",
+            Errors = new List<Error>
+            {
+                new Error("Email", "Email sai định dạng")
+            },
+            StatusCode = 422,
+            IsSuccess = false
+          };
         }
 
         var query = "SELECT * FROM ACCOUNT WHERE Email = @email";
@@ -48,7 +57,17 @@ namespace server.Repositories
 
         if (account != null)
         {
-          return new Data_Response<AccountDto>(409, "Email already registered");
+          return new AccountsResType
+          {
+            Message = "Lỗi xảy ra khi xác thực dữ liệu...",
+            Errors = new List<Error>
+            {
+                new Error("Email", "Email đã được đăng ký")
+            },
+            StatusCode = 409,
+            IsSuccess = false
+          };
+
         }
 
         // Hash the password
@@ -78,21 +97,20 @@ namespace server.Repositories
             new SqlParameter("@DateUpdated", DBNull.Value)
         );
 
-        var accountDto = new AccountDto
+        var accountAddResType = new AccountAddResType
         {
-          AccountId = accountId,
-          Email = acc.Email,
           RoleId = acc.RoleId,
           SchoolId = acc.SchoolId,
+          Email = acc.Email,
           DateCreated = acc.DateCreated,
           DateUpdated = acc.DateUpdated,
         };
 
-        return new Data_Response<AccountDto>(200, accountDto);
+        return new AccountsResType(200, "Successful", accountAddResType);
       }
       catch (Exception ex)
       {
-        return new Data_Response<AccountDto>(500, $"Server error: {ex.Message}");
+        return new AccountsResType(500, $"Server error: {ex.Message}");
       }
     }
 
@@ -148,40 +166,69 @@ namespace server.Repositories
       }
     }
 
-    public async Task<List<AccountDto>> GetAccounts(int pageNumber, int pageSize)
+    public async Task<AccountsResType> GetAccounts(int pageNumber, int pageSize)
     {
       try
       {
         var skip = (pageNumber - 1) * pageSize;
 
-        var query = @"SELECT *
-                      FROM ACCOUNT 
-                      ORDER BY EMAIL 
-                      OFFSET @skip ROWS
-                      FETCH NEXT @pageSize ROWS ONLY;";
+        // Use LINQ to join tables and select specific columns
+        var accountsQuery = from account in _context.Accounts
+                            join role in _context.Roles on account.RoleId equals role.RoleId into roleGroup
+                            from role in roleGroup.DefaultIfEmpty()
+                            join school in _context.Schools on account.SchoolId equals school.SchoolId into schoolGroup
+                            from school in schoolGroup.DefaultIfEmpty()
+                            select new AccountsData
+                            {
+                              AccountId = account.AccountId,
+                              RoleId = account.RoleId,
+                              SchoolId = account.SchoolId,
+                              RoleName = role.NameRole,
+                              SchoolName = school.NameSchcool,
+                              Email = account.Email,
+                              DateCreated = account.DateCreated,
+                              DateUpdated = account.DateUpdated
+                            };
 
-        var accsList = await _context.Accounts
-          .FromSqlRaw(query,
-                      new SqlParameter("@skip", skip),
-                      new SqlParameter("@pageSize", pageSize)
-          ).ToListAsync() ?? throw new Exception("Empty");
+        // Apply pagination
+        var pagedAccounts = await accountsQuery
+                            .OrderBy(a => a.Email)
+                            .Skip(skip)
+                            .Take(pageSize)
+                            .ToListAsync();
 
-        var result = accsList.Select(acc => new AccountDto
+        if (pagedAccounts == null || pagedAccounts.Count == 0)
         {
-          AccountId = acc.AccountId,
-          RoleId = acc.RoleId,
-          SchoolId = acc.SchoolId,
-          Email = acc.Email,
-          DateCreated = acc.DateCreated,
-          DateUpdated = acc.DateUpdated
-        }).ToList();
+          return new AccountsResType
+          {
+            IsSuccess = false,
+            StatusCode = 404,
+            Message = "No accounts found",
+            Data = null
+          };
+        }
 
-        return result;
+        // Create the success response
+        var response = new AccountsResType
+        {
+          IsSuccess = true,
+          StatusCode = 200,
+          Message = "Success",
+          Data = pagedAccounts
+        };
+
+        return response;
       }
       catch (Exception ex)
       {
         Console.WriteLine($"Error occurred: {ex.Message}, Inner Exception: {ex.InnerException?.Message}");
-        throw new Exception($"Server error: {ex.Message}");
+        return new AccountsResType
+        {
+          IsSuccess = false,
+          StatusCode = 500,
+          Message = $"An error occurred: {ex.Message}",
+          Data = null
+        };
       }
     }
 
@@ -306,7 +353,7 @@ namespace server.Repositories
       }
     }
 
-    public async Task<Data_Response<AccountDto>> DeleteAccount(int accountId)
+    public async Task<Data_Response<AccountsResType>> DeleteAccount(int accountId)
     {
       try
       {
@@ -319,7 +366,7 @@ namespace server.Repositories
         // Check account null??
         if (account is null)
         {
-          return new Data_Response<AccountDto>(404, "Account not found!");
+          return new Data_Response<AccountsResType>(404, "Account not found!");
         }
 
         // Delete query
@@ -327,11 +374,11 @@ namespace server.Repositories
         await _context.Database
           .ExecuteSqlRawAsync(deleteQuery, new SqlParameter("@accountId", accountId));
 
-        return new Data_Response<AccountDto>(200, "Deleted");
+        return new Data_Response<AccountsResType>(200, "Deleted");
       }
       catch (Exception ex)
       {
-        return new Data_Response<AccountDto>(500, $"Server error deleting account: {ex.Message}");
+        return new Data_Response<AccountsResType>(500, $"Server error deleting account: {ex.Message}");
       }
     }
 
@@ -558,6 +605,19 @@ namespace server.Repositories
       catch (Exception ex)
       {
         throw new Exception($"Server error: {ex.Message}");
+      }
+    }
+
+    public async Task<int> GetCountAccounts()
+    {
+      try
+      {
+        var accounts = await _context.Accounts.CountAsync();
+        return accounts;
+      }
+      catch (Exception ex)
+      {
+        throw new Exception($"Error: {ex.Message}");
       }
     }
   }

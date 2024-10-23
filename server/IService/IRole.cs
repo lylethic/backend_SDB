@@ -1,21 +1,24 @@
 ﻿using server.Dtos;
+using server.Types;
 
 namespace server.IService
 {
   public interface IRole
   {
-    Task<List<RoleDto>> GetRoles(int pageNumber, int pageSize);
+    Task<RoleResType> GetRoles(int pageNumber, int pageSize);
 
-    Task<Data_Response<RoleDto>> GetRole(int id);
+    Task<RoleResType> GetRole(int id);
 
-    Task<Data_Response<RoleDto>> AddRole(RoleDto role);
+    Task<RoleResType> AddRole(RoleDto role);
 
-    Task<Data_Response<RoleDto>> UpdateRole(int id, RoleDto role);
+    Task<RoleResType> UpdateRole(int id, RoleDto role);
 
-    Task<Data_Response<RoleDto>> DeleteRole(int id);
+    Task<RoleResType> DeleteRole(int id);
 
     Task<string> ImportExcel(IFormFile file);
 
     Task<Data_Response<string>> BulkDelete(List<int> ids);
+
+    Task<Data_Response<string>> ExportRolesExcel(List<int> ids, string filePath);
   }
 }

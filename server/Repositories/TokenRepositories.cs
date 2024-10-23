@@ -33,7 +33,7 @@ namespace server.Repositories
         audience: _config["JwtSettings:Audience"],
         claims: claims,
         signingCredentials: signinCredentials,
-        expires: DateTime.UtcNow.AddDays(3)
+        expires: DateTime.UtcNow.AddHours(Convert.ToDouble(_config["JwtSettings:AccessTokenExpirationHours"]))
         );
 
       var tokenString = new JwtSecurityTokenHandler().WriteToken(tokeOptions);
@@ -115,11 +115,11 @@ namespace server.Repositories
 
         // Update refresh token in the database
         tokenStored.Token = newRefreshToken;
-        tokenStored.ExpiresAt = DateTime.UtcNow.AddDays(1);
+        tokenStored.ExpiresAt = DateTime.UtcNow.AddMonths(Convert.ToInt16(_config["JwtSettings:RefreshTokenExpirationMonths"]));
         await _context.SaveChangesAsync();
 
         // Luu vao cookies (Server-side-ren)
-        SetJWTCookie(newAccessToken);
+        SetJWTTokenCookie(newAccessToken);
         SetRefreshTokenCookie(newRefreshToken);
 
         return new ResponseDto(true, "Token refreshed successfully", newAccessToken);
@@ -130,14 +130,14 @@ namespace server.Repositories
       }
     }
 
-    public void SetJWTCookie(string token)
+    public void SetJWTTokenCookie(string token)
     {
       var cookieOptions = new CookieOptions
       {
         HttpOnly = true,
         Secure = true,
         SameSite = SameSiteMode.Strict, // Prevent CSRF attacks
-        Expires = DateTime.UtcNow.AddDays(3),
+        Expires = DateTime.UtcNow.AddHours(Convert.ToDouble(_config["JwtSettings:AccessTokenExpirationHours"])),
       };
       try
       {
@@ -156,7 +156,7 @@ namespace server.Repositories
         HttpOnly = true,
         Secure = true,
         SameSite = SameSiteMode.Strict,
-        Expires = DateTime.UtcNow.AddDays(5),
+        Expires = DateTime.UtcNow.AddMonths(Convert.ToInt16(_config["JwtSettings:RefreshTokenExpirationMonths"])),
       };
       try
       {
@@ -168,14 +168,14 @@ namespace server.Repositories
       }
     }
 
-    public void ClearJWTCookie()
+    public void ClearJWTTokenCookie()
     {
       var cookieOptions = new CookieOptions
       {
         HttpOnly = true,
         Secure = true,
         SameSite = SameSiteMode.Strict,
-        Expires = DateTime.UtcNow.AddDays(-1) // Set expiration date to the past
+        Expires = DateTime.UtcNow.AddHours(-1) // Set expiration date to the past
       };
       try
       {
@@ -194,7 +194,7 @@ namespace server.Repositories
         HttpOnly = true,
         Secure = true,
         SameSite = SameSiteMode.Strict,
-        Expires = DateTime.UtcNow.AddDays(-1) // Set expiration date to the past
+        Expires = DateTime.UtcNow.AddMonths(-1) // Set expiration date to the past
       };
       try
       {
