@@ -11,6 +11,8 @@ namespace server.IService
 
     Task<SchoolResType> GetSchools(int pageNumber, int pageSize);
 
+    Task<SchoolResType> GetSchoolsNoPagnination();
+
     Task<SchoolResType> DeleteSchool(int id);
 
     Task<SchoolResType> UpdateSchool(int id, SchoolDto model);

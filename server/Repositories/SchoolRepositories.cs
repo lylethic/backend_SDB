@@ -191,6 +191,38 @@ namespace server.Repositories
       }
     }
 
+    public async Task<SchoolResType> GetSchoolsNoPagnination()
+    {
+      try
+      {
+
+        var query = @"SELECT * FROM SCHOOL";
+
+        var schoolList = await _context.Schools
+          .FromSqlRaw(query).ToListAsync() ?? throw new Exception("Empty");
+
+        var result = schoolList.Select(x => new SchoolDto
+        {
+          SchoolId = x.SchoolId,
+          ProvinceId = x.ProvinceId,
+          DistrictId = x.DistrictId,
+          NameSchool = x.NameSchcool,
+          PhoneNumber = x.PhoneNumber,
+          Address = x.Address,
+          SchoolType = x.SchoolType,
+          Description = x.Description,
+          DateCreated = x.DateCreated,
+          DateUpdated = x.DateUpdated,
+        }).ToList();
+
+        return new SchoolResType(200, "Thành công", result);
+      }
+      catch (Exception ex)
+      {
+        return new SchoolResType(500, $"Có lỗi: {ex.Message}");
+      }
+    }
+
     public async Task<SchoolResType> UpdateSchool(int id, SchoolDto model)
     {
       try

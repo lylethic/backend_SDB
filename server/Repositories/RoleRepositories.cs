@@ -91,6 +91,35 @@ namespace server.Repositories
       }
     }
 
+    public async Task<RoleResType> GetRolesNoPagnination()
+    {
+      try
+      {
+
+        var query = @"SELECT * FROM Role";
+
+        var roles = await _context.Roles
+          .FromSqlRaw(query)
+          .ToListAsync() ?? throw new Exception("Empty");
+
+        var result = roles.Select(x => new RoleDto
+        {
+          RoleId = x.RoleId,
+          NameRole = x.NameRole,
+          Description = x.Description,
+          DateCreated = x.DateCreated,
+          DateUpdated = x.DateUpdated,
+
+        }).ToList();
+
+        return new RoleResType(200, "Thành công", result);
+      }
+      catch (Exception ex)
+      {
+        return new RoleResType(500, $"Có lỗi: {ex.Message}");
+      }
+    }
+
     public async Task<RoleResType> AddRole(RoleDto model)
     {
       try
@@ -239,7 +268,7 @@ namespace server.Repositories
       }
     }
 
-    public async Task<Data_Response<string>> BulkDelete(List<int> ids)
+    public async Task<RoleResType> BulkDelete(List<int> ids)
     {
       await using var transaction = await _context.Database.BeginTransactionAsync();
 
@@ -247,7 +276,7 @@ namespace server.Repositories
       {
         if (ids is null || ids.Count == 0)
         {
-          return new Data_Response<string>(400, "No IDs provided.");
+          return new RoleResType(400, "No IDs provided.");
         }
 
         var idList = string.Join(",", ids);
@@ -258,17 +287,17 @@ namespace server.Repositories
 
         if (delete == 0)
         {
-          return new Data_Response<string>(404, "No RoleId found to delete");
+          return new RoleResType(404, "No RoleId found to delete");
         }
 
         await transaction.CommitAsync();
 
-        return new Data_Response<string>(200, "Deleted succesfully");
+        return new RoleResType(200, "Deleted succesfully");
       }
       catch (Exception ex)
       {
         await transaction.RollbackAsync();
-        return new Data_Response<string>(500, $"Server error: {ex.Message}");
+        return new RoleResType(500, $"Server error: {ex.Message}");
       }
     }
 
@@ -341,13 +370,13 @@ namespace server.Repositories
       }
     }
 
-    public async Task<Data_Response<string>> ExportRolesExcel(List<int> ids, string filePath)
+    public async Task<RoleResType> ExportRolesExcel(List<int> ids, string filePath)
     {
       try
       {
         if (ids is null || ids.Count == 0)
         {
-          return new Data_Response<string>(400, "Không có id nào!");
+          return new RoleResType(400, "Không có id nào!");
         }
 
         Console.WriteLine($"ID: {string.Join(",", ids)}");
@@ -358,7 +387,7 @@ namespace server.Repositories
 
         if (roles is null || !roles.Any())
         {
-          return new Data_Response<string>(404, "Không tìm thấy id");
+          return new RoleResType(404, "Không tìm thấy id");
         }
 
         using (var workbook = new XLWorkbook())
@@ -386,11 +415,24 @@ namespace server.Repositories
           workbook.SaveAs(filePath);
         }
 
-        return new Data_Response<string>(200, "Successfull");
+        return new RoleResType(200, "Successfull");
       }
       catch (Exception ex)
       {
-        return new Data_Response<string>(500, $"Server error: {ex.Message}");
+        return new RoleResType(500, $"Server error: {ex.Message}");
+      }
+    }
+
+    public async Task<int> GetCountRoles()
+    {
+      try
+      {
+        var role = await _context.Roles.CountAsync();
+        return role;
+      }
+      catch (Exception ex)
+      {
+        throw new Exception($"Error: {ex.Message}");
       }
     }
   }

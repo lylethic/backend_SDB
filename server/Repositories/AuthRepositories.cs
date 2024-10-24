@@ -108,7 +108,7 @@ namespace server.Repositories
       {
         AccountId = user.AccountId,
         Token = refreshToken,
-        ExpiresAt = DateTime.UtcNow.AddDays(5), // Expires của refreshToken 
+        ExpiresAt = DateTime.UtcNow.AddMonths(Convert.ToInt16(_config["JwtSettings:RefreshTokenExpirationMonths"])), // Expires của refreshToken 
         CreatedAt = DateTime.UtcNow,
       };
 
@@ -132,7 +132,7 @@ namespace server.Repositories
         {
           Token = accessToken,
           RefreshToken = refreshToken,
-          ExpiresAt = DateTime.UtcNow.AddDays(3).ToString(),
+          ExpiresAt = DateTime.UtcNow.AddMonths(Convert.ToInt16(_config["JwtSettings:RefreshTokenExpirationMonths"])).ToString(),
           //Account = accountData
         }
       };
@@ -243,7 +243,7 @@ namespace server.Repositories
       {
         AccountId = user.AccountId,
         Token = refreshToken,
-        ExpiresAt = DateTime.UtcNow.AddDays(5),
+        ExpiresAt = DateTime.UtcNow.AddMonths(Convert.ToInt16(_config["JwtSettings:RefreshTokenExpirationMonths"])),
         CreatedAt = DateTime.UtcNow,
       };
 

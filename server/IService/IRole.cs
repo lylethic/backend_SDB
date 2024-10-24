@@ -7,6 +7,8 @@ namespace server.IService
   {
     Task<RoleResType> GetRoles(int pageNumber, int pageSize);
 
+    Task<RoleResType> GetRolesNoPagnination();
+
     Task<RoleResType> GetRole(int id);
 
     Task<RoleResType> AddRole(RoleDto role);
@@ -17,8 +19,10 @@ namespace server.IService
 
     Task<string> ImportExcel(IFormFile file);
 
-    Task<Data_Response<string>> BulkDelete(List<int> ids);
+    Task<RoleResType> BulkDelete(List<int> ids);
 
-    Task<Data_Response<string>> ExportRolesExcel(List<int> ids, string filePath);
+    Task<RoleResType> ExportRolesExcel(List<int> ids, string filePath);
+
+    Task<int> GetCountRoles();
   }
 }

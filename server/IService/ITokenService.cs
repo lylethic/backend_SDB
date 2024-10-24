@@ -1,4 +1,5 @@
 ﻿using server.Dtos;
+using server.Types;
 using System.Security.Claims;
 
 namespace server.IService
@@ -9,9 +10,9 @@ namespace server.IService
 
     string GenerateRefreshToken();
 
-    ClaimsPrincipal GetPrincipalFromExpiredToken(string token);
+    (ClaimsPrincipal Principal, bool IsExpired) GetPrincipalFromExpiredToken(string token);
 
-    Task<ResponseDto> RefreshToken();
+    Task<LoginResType> RefreshToken(TokenDto model);
 
     void SetJWTTokenCookie(string token);
 

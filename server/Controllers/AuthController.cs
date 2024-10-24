@@ -2,7 +2,6 @@
 using Microsoft.AspNetCore.Mvc;
 using server.Dtos;
 using server.IService;
-using server.Types;
 
 namespace server.Controllers
 {
@@ -65,15 +64,31 @@ namespace server.Controllers
 
     [HttpPost, Route("refresh")]
     [AllowAnonymous]
-    public async Task<ActionResult<ResponseDto>> RefreshToken()
+    public async Task<IActionResult> RefreshToken(TokenDto model)
     {
-      var result = await _tokenService.RefreshToken();
+      var result = await _tokenService.RefreshToken(model);
       if (!result.IsSuccess)
       {
-        return StatusCode(422, result);
+        return StatusCode(result.StatusCode, new
+        {
+          message = result.Message,
+          errors = result.Errors,
+          statusCode = result.StatusCode,
+        });
       }
 
-      return Ok(result);
+      return Ok(new
+      {
+        isSuccess = result.IsSuccess,
+        statusCode = result.StatusCode,
+        message = result.Message,
+        data = new
+        {
+          token = result.Data.Token,
+          refreshToken = result.Data.RefreshToken,
+          expiresAt = result.Data.ExpiresAt
+        }
+      });
     }
 
     [HttpPost, Route("logout"), Authorize]

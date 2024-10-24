@@ -15,21 +15,50 @@ namespace server.Controllers
     {
       this._school = school;
     }
-    [Authorize(Policy = "SuperAdminAndAdmin")]
 
     [HttpGet]
     public async Task<IActionResult> GetSchools(int pageNumber = 1, int pageSize = 50)
     {
       try
       {
-        var schools = await _school.GetSchools(pageNumber, pageSize);
+        var result = await _school.GetSchools(pageNumber, pageSize);
 
-        if (schools is null)
+        if (result.StatusCode == 200)
         {
-          return NotFound();
+          return StatusCode(200, new
+          {
+            statusCode = result.StatusCode,
+            message = result.Message,
+            data = result.SchoolData
+          });
         }
 
-        return Ok(schools);
+        return StatusCode(500, result);
+      }
+      catch (Exception ex)
+      {
+        return StatusCode(500, $"Server error: {ex.Message}");
+      }
+    }
+
+    [HttpGet("get-schools-no-pagination")]
+    public async Task<IActionResult> GetSchoolsNoPagination()
+    {
+      try
+      {
+        var result = await _school.GetSchoolsNoPagnination();
+
+        if (result.StatusCode == 200)
+        {
+          return StatusCode(200, new
+          {
+            statusCode = result.StatusCode,
+            message = result.Message,
+            data = result.SchoolData
+          });
+        }
+
+        return StatusCode(500, result);
       }
       catch (Exception ex)
       {

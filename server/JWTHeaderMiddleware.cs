@@ -19,7 +19,7 @@ namespace server
 
     public async Task Invoke(HttpContext httpContext)
     {
-      var cookieName = "jwtCookie";
+      var cookieName = "accessToken";
       var jwtToken = httpContext.Request.Cookies[cookieName];
 
       if (!string.IsNullOrEmpty(jwtToken))

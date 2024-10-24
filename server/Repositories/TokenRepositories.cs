@@ -1,6 +1,7 @@
 ﻿using Microsoft.IdentityModel.Tokens;
 using server.Dtos;
 using server.IService;
+using server.Types;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Security.Cryptography;
@@ -51,7 +52,7 @@ namespace server.Repositories
       }
     }
 
-    public ClaimsPrincipal GetPrincipalFromExpiredToken(string token)
+    public (ClaimsPrincipal Principal, bool IsExpired) GetPrincipalFromExpiredToken(string token)
     {
       var tokenValidationParameters = new TokenValidationParameters
       {
@@ -59,11 +60,10 @@ namespace server.Repositories
         ValidateIssuer = false,
         ValidateIssuerSigningKey = true,
         IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["JwtSettings:SecretKey"]!)),
-        ValidateLifetime = false
+        ValidateLifetime = false // We are bypassing lifetime validation to extract the claims from the expired token
       };
 
       var tokenHandler = new JwtSecurityTokenHandler();
-
       SecurityToken securityToken;
 
       var principal = tokenHandler.ValidateToken(token, tokenValidationParameters, out securityToken);
@@ -74,39 +74,97 @@ namespace server.Repositories
         throw new SecurityTokenException("Invalid token");
       }
 
-      return principal;
+      // Extract the expiration claim ("exp")
+      var expClaim = jwtSecurityToken.Claims.FirstOrDefault(c => c.Type == JwtRegisteredClaimNames.Exp)?.Value;
+      DateTime? expirationTime = null;
+      bool isExpired = false;
+
+      if (expClaim != null && long.TryParse(expClaim, out long expUnix))
+      {
+        // Convert Unix time (in seconds) to DateTime
+        expirationTime = DateTimeOffset.FromUnixTimeSeconds(expUnix).UtcDateTime;
+
+        // Print the expiration time
+        Console.WriteLine($"Token expires at: {expirationTime} UTC");
+
+        // Check if the token has already expired
+        if (expirationTime < DateTime.UtcNow)
+        {
+          Console.WriteLine("Access token has expired.");
+          isExpired = true;
+        }
+        else
+        {
+          Console.WriteLine("Access token is still valid.");
+          isExpired = false;
+        }
+      }
+      else
+      {
+        Console.WriteLine("Expiration claim (exp) not found.");
+        throw new SecurityTokenException("Expiration claim not found.");
+      }
+
+      return (principal, isExpired);
     }
 
-    public async Task<ResponseDto> RefreshToken()
+
+    public async Task<LoginResType> RefreshToken(TokenDto model)
     {
-      // Retrieve the access token from the cookie
-      var accessToken = _httpContextAccessor.HttpContext?.Request.Cookies["jwtCookie"];
-      if (string.IsNullOrEmpty(accessToken))
+      if (model is null)
       {
-        return new ResponseDto(false, "Invalid client request. Access token not found in cookie.");
+        return new LoginResType(false, 400, "Invalid client request. AccessToken and refreshToken are required");
       }
+
+      string? accessToken = model.AccessToken;
+      string? refreshToken = model.RefreshToken;
 
       try
       {
-        // Validate AccessToken => Sap het han chua
-        var principal = GetPrincipalFromExpiredToken(accessToken);
-        var accountId = principal.FindFirst("AccountId")?.Value;
+        // Validate: user, AccessToken tu claim Sap het han chua
+        var (principal, isExpired) = GetPrincipalFromExpiredToken(accessToken);
 
+        // Log the expiration check result
+        if (isExpired)
+        {
+          Console.WriteLine("Access token has expired.#################################################");
+        }
+        else
+        {
+          Console.WriteLine("Access token is still valid.#################################################");
+        }
+
+        if (principal == null)
+        {
+          return new LoginResType(false, 401, "Invalid or expired access token.");
+        }
+
+        var accountId = principal.FindFirst("AccountId")?.Value;
+        if (string.IsNullOrEmpty(accountId))
+        {
+          return new LoginResType(false, 400, "Account ID claim not found.");
+        }
+
+        // REtrieve
         var tokenStored = _context.Sessions
                          .Where(id => id.AccountId == Convert.ToInt16(accountId))
                          .OrderByDescending(s => s.ExpiresAt)
                          .FirstOrDefault();
 
 
-        if (tokenStored is null)
+        if (tokenStored is null || tokenStored.Token != refreshToken)
         {
-          return new ResponseDto(false, "Session not found");
+          return new LoginResType(false, 404, "Invalid or expired refresh token.");
 
         }
-        // Check if the stored refresh token is still valid (not expired)
-        if (tokenStored.ExpiresAt <= DateTime.UtcNow)
+
+        if (tokenStored.ExpiresAt < DateTime.UtcNow)
         {
-          return new ResponseDto(false, "Refresh token has expired");
+          // Delete expired refresh token
+          _context.Sessions.Remove(tokenStored);
+          await _context.SaveChangesAsync();
+
+          return new LoginResType(false, 401, "Refresh token has expired and has been removed.");
         }
 
         // Generate new access and refresh tokens
@@ -115,18 +173,28 @@ namespace server.Repositories
 
         // Update refresh token in the database
         tokenStored.Token = newRefreshToken;
-        tokenStored.ExpiresAt = DateTime.UtcNow.AddMonths(Convert.ToInt16(_config["JwtSettings:RefreshTokenExpirationMonths"]));
         await _context.SaveChangesAsync();
 
         // Luu vao cookies (Server-side-ren)
         SetJWTTokenCookie(newAccessToken);
         SetRefreshTokenCookie(newRefreshToken);
 
-        return new ResponseDto(true, "Token refreshed successfully", newAccessToken);
+        return new LoginResType
+        {
+          IsSuccess = true,
+          StatusCode = 200,
+          Message = "Refresh Token successful",
+          Data = new LoginResData
+          {
+            Token = newAccessToken,
+            RefreshToken = newRefreshToken, // Refresh-token old
+            ExpiresAt = tokenStored.ExpiresAt.ToString() // old
+          }
+        };
       }
       catch (Exception ex)
       {
-        return new ResponseDto(false, ex.Message);
+        return new LoginResType(false, ex.Message);
       }
     }
 
@@ -141,7 +209,7 @@ namespace server.Repositories
       };
       try
       {
-        _httpContextAccessor.HttpContext?.Response.Cookies.Append("jwtCookie", token, cookieOptions);
+        _httpContextAccessor.HttpContext?.Response.Cookies.Append("accessToken", token, cookieOptions);
       }
       catch (Exception ex)
       {
@@ -179,7 +247,7 @@ namespace server.Repositories
       };
       try
       {
-        _httpContextAccessor.HttpContext?.Response.Cookies.Append("jwtCookie", "", cookieOptions);
+        _httpContextAccessor.HttpContext?.Response.Cookies.Append("accessToken", "", cookieOptions);
       }
       catch (Exception ex)
       {

@@ -17,6 +17,13 @@ namespace server.Controllers
       _roleRepo = roleRepo;
     }
 
+    [HttpGet("count-number-of-roles")]
+    public async Task<IActionResult> GetCountAccounts()
+    {
+      var result = await _roleRepo.GetCountRoles();
+      return Ok(result);
+    }
+
     // GET: api/Roles`  
     [HttpGet]
     public async Task<IActionResult> GetRoles(int pageNumber = 1, int pageSize = 50)
@@ -25,7 +32,7 @@ namespace server.Controllers
 
       if (result.StatusCode == 200)
       {
-        return Ok(new
+        return StatusCode(200, new
         {
           statusCode = result.StatusCode,
           message = result.Message,
@@ -38,6 +45,31 @@ namespace server.Controllers
         statusCode = result.StatusCode,
         message = result.Message
       });
+    }
+
+    [HttpGet("get-roles-no-pagination")]
+    public async Task<IActionResult> GetRolesNoPagination()
+    {
+      try
+      {
+        var result = await _roleRepo.GetRolesNoPagnination();
+
+        if (result.StatusCode == 200)
+        {
+          return StatusCode(200, new
+          {
+            statusCode = result.StatusCode,
+            message = result.Message,
+            data = result.RoleData
+          });
+        }
+
+        return StatusCode(500, result);
+      }
+      catch (Exception ex)
+      {
+        return StatusCode(500, $"Server error: {ex.Message}");
+      }
     }
 
     // GET: api/Roles/5
@@ -110,16 +142,32 @@ namespace server.Controllers
     public async Task<IActionResult> DeleteRole(int id)
     {
       var result = await _roleRepo.DeleteRole(id);
-      if (result.StatusCode != 200)
+
+      if (result.StatusCode == 404)
       {
-        return BadRequest(result);
+        return StatusCode(404, new
+        {
+          statusCode = result.StatusCode,
+          message = result.Message,
+          error = result.Errors
+        });
+      }
+
+      if (result.StatusCode == 200)
+      {
+        return StatusCode(200, new
+        {
+          statusCode = result.StatusCode,
+          message = result.Message
+        });
       }
 
       return StatusCode(500, new
       {
         statusCode = result.StatusCode,
-        message = result.Message
+        message = result.Message,
       });
+
     }
 
     [Authorize(Policy = "SuperAdminAndAdmin")]
@@ -128,12 +176,30 @@ namespace server.Controllers
     {
       var result = await _roleRepo.BulkDelete(ids);
 
-      if (result.StatusCode != 200)
+      if (result.StatusCode == 200)
       {
-        return BadRequest(result);
+        return StatusCode(200, new
+        {
+          statusCode = result.StatusCode,
+          message = result.Message
+        });
       }
 
-      return Ok(result);
+      if (result.StatusCode == 404)
+      {
+        return StatusCode(404, new
+        {
+          statusCode = result.StatusCode,
+          message = result.Message
+        });
+      }
+
+      return StatusCode(500, new
+      {
+        statusCode = result.StatusCode,
+        message = result.Message
+      });
+
     }
 
     [Authorize(Policy = "SuperAdminAndAdmin")]

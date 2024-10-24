@@ -19,7 +19,7 @@ namespace server.Controllers
     }
 
     [HttpGet("count-number-of-accounts")]
-    public async Task<IActionResult> getCountAccounts()
+    public async Task<IActionResult> GetCountAccounts()
     {
       var result = await _acc.GetCountAccounts();
       return Ok(result);
