@@ -21,7 +21,5 @@ public partial class Semester
 
     public virtual ICollection<ChiTietSoDauBai> ChiTietSoDauBais { get; set; } = new List<ChiTietSoDauBai>();
 
-    public virtual ICollection<PhanCongChuNhiem> PhanCongChuNhiems { get; set; } = new List<PhanCongChuNhiem>();
-
     public virtual ICollection<Week> Weeks { get; set; } = new List<Week>();
 }

@@ -11,8 +11,6 @@ public partial class PhanCongChuNhiem
 
     public int ClassId { get; set; }
 
-    public int SemesterId { get; set; }
-
     public bool Status { get; set; }
 
     public DateTime? DateCreated { get; set; }
@@ -21,9 +19,11 @@ public partial class PhanCongChuNhiem
 
     public string? Description { get; set; }
 
-    public virtual Class Class { get; set; } = null!;
+    public int? AcademicYearId { get; set; }
 
-    public virtual Semester Semester { get; set; } = null!;
+    public virtual AcademicYear? AcademicYear { get; set; }
+
+    public virtual Class Class { get; set; } = null!;
 
     public virtual Teacher Teacher { get; set; } = null!;
 }

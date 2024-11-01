@@ -78,6 +78,20 @@ namespace server.Controllers
       return Ok(result);
     }
 
+    [HttpGet, Route("get-name-of-school/{id}")]
+    public async Task<IActionResult> GetNameOfSchoolById(int id)
+    {
+      try
+      {
+        var result = await _school.GetNameOfSchool(id);
+        return StatusCode(200, new { nameSchool = result });
+      }
+      catch (Exception ex)
+      {
+        return StatusCode(500, ex.Message);
+      }
+    }
+
     [Authorize(Policy = "SuperAdmin")]
     [HttpPost]
     public async Task<IActionResult> CreateSchool(SchoolDto model)

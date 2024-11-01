@@ -37,6 +37,26 @@ namespace server.Controllers
       }
     }
 
+    [HttpGet, Route("GetTeachersBySchool")]
+    public async Task<IActionResult> GetTeachersBySchool(int pageNumber, int pageSize, int schoolId)
+    {
+      try
+      {
+        var teachers = await _teacherRepo.GetTeachersBySchool(pageNumber, pageSize, schoolId);
+        if (teachers == null)
+        {
+          return NotFound(); // 404
+        }
+
+        return Ok(teachers); // 200
+      }
+      catch (Exception ex)
+      {
+        Console.WriteLine(ex.Message);
+        return StatusCode(500, $"Server error: {ex.Message}"); // 500
+      }
+    }
+
     // GET: api/Teachers/5
     [HttpGet("{id}")]
     public async Task<IActionResult> GetTeacher(int id)

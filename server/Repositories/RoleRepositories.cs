@@ -107,8 +107,6 @@ namespace server.Repositories
           RoleId = x.RoleId,
           NameRole = x.NameRole,
           Description = x.Description,
-          DateCreated = x.DateCreated,
-          DateUpdated = x.DateUpdated,
 
         }).ToList();
 

@@ -6,6 +6,7 @@ using server.Dtos;
 using server.IService;
 using server.Models;
 using server.Types;
+using System.Globalization;
 using System.Text;
 
 namespace server.Repositories
@@ -21,7 +22,7 @@ namespace server.Repositories
       this._logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
-    public async Task<Data_Response<string>> BulkDelete(List<int> ids)
+    public async Task<ResponseData<string>> BulkDelete(List<int> ids)
     {
       await using var transaction = await _context.Database.BeginTransactionAsync();
 
@@ -29,7 +30,7 @@ namespace server.Repositories
       {
         if (ids is null || ids.Count == 0)
         {
-          return new Data_Response<string>(400, "No IDs provided.");
+          return new ResponseData<string>(400, "No IDs provided.");
         }
 
         var idList = string.Join(",", ids);
@@ -40,21 +41,21 @@ namespace server.Repositories
 
         if (delete == 0)
         {
-          return new Data_Response<string>(404, "No WeekId found to delete");
+          return new ResponseData<string>(404, "No WeekId found to delete");
         }
 
         await transaction.CommitAsync();
 
-        return new Data_Response<string>(200, "Deleted");
+        return new ResponseData<string>(200, "Deleted");
       }
       catch (Exception ex)
       {
         await transaction.RollbackAsync();
-        return new Data_Response<string>(500, $"Server error: {ex.Message}");
+        return new ResponseData<string>(500, $"Server error: {ex.Message}");
       }
     }
 
-    public async Task<Data_Response<WeekDto>> CreateWeek(WeekDto model)
+    public async Task<ResponseData<WeekDto>> CreateWeek(WeekDto model)
     {
       try
       {
@@ -66,7 +67,7 @@ namespace server.Repositories
 
         if (existingWeek is not null)
         {
-          return new Data_Response<WeekDto>(409, "Week already exists");
+          return new ResponseData<WeekDto>(409, "Week already exists");
         }
 
         var findSemester = "SELECT * FROM Semester WHERE SemesterId = @id";
@@ -77,7 +78,7 @@ namespace server.Repositories
 
         if (semester is null)
         {
-          return new Data_Response<WeekDto>(409, "Semester not found");
+          return new ResponseData<WeekDto>(409, "Semester not found");
         }
 
         var sqlInsert = @"INSERT INTO Week (SemesterId, WeekName, WeekStart, WeekEnd, Status) 
@@ -105,15 +106,15 @@ namespace server.Repositories
           Status = model.Status,
         };
 
-        return new Data_Response<WeekDto>(200, result);
+        return new ResponseData<WeekDto>(200, result);
       }
       catch (Exception ex)
       {
-        return new Data_Response<WeekDto>(200, $"Server error: {ex.Message}");
+        return new ResponseData<WeekDto>(200, $"Server error: {ex.Message}");
       }
     }
 
-    public async Task<Data_Response<WeekDto>> DeleteWeek(int id)
+    public async Task<ResponseData<WeekDto>> DeleteWeek(int id)
     {
       try
       {
@@ -125,22 +126,22 @@ namespace server.Repositories
 
         if (semester is null)
         {
-          return new Data_Response<WeekDto>(404, "Semester not found");
+          return new ResponseData<WeekDto>(404, "Semester not found");
         }
 
         var deleteQuery = "DELETE FROM Week WHERE WeekId = @id";
 
         await _context.Database.ExecuteSqlRawAsync(deleteQuery, new SqlParameter("@id", id));
 
-        return new Data_Response<WeekDto>(200, "A Week Deleted");
+        return new ResponseData<WeekDto>(200, "A Week Deleted");
       }
       catch (Exception ex)
       {
-        return new Data_Response<WeekDto>(500, $"Server error: {ex.Message}");
+        return new ResponseData<WeekDto>(500, $"Server error: {ex.Message}");
       }
     }
 
-    public async Task<Data_Response<WeekResType>> GetWeek(int id)
+    public async Task<ResponseData<WeekData>> GetWeek(int id)
     {
       try
       {
@@ -169,16 +170,16 @@ namespace server.Repositories
 
         if (week is null)
         {
-          return new Data_Response<WeekResType>(404, "Week not found");
+          return new ResponseData<WeekData>(404, "Week not found");
         }
 
         if (!week.Status)
         {
-          return new Data_Response<WeekResType>(400, "Week is inactive.This week are locked.");
+          return new ResponseData<WeekData>(400, "Week is inactive.This week are locked.");
         }
         else
         {
-          var result = new WeekResType
+          var result = new WeekData
           {
             WeekId = id,
             WeekName = week.WeekName,
@@ -191,12 +192,12 @@ namespace server.Repositories
             DateEnd = week.Semester.DateEnd
           };
 
-          return new Data_Response<WeekResType>(200, result);
+          return new ResponseData<WeekData>(200, result);
         }
       }
       catch (Exception ex)
       {
-        return new Data_Response<WeekResType>(500, $"Server error: {ex.Message}");
+        return new ResponseData<WeekData>(500, $"Server error: {ex.Message}");
       }
     }
 
@@ -350,7 +351,7 @@ namespace server.Repositories
       }
     }
 
-    public async Task<Data_Response<WeekDto>> UpdateWeek(int id, WeekDto model)
+    public async Task<ResponseData<WeekDto>> UpdateWeek(int id, WeekDto model)
     {
       try
       {
@@ -362,7 +363,7 @@ namespace server.Repositories
 
         if (existingWeek is null)
         {
-          return new Data_Response<WeekDto>(404, "Week not found");
+          return new ResponseData<WeekDto>(404, "Week not found");
         }
 
         bool hasChanges = false;
@@ -409,18 +410,44 @@ namespace server.Repositories
           // Execute the update query
           var updateQuery = queryBuilder.ToString();
           await _context.Database.ExecuteSqlRawAsync(updateQuery, [.. parameters]);
-          return new Data_Response<WeekDto>(200, "Updated");
+          return new ResponseData<WeekDto>(200, "Updated");
 
         }
         else
         {
-          return new Data_Response<WeekDto>(200, "No changes detected");
+          return new ResponseData<WeekDto>(200, "No changes detected");
         }
       }
       catch (Exception ex)
       {
-        return new Data_Response<WeekDto>(500, $"Server Error: {ex.Message}");
+        return new ResponseData<WeekDto>(500, $"Server Error: {ex.Message}");
       }
+    }
+
+    public async Task<WeekResType> Get7DaysInWeek(int selectedWeekId)
+    {
+      var selectedWeek = await _context.Weeks.FirstOrDefaultAsync(x => x.WeekId == selectedWeekId);
+      if (selectedWeek == null)
+      {
+        return new WeekResType("Không tìm thấy");
+      }
+
+      var daysInWeek = new List<SevenDaysInWeek>();
+      var currentDate = selectedWeek.WeekStart;
+
+      for (int i = 0; i < 7; i++)
+      {
+        // Tính toán ngày
+        daysInWeek.Add(new SevenDaysInWeek
+        {
+          Day = currentDate.ToString("dddd", new CultureInfo("vi-VN")),
+          Date = currentDate.ToString("dd/MM/yyyy") // Định dạng ngày
+        });
+
+        currentDate = currentDate.AddDays(1); // Thêm một ngày
+      }
+
+      return new WeekResType("Thành công", daysInWeek);
     }
   }
 }

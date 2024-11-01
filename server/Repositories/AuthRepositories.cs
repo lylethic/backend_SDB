@@ -118,8 +118,8 @@ namespace server.Repositories
       // Construct the account data to be returned
       var accountData = new AccountData
       {
-        Id = user.AccountId,
-        RoleIdId = user.RoleId,
+        AccountId = user.AccountId,
+        RoleId = user.RoleId,
         SchoolId = user?.SchoolId,
         Email = user?.Email
       };
@@ -127,13 +127,13 @@ namespace server.Repositories
       return new LoginResType
       {
         IsSuccess = true,
+        StatusCode = 200,
         Message = "Login successful",
         Data = new LoginResData
         {
           Token = accessToken,
           RefreshToken = refreshToken,
           ExpiresAt = DateTime.UtcNow.AddMonths(Convert.ToInt16(_config["JwtSettings:RefreshTokenExpirationMonths"])).ToString(),
-          //Account = accountData
         }
       };
     }

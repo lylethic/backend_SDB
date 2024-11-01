@@ -17,7 +17,7 @@ namespace server.Repositories
       this._context = context;
     }
 
-    public async Task<Data_Response<BiaSoDauBaiDto>> CreateBiaSoDauBai(BiaSoDauBaiDto model)
+    public async Task<ResponseData<BiaSoDauBaiDto>> CreateBiaSoDauBai(BiaSoDauBaiDto model)
     {
       using var transaction = await _context.Database.BeginTransactionAsync();
 
@@ -30,7 +30,7 @@ namespace server.Repositories
 
         if (sodaubai is not null)
         {
-          return new Data_Response<BiaSoDauBaiDto>(409, "Sodaubai already exists");
+          return new ResponseData<BiaSoDauBaiDto>(409, "Sodaubai already exists");
         }
 
         // Check if schoolId exists
@@ -39,7 +39,7 @@ namespace server.Repositories
 
         if (!schoolExists)
         {
-          return new Data_Response<BiaSoDauBaiDto>(404, "SchoolId not found");
+          return new ResponseData<BiaSoDauBaiDto>(404, "SchoolId not found");
         }
 
         // Check if academicYearId exists
@@ -48,7 +48,7 @@ namespace server.Repositories
 
         if (!academicYearExists)
         {
-          return new Data_Response<BiaSoDauBaiDto>(404, "academicYearId not found");
+          return new ResponseData<BiaSoDauBaiDto>(404, "academicYearId not found");
         }
 
         // Check if classId exists
@@ -57,7 +57,7 @@ namespace server.Repositories
 
         if (!classExists)
         {
-          return new Data_Response<BiaSoDauBaiDto>(404, "ClassId not found");
+          return new ResponseData<BiaSoDauBaiDto>(404, "ClassId not found");
         }
 
         model.DateCreated = DateTime.UtcNow;
@@ -89,17 +89,17 @@ namespace server.Repositories
           DateUpdated = model.DateUpdated,
         };
 
-        return new Data_Response<BiaSoDauBaiDto>(200, result);
+        return new ResponseData<BiaSoDauBaiDto>(200, result);
       }
       catch (Exception ex)
       {
         // Rollback the transaction if any exception occurs
         await transaction.RollbackAsync();
-        return new Data_Response<BiaSoDauBaiDto>(500, $"Server Error: {ex.Message}");
+        return new ResponseData<BiaSoDauBaiDto>(500, $"Server Error: {ex.Message}");
       }
     }
 
-    public async Task<Data_Response<BiaSoDauBaiDto>> GetBiaSoDauBai(int id)
+    public async Task<ResponseData<BiaSoDauBaiDto>> GetBiaSoDauBai(int id)
     {
       try
       {
@@ -112,7 +112,7 @@ namespace server.Repositories
 
         if (sodaubai is null)
         {
-          return new Data_Response<BiaSoDauBaiDto>(404, "Not found");
+          return new ResponseData<BiaSoDauBaiDto>(404, "Not found");
         }
 
         // Map the result to the StudentDto
@@ -127,11 +127,11 @@ namespace server.Repositories
           DateUpdated = sodaubai.DateUpdated,
         };
 
-        return new Data_Response<BiaSoDauBaiDto>(200, result);
+        return new ResponseData<BiaSoDauBaiDto>(200, result);
       }
       catch (Exception ex)
       {
-        return new Data_Response<BiaSoDauBaiDto>(500, $"Server error: {ex.Message}");
+        return new ResponseData<BiaSoDauBaiDto>(500, $"Server error: {ex.Message}");
       }
     }
 
@@ -201,7 +201,7 @@ namespace server.Repositories
       }
     }
 
-    public async Task<Data_Response<BiaSoDauBaiDto>> UpdateBiaSoDauBai(int id, BiaSoDauBaiDto model)
+    public async Task<ResponseData<BiaSoDauBaiDto>> UpdateBiaSoDauBai(int id, BiaSoDauBaiDto model)
     {
       using var transaction = await _context.Database.BeginTransactionAsync();
       try
@@ -213,7 +213,7 @@ namespace server.Repositories
 
         if (existingBiaSoDaiBai == null)
         {
-          return new Data_Response<BiaSoDauBaiDto>(404, "BiaSoDauBaiId not found");
+          return new ResponseData<BiaSoDauBaiDto>(404, "BiaSoDauBaiId not found");
         }
 
         bool hasChanges = false;
@@ -277,11 +277,11 @@ namespace server.Repositories
           // Commit the transaction
           await transaction.CommitAsync();
 
-          return new Data_Response<BiaSoDauBaiDto>(200, "Updated successfully");
+          return new ResponseData<BiaSoDauBaiDto>(200, "Updated successfully");
         }
         else
         {
-          return new Data_Response<BiaSoDauBaiDto>(200, "No changes detected");
+          return new ResponseData<BiaSoDauBaiDto>(200, "No changes detected");
         }
       }
       catch (Exception ex)
@@ -289,11 +289,11 @@ namespace server.Repositories
         // Rollback the transaction in case of an error
         await transaction.RollbackAsync();
 
-        return new Data_Response<BiaSoDauBaiDto>(500, $"Server Error: {ex.Message}");
+        return new ResponseData<BiaSoDauBaiDto>(500, $"Server Error: {ex.Message}");
       }
     }
 
-    public async Task<Data_Response<BiaSoDauBaiDto>> DeleteBiaSoDauBai(int id)
+    public async Task<ResponseData<BiaSoDauBaiDto>> DeleteBiaSoDauBai(int id)
     {
       try
       {
@@ -304,20 +304,20 @@ namespace server.Repositories
 
         if (sodaubai is null)
         {
-          return new Data_Response<BiaSoDauBaiDto>(404, "Student not found");
+          return new ResponseData<BiaSoDauBaiDto>(404, "Student not found");
         }
 
         var deleteQuery = "DELETE FROM BiaSoDauBai WHERE BiaSoDauBaiId = @id";
         await _context.Database.ExecuteSqlRawAsync(deleteQuery, new SqlParameter("@id", id));
-        return new Data_Response<BiaSoDauBaiDto>(200, "Deleted");
+        return new ResponseData<BiaSoDauBaiDto>(200, "Deleted");
       }
       catch (Exception ex)
       {
-        return new Data_Response<BiaSoDauBaiDto>(500, $"Server error: {ex.Message}");
+        return new ResponseData<BiaSoDauBaiDto>(500, $"Server error: {ex.Message}");
       }
     }
 
-    public async Task<Data_Response<string>> BulkDelete(List<int> ids)
+    public async Task<ResponseData<string>> BulkDelete(List<int> ids)
     {
       await using var transaction = await _context.Database.BeginTransactionAsync();
 
@@ -325,7 +325,7 @@ namespace server.Repositories
       {
         if (ids is null || ids.Count == 0)
         {
-          return new Data_Response<string>(400, "No IDs provided.");
+          return new ResponseData<string>(400, "No IDs provided.");
         }
 
         var idList = string.Join(",", ids);
@@ -336,17 +336,17 @@ namespace server.Repositories
 
         if (delete == 0)
         {
-          return new Data_Response<string>(404, "No BiaSoDauBaiId found to delete");
+          return new ResponseData<string>(404, "No BiaSoDauBaiId found to delete");
         }
 
         await transaction.CommitAsync();
 
-        return new Data_Response<string>(200, "Deleted succesfully");
+        return new ResponseData<string>(200, "Deleted succesfully");
       }
       catch (Exception ex)
       {
         await transaction.RollbackAsync();
-        return new Data_Response<string>(500, $"Server error: {ex.Message}");
+        return new ResponseData<string>(500, $"Server error: {ex.Message}");
       }
     }
 

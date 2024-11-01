@@ -52,14 +52,14 @@ namespace server.Repositories
       }
     }
 
-    public async Task<Data_Response<string>> BulkDelete(List<int> ids)
+    public async Task<ResponseData<string>> BulkDelete(List<int> ids)
     {
       await using var transaction = await _context.Database.BeginTransactionAsync();
       try
       {
         if (ids == null || ids.Count == 0)
         {
-          return new Data_Response<string>(400, "No IDs provided");
+          return new ResponseData<string>(400, "No IDs provided");
         }
 
 
@@ -74,21 +74,21 @@ namespace server.Repositories
 
         if (affectedRows == 0)
         {
-          return new Data_Response<string>(404, "No ids found to delete");
+          return new ResponseData<string>(404, "No ids found to delete");
         }
 
         await transaction.CommitAsync();
 
-        return new Data_Response<string>(200, "Deleted successfully");
+        return new ResponseData<string>(200, "Deleted successfully");
       }
       catch (Exception ex)
       {
         await transaction.RollbackAsync();
-        return new Data_Response<string>(500, $"Server error: {ex.Message}");
+        return new ResponseData<string>(500, $"Server error: {ex.Message}");
       }
     }
 
-    public async Task<Data_Response<PC_GiangDay_BiaSDBDto>> CreatePC_GiangDay_BiaSDB(PC_GiangDay_BiaSDBDto model)
+    public async Task<ResponseData<PC_GiangDay_BiaSDBDto>> CreatePC_GiangDay_BiaSDB(PC_GiangDay_BiaSDBDto model)
     {
       try
       {
@@ -100,7 +100,7 @@ namespace server.Repositories
 
         if (teacherExists is null)
         {
-          return new Data_Response<PC_GiangDay_BiaSDBDto>(404, "Teacher Not found");
+          return new ResponseData<PC_GiangDay_BiaSDBDto>(404, "Teacher Not found");
         }
 
         //check PC_GiangDay_BiaSDB
@@ -112,7 +112,7 @@ namespace server.Repositories
 
         if (getClass is not null)
         {
-          return new Data_Response<PC_GiangDay_BiaSDBDto>(409, "PC_GiangDay_BiaSDB already exists");
+          return new ResponseData<PC_GiangDay_BiaSDBDto>(409, "PC_GiangDay_BiaSDB already exists");
         }
 
         var sqlInsert = @"INSERT INTO PhanCongGiangDay (TeacherId, biaSoDauBaiId, Status, DateCreated, DateUpdated)
@@ -135,15 +135,15 @@ namespace server.Repositories
           Status = model.Status,
         };
 
-        return new Data_Response<PC_GiangDay_BiaSDBDto>(200, result);
+        return new ResponseData<PC_GiangDay_BiaSDBDto>(200, result);
       }
       catch (Exception ex)
       {
-        return new Data_Response<PC_GiangDay_BiaSDBDto>(500, $"Server error: {ex.Message}");
+        return new ResponseData<PC_GiangDay_BiaSDBDto>(500, $"Server error: {ex.Message}");
       }
     }
 
-    public async Task<Data_Response<PC_GiangDay_BiaSDBDto>> DeletePC_GiangDay_BiaSDB(int id)
+    public async Task<ResponseData<PC_GiangDay_BiaSDBDto>> DeletePC_GiangDay_BiaSDB(int id)
     {
       try
       {
@@ -154,22 +154,22 @@ namespace server.Repositories
 
         if (getClass is null)
         {
-          return new Data_Response<PC_GiangDay_BiaSDBDto>(404, "Not found");
+          return new ResponseData<PC_GiangDay_BiaSDBDto>(404, "Not found");
         }
 
         var deleteQuery = "DELETE FROM PhanCongGiangDay WHERE PhanCongGiangDayId = @id";
 
         await _context.Database.ExecuteSqlRawAsync(deleteQuery, new SqlParameter("@id", id));
 
-        return new Data_Response<PC_GiangDay_BiaSDBDto>(200, "Deleted");
+        return new ResponseData<PC_GiangDay_BiaSDBDto>(200, "Deleted");
       }
       catch (Exception ex)
       {
-        return new Data_Response<PC_GiangDay_BiaSDBDto>(500, $"Server error: {ex.Message}");
+        return new ResponseData<PC_GiangDay_BiaSDBDto>(500, $"Server error: {ex.Message}");
       }
     }
 
-    public async Task<Data_Response<PC_GiangDay_BiaSDBDto>> GetPC_GiangDay_BiaSDB(int id)
+    public async Task<ResponseData<PC_GiangDay_BiaSDBDto>> GetPC_GiangDay_BiaSDB(int id)
     {
       try
       {
@@ -180,7 +180,7 @@ namespace server.Repositories
 
         if (phancongSDB is null)
         {
-          return new Data_Response<PC_GiangDay_BiaSDBDto>(404, "Not found");
+          return new ResponseData<PC_GiangDay_BiaSDBDto>(404, "Not found");
         }
 
         var result = new PC_GiangDay_BiaSDBDto
@@ -191,11 +191,11 @@ namespace server.Repositories
           Status = phancongSDB.Status,
         };
 
-        return new Data_Response<PC_GiangDay_BiaSDBDto>(200, result);
+        return new ResponseData<PC_GiangDay_BiaSDBDto>(200, result);
       }
       catch (Exception ex)
       {
-        return new Data_Response<PC_GiangDay_BiaSDBDto>(500, $"Server Error: {ex.Message}");
+        return new ResponseData<PC_GiangDay_BiaSDBDto>(500, $"Server Error: {ex.Message}");
       }
     }
 
@@ -271,7 +271,7 @@ namespace server.Repositories
       }
     }
 
-    public async Task<Data_Response<PC_GiangDay_BiaSDBDto>> UpdatePC_GiangDay_BiaSDB(int id, PC_GiangDay_BiaSDBDto model)
+    public async Task<ResponseData<PC_GiangDay_BiaSDBDto>> UpdatePC_GiangDay_BiaSDB(int id, PC_GiangDay_BiaSDBDto model)
     {
       try
       {
@@ -283,7 +283,7 @@ namespace server.Repositories
 
         if (existingPhanCongGiangDay is null)
         {
-          return new Data_Response<PC_GiangDay_BiaSDBDto>(404, "Not found");
+          return new ResponseData<PC_GiangDay_BiaSDBDto>(404, "Not found");
         }
 
         bool hasChanges = false;
@@ -326,16 +326,16 @@ namespace server.Repositories
           var updateQuery = queryBuilder.ToString();
           await _context.Database.ExecuteSqlRawAsync(updateQuery, [.. parameters]);
 
-          return new Data_Response<PC_GiangDay_BiaSDBDto>(200, "Updated");
+          return new ResponseData<PC_GiangDay_BiaSDBDto>(200, "Updated");
         }
         else
         {
-          return new Data_Response<PC_GiangDay_BiaSDBDto>(200, "No changes detected");
+          return new ResponseData<PC_GiangDay_BiaSDBDto>(200, "No changes detected");
         }
       }
       catch (Exception ex)
       {
-        return new Data_Response<PC_GiangDay_BiaSDBDto>(500, $"Server error: {ex.Message}");
+        return new ResponseData<PC_GiangDay_BiaSDBDto>(500, $"Server error: {ex.Message}");
       }
     }
   }

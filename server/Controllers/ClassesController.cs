@@ -38,6 +38,26 @@ namespace server.Controllers
       }
     }
 
+    [HttpGet, Route("GetClassesBySchool")]
+    public async Task<IActionResult> GetClassesBySchool([FromQuery] int pageNumber, [FromQuery] int pageSize, int schoolId)
+    {
+      try
+      {
+        var result = await _func.GetClassesBySchool(pageNumber, pageSize, schoolId);
+        if (result is null)
+        {
+          return NotFound();
+        }
+
+        return Ok(result);
+      }
+      catch (Exception ex)
+      {
+        Console.WriteLine(ex.Message);
+        return StatusCode(500, "Server error"); // 500
+      }
+    }
+
     // GET api/<ClassesController>/5
     [HttpGet("{id}")]
     public async Task<IActionResult> GetById(int id)

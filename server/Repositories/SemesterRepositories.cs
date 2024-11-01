@@ -17,7 +17,7 @@ namespace server.Repositories
 
     public SemesterRepositories(SoDauBaiContext context) { this._context = context; }
 
-    public async Task<Data_Response<SemesterDto>> CreateSemester(SemesterDto model)
+    public async Task<ResponseData<SemesterDto>> CreateSemester(SemesterDto model)
     {
       try
       {
@@ -29,7 +29,7 @@ namespace server.Repositories
 
         if (academicYear is not null)
         {
-          return new Data_Response<SemesterDto>(409, "Semester already exists");
+          return new ResponseData<SemesterDto>(409, "Semester already exists");
         }
 
         var sqlInsert = @"INSERT INTO Semester (academicYearId, semesterName, dateStart, dateEnd, description) 
@@ -59,15 +59,15 @@ namespace server.Repositories
           Description = model.Description
         };
 
-        return new Data_Response<SemesterDto>(200, result);
+        return new ResponseData<SemesterDto>(200, result);
       }
       catch (Exception ex)
       {
-        return new Data_Response<SemesterDto>(200, $"Server error: {ex.Message}");
+        return new ResponseData<SemesterDto>(200, $"Server error: {ex.Message}");
       }
     }
 
-    public async Task<Data_Response<SemesterDto>> DeleteSemester(int id)
+    public async Task<ResponseData<SemesterDto>> DeleteSemester(int id)
     {
       try
       {
@@ -78,21 +78,21 @@ namespace server.Repositories
 
         if (semester is null)
         {
-          return new Data_Response<SemesterDto>(404, "Semester not found");
+          return new ResponseData<SemesterDto>(404, "Semester not found");
         }
 
         var deleteQuery = "DELETE FROM Semester WHERE SemesterId = @id";
         await _context.Database.ExecuteSqlRawAsync(deleteQuery, new SqlParameter("@id", id));
 
-        return new Data_Response<SemesterDto>(200, "Deleted");
+        return new ResponseData<SemesterDto>(200, "Deleted");
       }
       catch (Exception ex)
       {
-        return new Data_Response<SemesterDto>(500, $"Server error: {ex.Message}");
+        return new ResponseData<SemesterDto>(500, $"Server error: {ex.Message}");
       }
     }
 
-    public async Task<Data_Response<SemesterResType>> GetSemester(int id)
+    public async Task<ResponseData<SemesterResType>> GetSemester(int id)
     {
       try
       {
@@ -127,7 +127,7 @@ namespace server.Repositories
 
         if (semester is null)
         {
-          return new Data_Response<SemesterResType>(404, "Semester not found");
+          return new ResponseData<SemesterResType>(404, "Semester not found");
         }
 
         var result = new SemesterResType
@@ -142,11 +142,11 @@ namespace server.Repositories
           YearEnd = semester.AcademicYear.YearEnd
         };
 
-        return new Data_Response<SemesterResType>(200, result);
+        return new ResponseData<SemesterResType>(200, result);
       }
       catch (Exception ex)
       {
-        return new Data_Response<SemesterResType>(500, $"Server error: {ex.Message}");
+        return new ResponseData<SemesterResType>(500, $"Server error: {ex.Message}");
       }
     }
 
@@ -185,7 +185,7 @@ namespace server.Repositories
       }
     }
 
-    public async Task<Data_Response<SemesterDto>> UpdateSemester(int id, SemesterDto model)
+    public async Task<ResponseData<SemesterDto>> UpdateSemester(int id, SemesterDto model)
     {
       try
       {
@@ -197,7 +197,7 @@ namespace server.Repositories
 
         if (existingSemester is null)
         {
-          return new Data_Response<SemesterDto>(404, "Semester not found");
+          return new ResponseData<SemesterDto>(404, "Semester not found");
         }
 
         bool hasChanges = false;
@@ -254,16 +254,16 @@ namespace server.Repositories
           var updateQuery = queryBuilder.ToString();
           await _context.Database.ExecuteSqlRawAsync(updateQuery, parameters.ToArray());
 
-          return new Data_Response<SemesterDto>(200, "Semester updated successfully");
+          return new ResponseData<SemesterDto>(200, "Semester updated successfully");
         }
         else
         {
-          return new Data_Response<SemesterDto>(200, "No changes detected");
+          return new ResponseData<SemesterDto>(200, "No changes detected");
         }
       }
       catch (Exception ex)
       {
-        return new Data_Response<SemesterDto>(500, $"Server Error: {ex.Message}");
+        return new ResponseData<SemesterDto>(500, $"Server Error: {ex.Message}");
       }
     }
 
@@ -338,7 +338,7 @@ namespace server.Repositories
       }
     }
 
-    public async Task<Data_Response<string>> BulkDelete(List<int> ids)
+    public async Task<ResponseData<string>> BulkDelete(List<int> ids)
     {
       await using var transaction = await _context.Database.BeginTransactionAsync();
 
@@ -346,7 +346,7 @@ namespace server.Repositories
       {
         if (ids is null || ids.Count == 0)
         {
-          return new Data_Response<string>(400, "No IDs provided.");
+          return new ResponseData<string>(400, "No IDs provided.");
         }
 
         var idList = string.Join(",", ids);
@@ -357,17 +357,17 @@ namespace server.Repositories
 
         if (delete == 0)
         {
-          return new Data_Response<string>(404, "No Semester found to delete");
+          return new ResponseData<string>(404, "No Semester found to delete");
         }
 
         await transaction.CommitAsync();
 
-        return new Data_Response<string>(200, "Deleted");
+        return new ResponseData<string>(200, "Deleted");
       }
       catch (Exception ex)
       {
         await transaction.RollbackAsync();
-        return new Data_Response<string>(500, $"Server error: {ex.Message}");
+        return new ResponseData<string>(500, $"Server error: {ex.Message}");
       }
     }
   }

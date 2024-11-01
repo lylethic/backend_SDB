@@ -1,29 +1,29 @@
 ﻿namespace server.Dtos
 {
-  public class Data_Response<T>
+  public class ResponseData<T>
   {
     public int StatusCode { get; set; }
     public string Message { get; set; } = string.Empty;
 
     public T? Data { get; set; }
 
-    public Data_Response()
+    public ResponseData()
     {
     }
 
-    public Data_Response(int statusCode, string message)
+    public ResponseData(int statusCode, string message)
     {
       this.StatusCode = statusCode;
       this.Message = message;
     }
 
-    public Data_Response(int statusCode, T data)
+    public ResponseData(int statusCode, T data)
     {
       this.StatusCode = statusCode;
       this.Data = data;
     }
 
-    public Data_Response(int statusCode, string message, T data)
+    public ResponseData(int statusCode, string message, T data)
     {
       this.StatusCode = statusCode;
       this.Message = message;

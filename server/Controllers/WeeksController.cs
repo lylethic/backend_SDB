@@ -52,7 +52,31 @@ namespace server.Controllers
       return Ok(subject);
     }
 
+    [HttpGet, Route("Get7DaysInWeek")]
+    public async Task<IActionResult> Get7DaysInWeek(int selectedWeekId)
+    {
+      try
+      {
+        var result = await _week.Get7DaysInWeek(selectedWeekId);
+        return Ok(result);
+      }
+      catch (Exception ex)
+      {
+        return BadRequest($"Có lỗi: {ex.Message}");
+      }
+    }
+
     // POST api/<WeeksController>
+    /* Mau
+    {
+      "weekId": 0,
+      "semesterId": 1,
+      "weekName": "Tuần 101",
+      "weekStart": "2024-10-21",
+      "weekEnd": "2024-10-27",
+      "status": true
+    }
+    */
     [HttpPost]
     public async Task<IActionResult> CreateWeek(WeekDto model)
     {

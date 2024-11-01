@@ -9,6 +9,8 @@ namespace server.IService
 
     Task<SchoolResType> GetSchool(int id);
 
+    Task<string> GetNameOfSchool(int id);
+
     Task<SchoolResType> GetSchools(int pageNumber, int pageSize);
 
     Task<SchoolResType> GetSchoolsNoPagnination();
@@ -17,10 +19,10 @@ namespace server.IService
 
     Task<SchoolResType> UpdateSchool(int id, SchoolDto model);
 
-    Task<Data_Response<string>> BulkDelete(List<int> ids);
+    Task<ResponseData<string>> BulkDelete(List<int> ids);
 
     Task<string> ImportExcelFile(IFormFile file);
 
-    Task<Data_Response<string>> ExportSchoolsExcel(List<int> ids, string filePath);
+    Task<ResponseData<string>> ExportSchoolsExcel(List<int> ids, string filePath);
   }
 }

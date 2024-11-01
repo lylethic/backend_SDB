@@ -8,13 +8,9 @@
 
     public int ClassId { get; set; }
 
-    public int SemesterId { get; set; }
+    public int AcademicYearId { get; set; }
 
     public bool Status { get; set; }
-
-    public DateTime? DateCreated { get; set; } = DateTime.UtcNow;
-
-    public DateTime? DateUpdated { get; set; }
 
     public string? Description { get; set; }
   }

@@ -17,7 +17,7 @@ namespace server.Repositories
       this._context = context;
     }
 
-    public async Task<Data_Response<GradeDto>> CreateGrade(GradeDto model)
+    public async Task<ResponseData<GradeDto>> CreateGrade(GradeDto model)
     {
       try
       {
@@ -29,7 +29,7 @@ namespace server.Repositories
 
         if (acaExists is null)
         {
-          return new Data_Response<GradeDto>(404, "Academic-year not found");
+          return new ResponseData<GradeDto>(404, "Academic-year not found");
         }
 
         //check grade
@@ -40,7 +40,7 @@ namespace server.Repositories
 
         if (grade is not null)
         {
-          return new Data_Response<GradeDto>(409, "Grade already exists");
+          return new ResponseData<GradeDto>(409, "Grade already exists");
         }
 
         var sqlInsert = @"INSERT INTO Grade (academicYearId, gradeName, description, dateCreated, dateUpdated)
@@ -64,15 +64,15 @@ namespace server.Repositories
           DateUpdated = model.DateUpdated,
         };
 
-        return new Data_Response<GradeDto>(200, result);
+        return new ResponseData<GradeDto>(200, result);
       }
       catch (Exception ex)
       {
-        return new Data_Response<GradeDto>(500, $"Server error: {ex.Message}");
+        return new ResponseData<GradeDto>(500, $"Server error: {ex.Message}");
       }
     }
 
-    public async Task<Data_Response<GradeDto>> GetGrade(int id)
+    public async Task<ResponseData<GradeDto>> GetGrade(int id)
     {
       try
       {
@@ -96,7 +96,7 @@ namespace server.Repositories
 
         if (grade is null)
         {
-          return new Data_Response<GradeDto>(404, "Grade not found");
+          return new ResponseData<GradeDto>(404, "Grade not found");
         }
 
         var result = new GradeDto
@@ -112,12 +112,12 @@ namespace server.Repositories
           }
         };
 
-        return new Data_Response<GradeDto>(200, result);
+        return new ResponseData<GradeDto>(200, result);
 
       }
       catch (Exception ex)
       {
-        return new Data_Response<GradeDto>(500, $"Server error: {ex.Message}");
+        return new ResponseData<GradeDto>(500, $"Server error: {ex.Message}");
       }
     }
 
@@ -155,7 +155,7 @@ namespace server.Repositories
       }
     }
 
-    public async Task<Data_Response<GradeDto>> UpdateGrade(int id, GradeDto model)
+    public async Task<ResponseData<GradeDto>> UpdateGrade(int id, GradeDto model)
     {
       using var transaction = await _context.Database.BeginTransactionAsync();
 
@@ -169,7 +169,7 @@ namespace server.Repositories
 
         if (existingGrade is null)
         {
-          return new Data_Response<GradeDto>(404, "Grade not found");
+          return new ResponseData<GradeDto>(404, "Grade not found");
         }
 
         bool hasChanges = false;
@@ -224,11 +224,11 @@ namespace server.Repositories
           await _context.Database.ExecuteSqlRawAsync(updateQuery, [.. parameters]);
 
           await transaction.CommitAsync();
-          return new Data_Response<GradeDto>(200, "Updated");
+          return new ResponseData<GradeDto>(200, "Updated");
         }
         else
         {
-          return new Data_Response<GradeDto>(200, "No changes detected");
+          return new ResponseData<GradeDto>(200, "No changes detected");
         }
 
       }
@@ -236,11 +236,11 @@ namespace server.Repositories
       {
         await transaction.RollbackAsync();
 
-        return new Data_Response<GradeDto>(500, $"Server error: {ex.Message}");
+        return new ResponseData<GradeDto>(500, $"Server error: {ex.Message}");
       }
     }
 
-    public async Task<Data_Response<GradeDto>> DeleteGrade(int id)
+    public async Task<ResponseData<GradeDto>> DeleteGrade(int id)
     {
       try
       {
@@ -252,28 +252,28 @@ namespace server.Repositories
 
         if (grade is null)
         {
-          return new Data_Response<GradeDto>(404, "Grade not found");
+          return new ResponseData<GradeDto>(404, "Grade not found");
         }
 
         var deleteQuery = "DELETE FROM Grade WHERE GradeId = @id";
         await _context.Database.ExecuteSqlRawAsync(deleteQuery, new SqlParameter("@id", id));
 
-        return new Data_Response<GradeDto>(200, "Deleted");
+        return new ResponseData<GradeDto>(200, "Deleted");
       }
       catch (Exception ex)
       {
-        return new Data_Response<GradeDto>(500, $"Server error: {ex.Message}");
+        return new ResponseData<GradeDto>(500, $"Server error: {ex.Message}");
       }
     }
 
-    public async Task<Data_Response<string>> BulkDelete(List<int> ids)
+    public async Task<ResponseData<string>> BulkDelete(List<int> ids)
     {
       await using var transaction = await _context.Database.BeginTransactionAsync();
       try
       {
         if (ids == null || ids.Count == 0)
         {
-          return new Data_Response<string>(400, "No IDs provided");
+          return new ResponseData<string>(400, "No IDs provided");
         }
 
         // Create a comma-separated list of IDs for the SQL query
@@ -287,18 +287,18 @@ namespace server.Repositories
 
         if (affectedRows == 0)
         {
-          return new Data_Response<string>(404, "No ids found to delete");
+          return new ResponseData<string>(404, "No ids found to delete");
         }
 
         await transaction.CommitAsync();
 
-        return new Data_Response<string>(200, "Deleted successfully");
+        return new ResponseData<string>(200, "Deleted successfully");
       }
       catch (Exception ex)
       {
         await transaction.RollbackAsync();
 
-        return new Data_Response<string>(500, $"Server error: {ex.Message}");
+        return new ResponseData<string>(500, $"Server error: {ex.Message}");
       }
     }
 

@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using server.Data;
 using server.Dtos;
 using server.IService;
+using server.Models;
 using server.Types;
 using System.Text;
 
@@ -18,7 +19,7 @@ namespace server.Repositories
       this._context = context;
     }
 
-    public async Task<Data_Response<ClassDto>> CreateClass(ClassDto model)
+    public async Task<ResponseData<ClassDto>> CreateClass(ClassDto model)
     {
       try
       {
@@ -30,7 +31,7 @@ namespace server.Repositories
 
         if (grade is null)
         {
-          return new Data_Response<ClassDto>(404, "Grade Not found");
+          return new ResponseData<ClassDto>(404, "Grade Not found");
         }
 
         // check teacher
@@ -41,7 +42,7 @@ namespace server.Repositories
 
         if (teacherExists is null)
         {
-          return new Data_Response<ClassDto>(404, "Teacher Not found");
+          return new ResponseData<ClassDto>(404, "Teacher Not found");
         }
 
         // check aca
@@ -52,7 +53,7 @@ namespace server.Repositories
 
         if (acaExists is null)
         {
-          return new Data_Response<ClassDto>(404, "AcademicYear Not found");
+          return new ResponseData<ClassDto>(404, "AcademicYear Not found");
         }
 
         // check school
@@ -63,7 +64,7 @@ namespace server.Repositories
 
         if (schoolExists is null)
         {
-          return new Data_Response<ClassDto>(404, "School Not found");
+          return new ResponseData<ClassDto>(404, "School Not found");
         }
 
         //check class
@@ -75,7 +76,7 @@ namespace server.Repositories
 
         if (getClass is not null)
         {
-          return new Data_Response<ClassDto>(409, "Grade already exists");
+          return new ResponseData<ClassDto>(409, "Grade already exists");
         }
 
         var sqlInsert = @"INSERT INTO Class (gradeId, teacherId, academicYearId, schoolId, className, status, description, dateCreated, dateUpdated)
@@ -110,15 +111,15 @@ namespace server.Repositories
           DateUpdated = model.DateUpdated,
         };
 
-        return new Data_Response<ClassDto>(200, result);
+        return new ResponseData<ClassDto>(200, result);
       }
       catch (Exception ex)
       {
-        return new Data_Response<ClassDto>(500, $"Server error: {ex.Message}");
+        return new ResponseData<ClassDto>(500, $"Server error: {ex.Message}");
       }
     }
 
-    public async Task<Data_Response<ClassDto>> DeleteClass(int id)
+    public async Task<ResponseData<ClassDto>> DeleteClass(int id)
     {
       try
       {
@@ -127,21 +128,21 @@ namespace server.Repositories
 
         if (getClass is null)
         {
-          return new Data_Response<ClassDto>(404, "Not found");
+          return new ResponseData<ClassDto>(404, "Not found");
         }
 
         var deleteQuery = "DELETE FROM CLASS WHERE ClassId = @id";
         await _context.Database.ExecuteSqlRawAsync(deleteQuery, new SqlParameter("@id", id));
 
-        return new Data_Response<ClassDto>(200, "Deleted");
+        return new ResponseData<ClassDto>(200, "Deleted");
       }
       catch (Exception ex)
       {
-        return new Data_Response<ClassDto>(500, $"Server error: {ex.Message}");
+        return new ResponseData<ClassDto>(500, $"Server error: {ex.Message}");
       }
     }
 
-    public async Task<Data_Response<ClassDto>> GetClass(int id)
+    public async Task<ResponseData<ClassDto>> GetClass(int id)
     {
       try
       {
@@ -152,7 +153,7 @@ namespace server.Repositories
 
         if (getClass is null)
         {
-          return new Data_Response<ClassDto>(404, "Not found");
+          return new ResponseData<ClassDto>(404, "Not found");
         }
 
         var result = new ClassDto
@@ -169,11 +170,11 @@ namespace server.Repositories
           DateUpdated = getClass.DateUpdated,
         };
 
-        return new Data_Response<ClassDto>(200, result);
+        return new ResponseData<ClassDto>(200, result);
       }
       catch (Exception ex)
       {
-        return new Data_Response<ClassDto>(500, $"Server error: {ex.Message}");
+        return new ResponseData<ClassDto>(500, $"Server error: {ex.Message}");
       }
     }
 
@@ -183,7 +184,8 @@ namespace server.Repositories
       {
         var skip = (pageNumber - 1) * pageSize;
 
-        var find = @"SELECT * FROM Class ORDER BY CLASSID 
+        var find = @"SELECT * FROM Class 
+                      ORDER BY CLASSID 
                       OFFSET @skip ROWS 
                       FETCH NEXT @pageSize ROWS ONLY";
 
@@ -216,7 +218,49 @@ namespace server.Repositories
       }
     }
 
-    public async Task<Data_Response<ClassDto>> UpdateClass(int id, ClassDto model)
+    public async Task<List<ClassDto>> GetClassesBySchool(int pageNumber, int pageSize, int schoolId)
+    {
+      try
+      {
+        var skip = (pageNumber - 1) * pageSize;
+
+        var find = @"SELECT * FROM Class 
+                      WHERE SCHOOLID = @schoolId
+                      ORDER BY CLASSID 
+                      OFFSET @skip ROWS 
+                      FETCH NEXT @pageSize ROWS ONLY";
+
+        var classes = await _context.Classes
+          .FromSqlRaw(find,
+          new SqlParameter("@schoolId", schoolId),
+          new SqlParameter("@skip", skip),
+          new SqlParameter("@pageSize", pageSize)
+          ).ToListAsync() ?? throw new Exception("Empty");
+
+        var result = classes.Select(x => new ClassDto
+        {
+          ClassId = x.ClassId,
+          GradeId = x.GradeId,
+          TeacherId = x.TeacherId,
+          AcademicYearId = x.AcademicYearId,
+          SchoolId = x.SchoolId,
+          ClassName = x.ClassName,
+          Status = x.Status,
+          Description = x.Description,
+          DateCreated = x.DateCreated,
+          DateUpdated = x.DateUpdated,
+        }).ToList();
+
+        return result;
+      }
+      catch (Exception ex)
+      {
+        Console.WriteLine(ex.Message);
+        throw new Exception($"Server error: {ex.Message}");
+      }
+    }
+
+    public async Task<ResponseData<ClassDto>> UpdateClass(int id, ClassDto model)
     {
       try
       {
@@ -227,7 +271,7 @@ namespace server.Repositories
 
         if (getClass is null)
         {
-          return new Data_Response<ClassDto>(404, "Class not found");
+          return new ResponseData<ClassDto>(404, "Class not found");
         }
 
         bool hasChanges = false;
@@ -304,16 +348,16 @@ namespace server.Repositories
           var updateQuery = queryBuilder.ToString();
           await _context.Database.ExecuteSqlRawAsync(updateQuery, [.. parameters]);
 
-          return new Data_Response<ClassDto>(200, "Class updated successfully");
+          return new ResponseData<ClassDto>(200, "Class updated successfully");
         }
         else
         {
-          return new Data_Response<ClassDto>(200, "No changes detected");
+          return new ResponseData<ClassDto>(200, "No changes detected");
         }
       }
       catch (Exception ex)
       {
-        return new Data_Response<ClassDto>(500, $"Server error: {ex.Message}");
+        return new ResponseData<ClassDto>(500, $"Server error: {ex.Message}");
       }
     }
 
@@ -393,14 +437,14 @@ namespace server.Repositories
       }
     }
 
-    public async Task<Data_Response<string>> BulkDelete(List<int> ids)
+    public async Task<ResponseData<string>> BulkDelete(List<int> ids)
     {
       await using var transaction = await _context.Database.BeginTransactionAsync();
       try
       {
         if (ids == null || !ids.Any())
         {
-          return new Data_Response<string>(400, "No IDs provided");
+          return new ResponseData<string>(400, "No IDs provided");
         }
 
 
@@ -415,23 +459,18 @@ namespace server.Repositories
 
         if (affectedRows == 0)
         {
-          return new Data_Response<string>(404, "No classes found to delete");
+          return new ResponseData<string>(404, "No classes found to delete");
         }
 
         await transaction.CommitAsync();
 
-        return new Data_Response<string>(200, "Deleted successfully");
+        return new ResponseData<string>(200, "Deleted successfully");
       }
       catch (Exception ex)
       {
         await transaction.RollbackAsync();
-        return new Data_Response<string>(500, $"Server error: {ex.Message}");
+        return new ResponseData<string>(500, $"Server error: {ex.Message}");
       }
-    }
-
-    public async Task<Data_Response<IEnumerable<ClassResType>>> GetClassBySchool(int schoolId)
-    {
-      return null;
     }
   }
 }

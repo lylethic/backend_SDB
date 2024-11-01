@@ -18,7 +18,7 @@ namespace server.Repositories
       this._context = context;
     }
 
-    public async Task<Data_Response<SubjectDto>> CreateSubject(SubjectDto model)
+    public async Task<ResponseData<SubjectDto>> CreateSubject(SubjectDto model)
     {
       try
       {
@@ -30,7 +30,7 @@ namespace server.Repositories
 
         if (subject is not null)
         {
-          return new Data_Response<SubjectDto>(409, "Subject already exists");
+          return new ResponseData<SubjectDto>(409, "Subject already exists");
         }
 
         var sqlInsert = @"INSERT INTO SUBJECT (academicYearId, subjectName)
@@ -49,15 +49,15 @@ namespace server.Repositories
           SubjectName = model.SubjectName,
         };
 
-        return new Data_Response<SubjectDto>(200, result);
+        return new ResponseData<SubjectDto>(200, result);
       }
       catch (Exception ex)
       {
-        return new Data_Response<SubjectDto>(500, $"Server error: {ex.Message}");
+        return new ResponseData<SubjectDto>(500, $"Server error: {ex.Message}");
       }
     }
 
-    public async Task<Data_Response<SubjectDto>> DeleteSubject(int id)
+    public async Task<ResponseData<SubjectDto>> DeleteSubject(int id)
     {
       try
       {
@@ -69,21 +69,21 @@ namespace server.Repositories
 
         if (subject is null)
         {
-          return new Data_Response<SubjectDto>(409, "Subject not found");
+          return new ResponseData<SubjectDto>(409, "Subject not found");
         }
 
         var deleteQuery = "DELETE FROM SUBJECT WHERE subjectId = @id";
         await _context.Database.ExecuteSqlRawAsync(deleteQuery, new SqlParameter("@id", id));
 
-        return new Data_Response<SubjectDto>(200, "Deleted");
+        return new ResponseData<SubjectDto>(200, "Deleted");
       }
       catch (Exception ex)
       {
-        return new Data_Response<SubjectDto>(500, $"Server error: {ex.Message}");
+        return new ResponseData<SubjectDto>(500, $"Server error: {ex.Message}");
       }
     }
 
-    public async Task<Data_Response<SubjectDto>> GetSubject(int id)
+    public async Task<ResponseData<SubjectDto>> GetSubject(int id)
     {
       try
       {
@@ -120,7 +120,7 @@ namespace server.Repositories
 
         if (subject is null)
         {
-          return new Data_Response<SubjectDto>(404, "Subject not found");
+          return new ResponseData<SubjectDto>(404, "Subject not found");
         }
 
         var result = new SubjectDto
@@ -133,11 +133,11 @@ namespace server.Repositories
           YearEnd = subject.AcademicYear.YearEnd
         };
 
-        return new Data_Response<SubjectDto>(200, result);
+        return new ResponseData<SubjectDto>(200, result);
       }
       catch (Exception ex)
       {
-        return new Data_Response<SubjectDto>(500, $"Server error: {ex.Message}");
+        return new ResponseData<SubjectDto>(500, $"Server error: {ex.Message}");
       }
     }
 
@@ -173,7 +173,7 @@ namespace server.Repositories
       }
     }
 
-    public async Task<Data_Response<SubjectDto>> UpdateSubject(int id, SubjectDto model)
+    public async Task<ResponseData<SubjectDto>> UpdateSubject(int id, SubjectDto model)
     {
       try
       {
@@ -185,7 +185,7 @@ namespace server.Repositories
 
         if (subject is null)
         {
-          return new Data_Response<SubjectDto>(404, "Subject not found");
+          return new ResponseData<SubjectDto>(404, "Subject not found");
         }
 
         var queryBuilder = new StringBuilder("UPDATE Subject SET ");
@@ -211,11 +211,11 @@ namespace server.Repositories
         var updateQuery = queryBuilder.ToString();
         await _context.Database.ExecuteSqlRawAsync(updateQuery, parameters.ToArray());
 
-        return new Data_Response<SubjectDto>(200, "Updated");
+        return new ResponseData<SubjectDto>(200, "Updated");
       }
       catch (Exception ex)
       {
-        return new Data_Response<SubjectDto>(500, $"Server error: {ex.Message}");
+        return new ResponseData<SubjectDto>(500, $"Server error: {ex.Message}");
       }
     }
 
@@ -285,7 +285,7 @@ namespace server.Repositories
       }
     }
 
-    public async Task<Data_Response<string>> BulkDelete(List<int> ids)
+    public async Task<ResponseData<string>> BulkDelete(List<int> ids)
     {
       await using var transaction = await _context.Database.BeginTransactionAsync();
 
@@ -293,7 +293,7 @@ namespace server.Repositories
       {
         if (ids is null || ids.Count == 0)
         {
-          return new Data_Response<string>(400, "No IDs provided.");
+          return new ResponseData<string>(400, "No IDs provided.");
         }
 
         var idList = string.Join(",", ids);
@@ -304,17 +304,17 @@ namespace server.Repositories
 
         if (delete == 0)
         {
-          return new Data_Response<string>(404, "No SubjectId found to delete");
+          return new ResponseData<string>(404, "No SubjectId found to delete");
         }
 
         await transaction.CommitAsync();
 
-        return new Data_Response<string>(200, "Deleted");
+        return new ResponseData<string>(200, "Deleted");
       }
       catch (Exception ex)
       {
         await transaction.RollbackAsync();
-        return new Data_Response<string>(500, $"Server error: {ex.Message}");
+        return new ResponseData<string>(500, $"Server error: {ex.Message}");
       }
     }
   }

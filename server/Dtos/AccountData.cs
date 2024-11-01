@@ -2,9 +2,10 @@
 {
   public class AccountData
   {
-    public int Id { get; set; }
-    public int RoleIdId { get; set; }
+    public int AccountId { get; set; }
+    public int RoleId { get; set; }
     public int? SchoolId { get; set; }
     public string? Email { get; set; }
+    public byte[]? Password { get; set; }
   }
 }

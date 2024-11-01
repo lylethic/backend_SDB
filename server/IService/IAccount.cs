@@ -7,25 +7,28 @@ namespace server.IService
   {
     Task<int> GetCountAccounts();
 
+    Task<int> GetCountAccountsBySchool(int schoolId);
+
     Task<AccountsResType> GetAccounts(int pageNumber, int pageSize);
 
     Task<List<AccountDto>> GetAccountsByRole(int pageNumber, int pageSize, int roleId);
 
-    Task<Data_Response<AccountResType>> GetAccount(int id);
+    Task<ResponseData<AccountResType>> GetAccount(int id);
+
+    Task<ResponseData<AccountData>> GetAccountById(int id);
 
     Task<AccountsResType> AddAccount(RegisterDto acc);
 
-    Task<Data_Response<AccountDto>> UpdateAccount(int accountId, AccountDto acc);
+    Task<ResponseData<AccountDto>> UpdateAccount(int accountId, AccountDto acc);
 
-    Task<Data_Response<AccountsResType>> DeleteAccount(int id);
+    Task<ResponseData<AccountsResType>> DeleteAccount(int id);
 
     Task<string> ImportExcel(IFormFile file);
 
-    Task<Data_Response<string>> BulkDelete(List<int> ids);
+    Task<ResponseData<string>> BulkDelete(List<int> ids);
 
-    Task<List<AccountDto>> GetAccountsBySchoolId(int pageNumber, int pageSize, int schoolId);
+    Task<AccountsResType> GetAccountsBySchoolId(int pageNumber, int pageSize, int schoolId);
 
     Task<List<AccountResType>> RelativeSearchAccounts(string? TeacherName, int? schoolId, int? roleId, int pageNumber, int pageSize);
-
   }
 }

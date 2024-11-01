@@ -15,7 +15,7 @@ namespace server.Repositories
 
     public StudentRepositories(SoDauBaiContext context) { this._context = context; }
 
-    public async Task<Data_Response<StudentDto>> CreateStudent(StudentDto model)
+    public async Task<ResponseData<StudentDto>> CreateStudent(StudentDto model)
     {
       try
       {
@@ -27,7 +27,7 @@ namespace server.Repositories
 
         if (student is not null)
         {
-          return new Data_Response<StudentDto>(409, "Student already exists");
+          return new ResponseData<StudentDto>(409, "Student already exists");
         }
 
         var sqlInsert = @"INSERT INTO STUDENT (ClassId, GradeId, AccountId, Fullname, Status, Description, DateCreated, DateUpdated) 
@@ -60,15 +60,15 @@ namespace server.Repositories
           DateUpdated = model.DateUpdated
         };
 
-        return new Data_Response<StudentDto>(200, result);
+        return new ResponseData<StudentDto>(200, result);
       }
       catch (Exception ex)
       {
-        return new Data_Response<StudentDto>(200, $"Server error: {ex.Message}");
+        return new ResponseData<StudentDto>(200, $"Server error: {ex.Message}");
       }
     }
 
-    public async Task<Data_Response<StudentDto>> DeleteStudent(int id)
+    public async Task<ResponseData<StudentDto>> DeleteStudent(int id)
     {
       try
       {
@@ -79,20 +79,20 @@ namespace server.Repositories
 
         if (student is null)
         {
-          return new Data_Response<StudentDto>(404, "Student not found");
+          return new ResponseData<StudentDto>(404, "Student not found");
         }
 
         var deleteQuery = "DELETE FROM Student WHERE StudentId = @id";
         await _context.Database.ExecuteSqlRawAsync(deleteQuery, new SqlParameter("@id", id));
-        return new Data_Response<StudentDto>(200, "Deleted");
+        return new ResponseData<StudentDto>(200, "Deleted");
       }
       catch (Exception ex)
       {
-        return new Data_Response<StudentDto>(500, $"Server error: {ex.Message}");
+        return new ResponseData<StudentDto>(500, $"Server error: {ex.Message}");
       }
     }
 
-    public async Task<Data_Response<StudentDto>> GetStudent(int id)
+    public async Task<ResponseData<StudentDto>> GetStudent(int id)
     {
       try
       {
@@ -124,7 +124,7 @@ namespace server.Repositories
 
         if (student is null)
         {
-          return new Data_Response<StudentDto>(404, "Student not found");
+          return new ResponseData<StudentDto>(404, "Student not found");
         }
 
         // Map the result to the StudentDto
@@ -146,11 +146,11 @@ namespace server.Repositories
           }
         };
 
-        return new Data_Response<StudentDto>(200, result);
+        return new ResponseData<StudentDto>(200, result);
       }
       catch (Exception ex)
       {
-        return new Data_Response<StudentDto>(500, $"Server error: {ex.Message}");
+        return new ResponseData<StudentDto>(500, $"Server error: {ex.Message}");
       }
     }
 
@@ -187,7 +187,7 @@ namespace server.Repositories
       }
     }
 
-    public async Task<Data_Response<StudentDto>> UpdateStudent(int id, StudentDto model)
+    public async Task<ResponseData<StudentDto>> UpdateStudent(int id, StudentDto model)
     {
       try
       {
@@ -198,7 +198,7 @@ namespace server.Repositories
 
         if (exists is null)
         {
-          return new Data_Response<StudentDto>(404, "Student not found");
+          return new ResponseData<StudentDto>(404, "Student not found");
         }
 
         bool hasChanges = false;
@@ -274,16 +274,16 @@ namespace server.Repositories
           var updateQuery = queryBuilder.ToString();
           await _context.Database.ExecuteSqlRawAsync(updateQuery, parameters.ToArray());
 
-          return new Data_Response<StudentDto>(200, "Updated");
+          return new ResponseData<StudentDto>(200, "Updated");
         }
         else
         {
-          return new Data_Response<StudentDto>(200, "No changes detected");
+          return new ResponseData<StudentDto>(200, "No changes detected");
         }
       }
       catch (Exception ex)
       {
-        return new Data_Response<StudentDto>(500, $"Server Error: {ex.Message}");
+        return new ResponseData<StudentDto>(500, $"Server Error: {ex.Message}");
       }
     }
 
@@ -359,7 +359,7 @@ namespace server.Repositories
       }
     }
 
-    public async Task<Data_Response<string>> BulkDelete(List<int> ids)
+    public async Task<ResponseData<string>> BulkDelete(List<int> ids)
     {
       await using var transaction = await _context.Database.BeginTransactionAsync();
 
@@ -367,7 +367,7 @@ namespace server.Repositories
       {
         if (ids is null || ids.Count == 0)
         {
-          return new Data_Response<string>(400, "No IDs provided.");
+          return new ResponseData<string>(400, "No IDs provided.");
         }
 
         var idList = string.Join(",", ids);
@@ -378,17 +378,17 @@ namespace server.Repositories
 
         if (delete == 0)
         {
-          return new Data_Response<string>(404, "No students found to delete");
+          return new ResponseData<string>(404, "No students found to delete");
         }
 
         await transaction.CommitAsync();
 
-        return new Data_Response<string>(200, "Deleted succesfully");
+        return new ResponseData<string>(200, "Deleted succesfully");
       }
       catch (Exception ex)
       {
         await transaction.RollbackAsync();
-        return new Data_Response<string>(500, $"Server error: {ex.Message}");
+        return new ResponseData<string>(500, $"Server error: {ex.Message}");
       }
     }
   }

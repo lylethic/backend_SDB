@@ -17,7 +17,7 @@ namespace server.Repositories
       this._context = context;
     }
 
-    public async Task<Data_Response<ClassifyDto>> CreateClassify(ClassifyDto model)
+    public async Task<ResponseData<ClassifyDto>> CreateClassify(ClassifyDto model)
     {
       using var transaction = await _context.Database.BeginTransactionAsync();
       try
@@ -29,7 +29,7 @@ namespace server.Repositories
 
         if (classify is not null)
         {
-          return new Data_Response<ClassifyDto>(409, "classificationId already exists");
+          return new ResponseData<ClassifyDto>(409, "classificationId already exists");
         }
 
         var query = @"INSERT INTO CLASSIFICATION (classifyName, score) 
@@ -49,18 +49,18 @@ namespace server.Repositories
           Score = model.Score,
         };
 
-        return new Data_Response<ClassifyDto>(200, result);
+        return new ResponseData<ClassifyDto>(200, result);
 
       }
       catch (Exception ex)
       {
         await transaction.RollbackAsync();
 
-        return new Data_Response<ClassifyDto>(200, $"Server error: {ex.Message}");
+        return new ResponseData<ClassifyDto>(200, $"Server error: {ex.Message}");
       }
     }
 
-    public async Task<Data_Response<ClassifyDto>> GetClassify(int id)
+    public async Task<ResponseData<ClassifyDto>> GetClassify(int id)
     {
       try
       {
@@ -73,7 +73,7 @@ namespace server.Repositories
 
         if (student is null)
         {
-          return new Data_Response<ClassifyDto>(404, "Not found");
+          return new ResponseData<ClassifyDto>(404, "Not found");
         }
 
         // Map the result to the StudentDto
@@ -84,11 +84,11 @@ namespace server.Repositories
           Score = student.Score,
         };
 
-        return new Data_Response<ClassifyDto>(200, result);
+        return new ResponseData<ClassifyDto>(200, result);
       }
       catch (Exception ex)
       {
-        return new Data_Response<ClassifyDto>(500, $"Server error: {ex.Message}");
+        return new ResponseData<ClassifyDto>(500, $"Server error: {ex.Message}");
       }
     }
 
@@ -121,7 +121,7 @@ namespace server.Repositories
       }
     }
 
-    public async Task<Data_Response<ClassifyDto>> UpdateClassify(int id, ClassifyDto model)
+    public async Task<ResponseData<ClassifyDto>> UpdateClassify(int id, ClassifyDto model)
     {
       using (var transaction = await _context.Database.BeginTransactionAsync())
       {
@@ -134,7 +134,7 @@ namespace server.Repositories
 
           if (exists == null)
           {
-            return new Data_Response<ClassifyDto>(404, "ClassificationId not found");
+            return new ResponseData<ClassifyDto>(404, "ClassificationId not found");
           }
 
           bool hasChanges = false;
@@ -172,22 +172,22 @@ namespace server.Repositories
 
             await transaction.CommitAsync();
 
-            return new Data_Response<ClassifyDto>(200, "Updated");
+            return new ResponseData<ClassifyDto>(200, "Updated");
           }
           else
           {
-            return new Data_Response<ClassifyDto>(200, "No changes detected");
+            return new ResponseData<ClassifyDto>(200, "No changes detected");
           }
         }
         catch (Exception ex)
         {
           await transaction.RollbackAsync();
-          return new Data_Response<ClassifyDto>(500, $"Server Error: {ex.Message}");
+          return new ResponseData<ClassifyDto>(500, $"Server Error: {ex.Message}");
         }
       }
     }
 
-    public async Task<Data_Response<ClassifyDto>> DeleteClassify(int id)
+    public async Task<ResponseData<ClassifyDto>> DeleteClassify(int id)
     {
       try
       {
@@ -198,20 +198,20 @@ namespace server.Repositories
 
         if (Classify is null)
         {
-          return new Data_Response<ClassifyDto>(404, "not found");
+          return new ResponseData<ClassifyDto>(404, "not found");
         }
 
         var deleteQuery = "DELETE FROM Classification WHERE ClassificationId = @id";
         await _context.Database.ExecuteSqlRawAsync(deleteQuery, new SqlParameter("@id", id));
-        return new Data_Response<ClassifyDto>(200, "Deleted");
+        return new ResponseData<ClassifyDto>(200, "Deleted");
       }
       catch (Exception ex)
       {
-        return new Data_Response<ClassifyDto>(500, $"Server error: {ex.Message}");
+        return new ResponseData<ClassifyDto>(500, $"Server error: {ex.Message}");
       }
     }
 
-    public async Task<Data_Response<string>> BulkDelete(List<int> ids)
+    public async Task<ResponseData<string>> BulkDelete(List<int> ids)
     {
       await using var transaction = await _context.Database.BeginTransactionAsync();
 
@@ -219,7 +219,7 @@ namespace server.Repositories
       {
         if (ids is null || ids.Count == 0)
         {
-          return new Data_Response<string>(400, "No IDs provided.");
+          return new ResponseData<string>(400, "No IDs provided.");
         }
 
         var idList = string.Join(",", ids);
@@ -230,17 +230,17 @@ namespace server.Repositories
 
         if (delete == 0)
         {
-          return new Data_Response<string>(404, "No ClassificationId found to delete");
+          return new ResponseData<string>(404, "No ClassificationId found to delete");
         }
 
         await transaction.CommitAsync();
 
-        return new Data_Response<string>(200, "Deleted succesfully");
+        return new ResponseData<string>(200, "Deleted succesfully");
       }
       catch (Exception ex)
       {
         await transaction.RollbackAsync();
-        return new Data_Response<string>(500, $"Server error: {ex.Message}");
+        return new ResponseData<string>(500, $"Server error: {ex.Message}");
       }
     }
 

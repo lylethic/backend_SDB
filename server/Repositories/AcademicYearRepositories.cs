@@ -18,7 +18,7 @@ namespace server.Repositories
       this._context = context;
     }
 
-    public async Task<Data_Response<AcademicYearDto>> CreateAcademicYear(AcademicYearDto model)
+    public async Task<ResponseData<AcademicYearDto>> CreateAcademicYear(AcademicYearDto model)
     {
       try
       {
@@ -30,7 +30,7 @@ namespace server.Repositories
 
         if (academicYear is not null)
         {
-          return new Data_Response<AcademicYearDto>(409, "AcademicYear already exists");
+          return new ResponseData<AcademicYearDto>(409, "AcademicYear already exists");
         }
 
         var sqlInsert = @"INSERT INTO AcademicYear (displayAcademicYear_Name, YearStart, YearEnd, Description) 
@@ -59,15 +59,15 @@ namespace server.Repositories
           Description = model.Description,
         };
 
-        return new Data_Response<AcademicYearDto>(200, result);
+        return new ResponseData<AcademicYearDto>(200, result);
       }
       catch (Exception ex)
       {
-        return new Data_Response<AcademicYearDto>(200, $"Server error: {ex.Message}");
+        return new ResponseData<AcademicYearDto>(200, $"Server error: {ex.Message}");
       }
     }
 
-    public async Task<Data_Response<AcademicYearDto>> DeleteAcademicYear(int id)
+    public async Task<ResponseData<AcademicYearDto>> DeleteAcademicYear(int id)
     {
       try
       {
@@ -78,20 +78,20 @@ namespace server.Repositories
 
         if (academicYear is null)
         {
-          return new Data_Response<AcademicYearDto>(404, "AcademicYear not found");
+          return new ResponseData<AcademicYearDto>(404, "AcademicYear not found");
         }
 
         var deleteQuery = "DELETE FROM AcademicYear WHERE AcademicYearId = @id";
         await _context.Database.ExecuteSqlRawAsync(deleteQuery, new SqlParameter("@id", id));
-        return new Data_Response<AcademicYearDto>(200, "Deleted");
+        return new ResponseData<AcademicYearDto>(200, "Deleted");
       }
       catch (Exception ex)
       {
-        return new Data_Response<AcademicYearDto>(500, $"Server error: {ex.Message}");
+        return new ResponseData<AcademicYearDto>(500, $"Server error: {ex.Message}");
       }
     }
 
-    public async Task<Data_Response<AcademicYearDto>> GetAcademicYear(int id)
+    public async Task<ResponseData<AcademicYearDto>> GetAcademicYear(int id)
     {
       try
       {
@@ -102,7 +102,7 @@ namespace server.Repositories
 
         if (academicYear is null)
         {
-          return new Data_Response<AcademicYearDto>(404, "AcademicYear not found");
+          return new ResponseData<AcademicYearDto>(404, "AcademicYear not found");
         }
 
 
@@ -115,11 +115,11 @@ namespace server.Repositories
           Description = academicYear.Description,
         };
 
-        return new Data_Response<AcademicYearDto>(200, result);
+        return new ResponseData<AcademicYearDto>(200, result);
       }
       catch (Exception ex)
       {
-        return new Data_Response<AcademicYearDto>(500, $"Server error: {ex.Message}");
+        return new ResponseData<AcademicYearDto>(500, $"Server error: {ex.Message}");
       }
     }
 
@@ -157,7 +157,7 @@ namespace server.Repositories
       }
     }
 
-    public async Task<Data_Response<AcademicYearDto>> UpdateAcademicYear(int id, AcademicYearDto model)
+    public async Task<ResponseData<AcademicYearDto>> UpdateAcademicYear(int id, AcademicYearDto model)
     {
       try
       {
@@ -169,7 +169,7 @@ namespace server.Repositories
 
         if (existingAca == null)
         {
-          return new Data_Response<AcademicYearDto>(404, "AcademicYear not found");
+          return new ResponseData<AcademicYearDto>(404, "AcademicYear not found");
         }
 
         // Build update query dynamically based on non-null fields
@@ -206,11 +206,11 @@ namespace server.Repositories
         var updateQuery = queryBuilder.ToString();
         await _context.Database.ExecuteSqlRawAsync(updateQuery, parameters.ToArray());
 
-        return new Data_Response<AcademicYearDto>(200, "AcademicYear updated successfully");
+        return new ResponseData<AcademicYearDto>(200, "AcademicYear updated successfully");
       }
       catch (Exception ex)
       {
-        return new Data_Response<AcademicYearDto>(500, $"Server Error: {ex.Message}");
+        return new ResponseData<AcademicYearDto>(500, $"Server Error: {ex.Message}");
       }
     }
 
@@ -286,7 +286,7 @@ namespace server.Repositories
       }
     }
 
-    public async Task<Data_Response<string>> BulkDelete(List<int> ids)
+    public async Task<ResponseData<string>> BulkDelete(List<int> ids)
     {
       await using var transaction = await _context.Database.BeginTransactionAsync();
 
@@ -294,7 +294,7 @@ namespace server.Repositories
       {
         if (ids is null || ids.Count == 0)
         {
-          return new Data_Response<string>(400, "No IDs provided.");
+          return new ResponseData<string>(400, "No IDs provided.");
         }
 
         var idList = string.Join(",", ids);
@@ -305,17 +305,17 @@ namespace server.Repositories
 
         if (delete == 0)
         {
-          return new Data_Response<string>(404, "No AcademicYearId found to delete");
+          return new ResponseData<string>(404, "No AcademicYearId found to delete");
         }
 
         await transaction.CommitAsync();
 
-        return new Data_Response<string>(200, "Deleted succesfully");
+        return new ResponseData<string>(200, "Deleted succesfully");
       }
       catch (Exception ex)
       {
         await transaction.RollbackAsync();
-        return new Data_Response<string>(500, $"Server error: {ex.Message}");
+        return new ResponseData<string>(500, $"Server error: {ex.Message}");
       }
     }
   }

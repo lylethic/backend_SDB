@@ -5,19 +5,19 @@ namespace server.IService
 {
   public interface IChiTietSoDauBai
   {
-    Task<Data_Response<ChiTietSoDauBaiDto>> CreateChiTietSoDauBai(ChiTietSoDauBaiDto model);
+    Task<ResponseData<ChiTietSoDauBaiDto>> CreateChiTietSoDauBai(ChiTietSoDauBaiDto model);
 
-    Task<Data_Response<ChiTietSoDauBaiDto>> GetChiTietSoDauBai(int id);
+    Task<ResponseData<ChiTietSoDauBaiDto>> GetChiTietSoDauBai(int id);
 
     Task<List<ChiTietSoDauBaiDto>> GetChiTietSoDauBais(int pageNumber, int pageSize);
 
-    Task<Data_Response<ChiTietSoDauBaiDto>> DeleteChiTietSoDauBai(int id);
+    Task<ResponseData<ChiTietSoDauBaiDto>> DeleteChiTietSoDauBai(int id);
 
-    Task<Data_Response<ChiTietSoDauBaiDto>> UpdateChiTietSoDauBai(int id, ChiTietSoDauBaiDto model);
+    Task<ResponseData<ChiTietSoDauBaiDto>> UpdateChiTietSoDauBai(int id, ChiTietSoDauBaiDto model);
 
     Task<string> ImportExcel(IFormFile file);
 
-    Task<Data_Response<string>> BulkDelete(List<int> ids);
+    Task<ResponseData<string>> BulkDelete(List<int> ids);
 
     /// <summary>
     /// ###Retrieves: 
@@ -30,7 +30,7 @@ namespace server.IService
     */
     /// </summary>
     /// <returns></returns>
-    Task<Data_Response<ChiTiet_BiaSoDauBaiResType>> GetChiTiet_Bia_Class_Teacher(int chiTietId);
+    Task<ResponseData<ChiTiet_BiaSoDauBaiResType>> GetChiTiet_Bia_Class_Teacher(int chiTietId);
 
     /// <summary>Get chitietid show info Week</summary>
     /// <param name="chiTietId"></param>
@@ -49,7 +49,7 @@ namespace server.IService
     ///  }
     ///}
     /// </returns>
-    Task<Data_Response<ChiTiet_WeekResType>> GetChiTiet_Week_XepLoai(int chiTietId);
+    Task<ResponseData<ChiTiet_WeekResType>> GetChiTiet_Week_XepLoai(int chiTietId);
 
     /// <summary>
     /// Get chi tiet sdb by SchoolId and weekId and BiaSoDauBaiId and ClassId
@@ -61,7 +61,7 @@ namespace server.IService
     ///  t.teacherId, 
     ///  t.fullname
     ///  </returns>
-    Task<Data_Response<IEnumerable<ChiTietSDBResType>>> GetChiTietBySchool(int schoolId, int weekId, int biaId, int classId, int pageNumber, int pageSize);
+    Task<ResponseData<IEnumerable<ChiTietSDBResType>>> GetChiTietBySchool(int schoolId, int weekId, int biaId, int classId, int pageNumber, int pageSize);
 
   }
 }

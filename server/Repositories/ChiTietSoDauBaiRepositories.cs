@@ -18,7 +18,7 @@ namespace server.Repositories
       this._context = context;
     }
 
-    public async Task<Data_Response<string>> BulkDelete(List<int> ids)
+    public async Task<ResponseData<string>> BulkDelete(List<int> ids)
     {
       await using var transaction = await _context.Database.BeginTransactionAsync();
 
@@ -26,7 +26,7 @@ namespace server.Repositories
       {
         if (ids is null || ids.Count == 0)
         {
-          return new Data_Response<string>(400, "No IDs provided.");
+          return new ResponseData<string>(400, "No IDs provided.");
         }
 
         var idList = string.Join(",", ids);
@@ -37,21 +37,21 @@ namespace server.Repositories
 
         if (delete == 0)
         {
-          return new Data_Response<string>(404, "No ChiTietSoDauBai found to delete");
+          return new ResponseData<string>(404, "No ChiTietSoDauBai found to delete");
         }
 
         await transaction.CommitAsync();
 
-        return new Data_Response<string>(200, "Deleted");
+        return new ResponseData<string>(200, "Deleted");
       }
       catch (Exception ex)
       {
         await transaction.RollbackAsync();
-        return new Data_Response<string>(500, $"Server error: {ex.Message}");
+        return new ResponseData<string>(500, $"Server error: {ex.Message}");
       }
     }
 
-    public async Task<Data_Response<ChiTietSoDauBaiDto>> CreateChiTietSoDauBai(ChiTietSoDauBaiDto model)
+    public async Task<ResponseData<ChiTietSoDauBaiDto>> CreateChiTietSoDauBai(ChiTietSoDauBaiDto model)
     {
       await using var transaction = await _context.Database.BeginTransactionAsync();
 
@@ -66,7 +66,7 @@ namespace server.Repositories
 
         if (existingBia is null)
         {
-          return new Data_Response<ChiTietSoDauBaiDto>(404, "Not found");
+          return new ResponseData<ChiTietSoDauBaiDto>(404, "Not found");
         }
 
         // Tim semster ton tai khong?
@@ -78,7 +78,7 @@ namespace server.Repositories
 
         if (existingSemester is null)
         {
-          return new Data_Response<ChiTietSoDauBaiDto>(404, "Not found");
+          return new ResponseData<ChiTietSoDauBaiDto>(404, "Not found");
         }
 
         // Tim Week ton tai khong?
@@ -90,7 +90,7 @@ namespace server.Repositories
 
         if (existingWeek is null)
         {
-          return new Data_Response<ChiTietSoDauBaiDto>(404, "Not found");
+          return new ResponseData<ChiTietSoDauBaiDto>(404, "Not found");
         }
 
         // Tim Mon hoc ton tai khong?
@@ -102,7 +102,7 @@ namespace server.Repositories
 
         if (existingSubject is null)
         {
-          return new Data_Response<ChiTietSoDauBaiDto>(404, "Not found");
+          return new ResponseData<ChiTietSoDauBaiDto>(404, "Not found");
         }
 
         // Tim Xep loai ton tai khong?
@@ -114,7 +114,7 @@ namespace server.Repositories
 
         if (existingXepLoai is null)
         {
-          return new Data_Response<ChiTietSoDauBaiDto>(404, "Not found");
+          return new ResponseData<ChiTietSoDauBaiDto>(404, "Not found");
         }
 
         var find = "SELECT * FROM ChiTietSodauBai WHERE ChiTietSodauBaiId = @id";
@@ -125,7 +125,7 @@ namespace server.Repositories
 
         if (existingChiTietSoDauBai is not null)
         {
-          return new Data_Response<ChiTietSoDauBaiDto>(409, "Chi tiet so dau bai already exists");
+          return new ResponseData<ChiTietSoDauBaiDto>(409, "Chi tiet so dau bai already exists");
         }
 
         var insertdata = @"INSERT INTO ChiTietSoDauBai (biaSoDauBaiId, semesterId, weekId, subjectId, 
@@ -180,7 +180,7 @@ namespace server.Repositories
 
         await transaction.CommitAsync();
 
-        return new Data_Response<ChiTietSoDauBaiDto>(200, result);
+        return new ResponseData<ChiTietSoDauBaiDto>(200, result);
       }
       catch (Exception ex)
       {
@@ -189,7 +189,7 @@ namespace server.Repositories
       }
     }
 
-    public async Task<Data_Response<ChiTietSoDauBaiDto>> DeleteChiTietSoDauBai(int id)
+    public async Task<ResponseData<ChiTietSoDauBaiDto>> DeleteChiTietSoDauBai(int id)
     {
       try
       {
@@ -201,20 +201,20 @@ namespace server.Repositories
 
         if (chiTietSoDauBai is null)
         {
-          return new Data_Response<ChiTietSoDauBaiDto>(404, "chiTietSoDauBai not found");
+          return new ResponseData<ChiTietSoDauBaiDto>(404, "chiTietSoDauBai not found");
         }
 
         var deleteQuery = "DELETE FROM Teacher WHERE TeacherId = @id";
         await _context.Database.ExecuteSqlRawAsync(deleteQuery, new SqlParameter("@id", id));
-        return new Data_Response<ChiTietSoDauBaiDto>(200, "Deleted");
+        return new ResponseData<ChiTietSoDauBaiDto>(200, "Deleted");
       }
       catch (Exception ex)
       {
-        return new Data_Response<ChiTietSoDauBaiDto>(500, $"Server error: {ex.Message}");
+        return new ResponseData<ChiTietSoDauBaiDto>(500, $"Server error: {ex.Message}");
       }
     }
 
-    public async Task<Data_Response<ChiTietSoDauBaiDto>> GetChiTietSoDauBai(int id)
+    public async Task<ResponseData<ChiTietSoDauBaiDto>> GetChiTietSoDauBai(int id)
     {
       try
       {
@@ -226,7 +226,7 @@ namespace server.Repositories
 
         if (chiTietSoDauBai is null)
         {
-          return new Data_Response<ChiTietSoDauBaiDto>(404, "Chi tiet so dau bai not found");
+          return new ResponseData<ChiTietSoDauBaiDto>(404, "Chi tiet so dau bai not found");
         }
 
         var result = new ChiTietSoDauBaiDto
@@ -249,7 +249,7 @@ namespace server.Repositories
           UpdatedAt = chiTietSoDauBai.UpdatedAt,
         };
 
-        return new Data_Response<ChiTietSoDauBaiDto>(200, result);
+        return new ResponseData<ChiTietSoDauBaiDto>(200, result);
       }
       catch (Exception ex)
       {
@@ -386,7 +386,7 @@ namespace server.Repositories
       }
     }
 
-    public async Task<Data_Response<ChiTietSoDauBaiDto>> UpdateChiTietSoDauBai(int id, ChiTietSoDauBaiDto model)
+    public async Task<ResponseData<ChiTietSoDauBaiDto>> UpdateChiTietSoDauBai(int id, ChiTietSoDauBaiDto model)
     {
       using var transaction = await _context.Database.BeginTransactionAsync();
 
@@ -401,7 +401,7 @@ namespace server.Repositories
 
         if (existingChiTietSoDauBai is null)
         {
-          return new Data_Response<ChiTietSoDauBaiDto>(404, "ChiTietSoDauBaiId not found");
+          return new ResponseData<ChiTietSoDauBaiDto>(404, "ChiTietSoDauBaiId not found");
         }
 
         bool hasChanges = false;
@@ -521,22 +521,22 @@ namespace server.Repositories
 
           // Commit the transaction
           await transaction.CommitAsync();
-          return new Data_Response<ChiTietSoDauBaiDto>(200, "Chi tiet so dau bai updated successfully");
+          return new ResponseData<ChiTietSoDauBaiDto>(200, "Chi tiet so dau bai updated successfully");
         }
         else
         {
-          return new Data_Response<ChiTietSoDauBaiDto>(200, "No changes detected");
+          return new ResponseData<ChiTietSoDauBaiDto>(200, "No changes detected");
         }
       }
       catch (Exception ex)
       {
         await transaction.RollbackAsync();
 
-        return new Data_Response<ChiTietSoDauBaiDto>(500, $"Server Error: {ex.Message}");
+        return new ResponseData<ChiTietSoDauBaiDto>(500, $"Server Error: {ex.Message}");
       }
     }
 
-    public async Task<Data_Response<ChiTiet_BiaSoDauBaiResType>> GetChiTiet_Bia_Class_Teacher(int chiTietId)
+    public async Task<ResponseData<ChiTiet_BiaSoDauBaiResType>> GetChiTiet_Bia_Class_Teacher(int chiTietId)
     {
       try
       {
@@ -569,7 +569,7 @@ namespace server.Repositories
 
         if (chitietSoDauBai is null)
         {
-          return new Data_Response<ChiTiet_BiaSoDauBaiResType>(404, "Chi tiet so dau bai id not found");
+          return new ResponseData<ChiTiet_BiaSoDauBaiResType>(404, "Chi tiet so dau bai id not found");
         }
 
         var result = new ChiTiet_BiaSoDauBaiResType
@@ -583,7 +583,7 @@ namespace server.Repositories
           TeacherFullName = chitietSoDauBai.TeacherFullName
         };
 
-        return new Data_Response<ChiTiet_BiaSoDauBaiResType>(200, result);
+        return new ResponseData<ChiTiet_BiaSoDauBaiResType>(200, result);
 
       }
       catch (System.Exception ex)
@@ -592,7 +592,7 @@ namespace server.Repositories
       }
     }
 
-    public async Task<Data_Response<ChiTiet_WeekResType>> GetChiTiet_Week_XepLoai(int chiTietId)
+    public async Task<ResponseData<ChiTiet_WeekResType>> GetChiTiet_Week_XepLoai(int chiTietId)
     {
       try
       {
@@ -627,7 +627,7 @@ namespace server.Repositories
 
         if (chitietSoDauBai is null)
         {
-          return new Data_Response<ChiTiet_WeekResType>(404, "Chi tiet so dau bai id not found");
+          return new ResponseData<ChiTiet_WeekResType>(404, "Chi tiet so dau bai id not found");
         }
 
         var result = new ChiTiet_WeekResType
@@ -641,7 +641,7 @@ namespace server.Repositories
           SoDiem = chitietSoDauBai.SoDiem
         };
 
-        return new Data_Response<ChiTiet_WeekResType>(200, result);
+        return new ResponseData<ChiTiet_WeekResType>(200, result);
 
       }
       catch (Exception ex)
@@ -650,7 +650,7 @@ namespace server.Repositories
       }
     }
 
-    public async Task<Data_Response<IEnumerable<ChiTietSDBResType>>> GetChiTietBySchool(int schoolId, int weekId, int biaId, int classId, int pageNumber, int pageSize)
+    public async Task<ResponseData<IEnumerable<ChiTietSDBResType>>> GetChiTietBySchool(int schoolId, int weekId, int biaId, int classId, int pageNumber, int pageSize)
     {
       try
       {
@@ -717,10 +717,10 @@ namespace server.Repositories
 
         if (chitietSoDauBai is null || chitietSoDauBai.Count == 0)
         {
-          return new Data_Response<IEnumerable<ChiTietSDBResType>>(404, "No results");
+          return new ResponseData<IEnumerable<ChiTietSDBResType>>(404, "No results");
         }
 
-        return new Data_Response<IEnumerable<ChiTietSDBResType>>(200, chitietSoDauBai);
+        return new ResponseData<IEnumerable<ChiTietSDBResType>>(200, chitietSoDauBai);
 
       }
       catch (System.Exception ex)

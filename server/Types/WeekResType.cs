@@ -1,23 +1,22 @@
-﻿namespace server.Types
+﻿using server.Dtos;
+
+namespace server.Types
 {
   public class WeekResType
   {
-    public int WeekId { get; set; }
+    public string Message { get; set; } = string.Empty;
 
-    public string WeekName { get; set; } = null!;
+    public List<SevenDaysInWeek> Data { get; set; }
 
-    public DateOnly WeekStart { get; set; }
+    public WeekResType(string message)
+    {
+      this.Message = message;
+    }
 
-    public DateOnly WeekEnd { get; set; }
-
-    public bool Status { get; set; }
-
-    public int SemesterId { get; set; }
-
-    public string SemesterName { get; set; } = null!;
-
-    public DateOnly DateStart { get; set; }
-
-    public DateOnly DateEnd { get; set; }
+    public WeekResType(string message, List<SevenDaysInWeek> data)
+    {
+      this.Message = message;
+      this.Data = data;
+    }
   }
 }

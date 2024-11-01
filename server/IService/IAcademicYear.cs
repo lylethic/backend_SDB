@@ -4,12 +4,12 @@ namespace server.IService
 {
   public interface IAcademicYear
   {
-    Task<Data_Response<AcademicYearDto>> CreateAcademicYear(AcademicYearDto model);
-    Task<Data_Response<AcademicYearDto>> GetAcademicYear(int id);
+    Task<ResponseData<AcademicYearDto>> CreateAcademicYear(AcademicYearDto model);
+    Task<ResponseData<AcademicYearDto>> GetAcademicYear(int id);
     Task<List<AcademicYearDto>> GetAcademicYears(int pageNumber, int pageSize);
-    Task<Data_Response<AcademicYearDto>> DeleteAcademicYear(int id);
-    Task<Data_Response<AcademicYearDto>> UpdateAcademicYear(int id, AcademicYearDto model);
-    Task<Data_Response<string>> BulkDelete(List<int> ids);
+    Task<ResponseData<AcademicYearDto>> DeleteAcademicYear(int id);
+    Task<ResponseData<AcademicYearDto>> UpdateAcademicYear(int id, AcademicYearDto model);
+    Task<ResponseData<string>> BulkDelete(List<int> ids);
     Task<string> ImportExcel(IFormFile file);
   }
 }

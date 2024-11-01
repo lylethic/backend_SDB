@@ -154,6 +154,25 @@ namespace server.Repositories
       }
     }
 
+    public async Task<string> GetNameOfSchool(int id)
+    {
+      try
+      {
+        var getName = await _context.Schools.FirstOrDefaultAsync(x => x.SchoolId == id);
+
+        if (getName is null)
+        {
+          return "Không tùm thấy trường học";
+        }
+
+        return getName.NameSchcool;
+      }
+      catch (Exception ex)
+      {
+        throw new Exception($"Server error: {ex.Message}");
+      }
+    }
+
     public async Task<SchoolResType> GetSchools(int pageNumber, int pageSize)
     {
       try
@@ -211,8 +230,6 @@ namespace server.Repositories
           Address = x.Address,
           SchoolType = x.SchoolType,
           Description = x.Description,
-          DateCreated = x.DateCreated,
-          DateUpdated = x.DateUpdated,
         }).ToList();
 
         return new SchoolResType(200, "Thành công", result);
@@ -415,7 +432,7 @@ namespace server.Repositories
       }
     }
 
-    public async Task<Data_Response<string>> BulkDelete(List<int> ids)
+    public async Task<ResponseData<string>> BulkDelete(List<int> ids)
     {
       await using var transaction = await _context.Database.BeginTransactionAsync();
 
@@ -423,7 +440,7 @@ namespace server.Repositories
       {
         if (ids is null || ids.Count == 0)
         {
-          return new Data_Response<string>(400, "No IDs provided.");
+          return new ResponseData<string>(400, "No IDs provided.");
         }
 
         var idList = string.Join(",", ids);
@@ -434,27 +451,27 @@ namespace server.Repositories
 
         if (delete == 0)
         {
-          return new Data_Response<string>(404, "No SCHOOLID found to delete");
+          return new ResponseData<string>(404, "No SCHOOLID found to delete");
         }
 
         await transaction.CommitAsync();
 
-        return new Data_Response<string>(200, "Deleted");
+        return new ResponseData<string>(200, "Deleted");
       }
       catch (Exception ex)
       {
         await transaction.RollbackAsync();
-        return new Data_Response<string>(500, $"Server error: {ex.Message}");
+        return new ResponseData<string>(500, $"Server error: {ex.Message}");
       }
     }
 
-    public async Task<Data_Response<string>> ExportSchoolsExcel(List<int> ids, string filePath)
+    public async Task<ResponseData<string>> ExportSchoolsExcel(List<int> ids, string filePath)
     {
       try
       {
         if (ids is null || ids.Count == 0)
         {
-          return new Data_Response<string>(400, "Không có id nào!");
+          return new ResponseData<string>(400, "Không có id nào!");
         }
 
         Console.WriteLine($"ID: {string.Join(",", ids)}");
@@ -465,7 +482,7 @@ namespace server.Repositories
 
         if (schools is null || !schools.Any())
         {
-          return new Data_Response<string>(404, "Không tìm thấy id");
+          return new ResponseData<string>(404, "Không tìm thấy id");
         }
 
         using (var workbook = new XLWorkbook())
@@ -503,11 +520,11 @@ namespace server.Repositories
           workbook.SaveAs(filePath);
         }
 
-        return new Data_Response<string>(200, "Successfull");
+        return new ResponseData<string>(200, "Successfull");
       }
       catch (Exception ex)
       {
-        return new Data_Response<string>(500, $"Server error: {ex.Message}");
+        return new ResponseData<string>(500, $"Server error: {ex.Message}");
       }
     }
   }

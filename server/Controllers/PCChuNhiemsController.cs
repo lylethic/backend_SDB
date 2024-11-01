@@ -21,21 +21,31 @@ namespace server.Controllers
     [HttpGet]
     public async Task<IActionResult> GetAll_PCChuNhiem(int pageNumber = 1, int pageSize = 50)
     {
-      try
-      {
-        var result = await _pc.GetPC_ChuNhiems(pageNumber, pageSize);
+      var result = await _pc.GetPC_ChuNhiems(pageNumber, pageSize);
 
-        if (result is null)
+      if (result.StatusCode == 200)
+      {
+        return Ok(new
         {
-          return NotFound("Not found");
-        }
+          message = result.Message,
+          data = result.Datas
+        });
+      }
 
-        return Ok(result);
-      }
-      catch (Exception ex)
+      if (result.StatusCode == 404)
       {
-        return StatusCode(500, $"Server error: {ex.Message}");
+        return NotFound(new
+        {
+          statusCode = result.StatusCode,
+          message = result.Message,
+        });
       }
+
+      return StatusCode(500, new
+      {
+        statusCode = result.StatusCode,
+        message = result.Message,
+      });
     }
 
     // GET api/<PCChuNhiemsController>/5
@@ -44,12 +54,59 @@ namespace server.Controllers
     {
       var result = await _pc.GetPC_ChuNhiem(id);
 
-      if (result is null)
+      if (result.StatusCode == 200)
       {
-        return BadRequest(result?.Message);
+        return Ok(new
+        {
+          message = result.Message,
+          data = result.Data
+        });
       }
 
-      return Ok(result);
+      if (result.StatusCode == 404)
+      {
+        return NotFound(new
+        {
+          statusCode = result.StatusCode,
+          message = result.Message,
+        });
+      }
+
+      return StatusCode(500, new
+      {
+        statusCode = result.StatusCode,
+        message = result.Message,
+      });
+    }
+
+    [HttpGet, Route("thongtinlopphancong/{id}")]
+    public async Task<IActionResult> GetThongtinlopphancong(int id)
+    {
+      var result = await _pc.Get_ChuNhiem_Teacher_Class(id);
+
+      if (result.StatusCode == 200)
+      {
+        return Ok(new
+        {
+          message = result.Message,
+          data = result.Data
+        });
+      }
+
+      if (result.StatusCode == 404)
+      {
+        return NotFound(new
+        {
+          statusCode = result.StatusCode,
+          message = result.Message,
+        });
+      }
+
+      return StatusCode(500, new
+      {
+        statusCode = result.StatusCode,
+        message = result.Message,
+      });
     }
 
     // POST api/<PCChuNhiemsController>
@@ -59,12 +116,39 @@ namespace server.Controllers
     {
       var result = await _pc.CreatePC_ChuNhiem(model);
 
-      if (result is null)
+      if (result.StatusCode == 404)
       {
-        return BadRequest(result?.Message);
+        return NotFound(new
+        {
+          statusCode = result.StatusCode,
+          message = result.Message,
+        });
       }
 
-      return Ok(result);
+      if (result.StatusCode == 200)
+      {
+        return Ok(new
+        {
+          statusCode = result.StatusCode,
+          message = result.Message,
+          data = result.PC_ChuNhiemDto
+        });
+      }
+
+      if (result.StatusCode == 409)
+      {
+        return BadRequest(new
+        {
+          statusCode = result.StatusCode,
+          message = result.Message,
+        });
+      }
+
+      return StatusCode(500, new
+      {
+        statusCode = result.StatusCode,
+        message = result.Message,
+      });
     }
 
     [Authorize(Policy = "SuperAdminAndAdmin")]
@@ -96,12 +180,17 @@ namespace server.Controllers
     {
       var result = await _pc.UpdatePC_ChuNhiem(id, model);
 
-      if (result is null)
+      if (result.StatusCode == 404)
       {
-        return BadRequest(result?.Message);
+        return NotFound(result);
       }
 
-      return Ok(result);
+      if (result.StatusCode == 200)
+      {
+        return Ok(result);
+      }
+
+      return StatusCode(500, result);
     }
 
     // DELETE api/<PCChuNhiemsController>/5
@@ -111,12 +200,17 @@ namespace server.Controllers
     {
       var result = await _pc.DeletePC_ChuNhiem(id);
 
-      if (result is null)
+      if (result.StatusCode == 404)
       {
-        return BadRequest(result?.Message);
+        return NotFound(result);
       }
 
-      return Ok(result);
+      if (result.StatusCode == 200)
+      {
+        return Ok(result);
+      }
+
+      return StatusCode(500, result);
     }
 
     [Authorize(Policy = "SuperAdminAndAdmin")]

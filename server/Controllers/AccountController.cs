@@ -2,7 +2,6 @@
 using Microsoft.AspNetCore.Mvc;
 using server.Dtos;
 using server.IService;
-using server.Types;
 
 namespace server.Controllers
 {
@@ -25,6 +24,12 @@ namespace server.Controllers
       return Ok(result);
     }
 
+    [HttpGet("count-number-of-accounts-by-school")]
+    public async Task<IActionResult> GetCountAccountsBySchool(int id)
+    {
+      var result = await _acc.GetCountAccountsBySchool(id);
+      return Ok(result);
+    }
 
     // GET: api/Auth
     [HttpGet]
@@ -35,23 +40,28 @@ namespace server.Controllers
         var accounts = await _acc.GetAccounts(pageNumber, pageSize);
         if (accounts.IsSuccess == false)
         {
-          return NotFound(new AccountsResType
+          return NotFound(new
           {
-            IsSuccess = false,
-            StatusCode = 404,
-            Message = "No results found"
+            isSuccess = false,
+            statusCode = 404,
+            message = "No results found"
           });
         }
-        return Ok(accounts); // 200
+        return Ok(new
+        {
+          statusCode = accounts.StatusCode,
+          message = accounts.Message,
+          data = accounts.Data,
+        }); // 200
       }
       catch (Exception ex)
       {
         Console.WriteLine(ex.Message);
-        return StatusCode(500, new AccountsResType
+        return StatusCode(500, new
         {
-          IsSuccess = false,
-          StatusCode = 500,
-          Message = $"An error occurred while retrieving accounts: {ex.Message}"
+          isSuccess = false,
+          statusCode = 500,
+          message = $"An error occurred while retrieving accounts: {ex.Message}"
         });
       }
     }
@@ -81,30 +91,83 @@ namespace server.Controllers
       try
       {
         var accounts = await _acc.GetAccountsBySchoolId(pageNumber, pageSize, schoolId);
-        if (accounts == null || accounts.Count == 0)
+        if (accounts.IsSuccess == false)
         {
-          return NotFound("No results"); // 404
+          return NotFound(new
+          {
+            isSuccess = false,
+            statusCode = 404,
+            message = "No results found"
+          });
         }
-        return Ok(accounts); // 200
+        return Ok(new
+        {
+          statusCode = accounts.StatusCode,
+          message = accounts.Message,
+          data = accounts.Data,
+        }); // 200
       }
       catch (Exception ex)
       {
         Console.WriteLine(ex.Message);
-        return StatusCode(500, "Server error"); // 500
+        return StatusCode(500, new
+        {
+          isSuccess = false,
+          statusCode = 500,
+          message = $"An error occurred while retrieving accounts: {ex.Message}"
+        });
       }
     }
 
     // GET: api/Auth/5
-    [HttpGet, Route("{id}")]
+    [HttpGet("{id}")]
     public async Task<IActionResult> GetAccountById(int id)
     {
       var account = await _acc.GetAccount(id);
 
-      if (account.StatusCode != 200)
+      if (account.StatusCode == 200)
       {
-        return BadRequest(account);
+        return Ok(new
+        {
+          message = account.Message,
+          data = account.Data
+        });
       }
-      return Ok(account);
+
+      if (account.StatusCode == 404)
+      {
+        return NotFound(new
+        {
+          message = account.Message,
+          data = account.Data,
+        });
+      }
+      return BadRequest(account);
+    }
+
+    [HttpGet, Route("detail/{id}")]
+    public async Task<IActionResult> GetAccountByIdToEdit(int id)
+    {
+      var account = await _acc.GetAccountById(id);
+
+      if (account.StatusCode == 200)
+      {
+        return Ok(new
+        {
+          message = account.Message,
+          data = account.Data
+        });
+      }
+
+      if (account.StatusCode == 404)
+      {
+        return NotFound(new
+        {
+          message = account.Message,
+          data = account.Data,
+        });
+      }
+      return BadRequest(account);
     }
 
     [HttpGet("search")]
