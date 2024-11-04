@@ -1,6 +1,6 @@
 ﻿namespace server.Types
 {
-  public class AccountAddResType
+  public class AccountAddBody
   {
     public int RoleId { get; set; }
     public int SchoolId { get; set; }
@@ -8,6 +8,6 @@
     public DateTime? DateCreated { get; set; }
     public DateTime? DateUpdated { get; set; }
 
-    public AccountAddResType() { }
+    public AccountAddBody() { }
   }
 }

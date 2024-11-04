@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using server.Data;
 using server.Dtos;
 using server.IService;
+using server.Types;
 using System.Text;
 
 namespace server.Repositories
@@ -17,7 +18,7 @@ namespace server.Repositories
       this._context = context;
     }
 
-    public async Task<ResponseData<BiaSoDauBaiDto>> CreateBiaSoDauBai(BiaSoDauBaiDto model)
+    public async Task<BiaSoDauBaiResType> CreateBiaSoDauBai(BiaSoDauBaiDto model)
     {
       using var transaction = await _context.Database.BeginTransactionAsync();
 
@@ -30,7 +31,7 @@ namespace server.Repositories
 
         if (sodaubai is not null)
         {
-          return new ResponseData<BiaSoDauBaiDto>(409, "Sodaubai already exists");
+          return new BiaSoDauBaiResType(409, "Sodaubai already exists");
         }
 
         // Check if schoolId exists
@@ -39,7 +40,7 @@ namespace server.Repositories
 
         if (!schoolExists)
         {
-          return new ResponseData<BiaSoDauBaiDto>(404, "SchoolId not found");
+          return new BiaSoDauBaiResType(404, "SchoolId not found");
         }
 
         // Check if academicYearId exists
@@ -48,7 +49,7 @@ namespace server.Repositories
 
         if (!academicYearExists)
         {
-          return new ResponseData<BiaSoDauBaiDto>(404, "academicYearId not found");
+          return new BiaSoDauBaiResType(404, "academicYearId not found");
         }
 
         // Check if classId exists
@@ -57,7 +58,7 @@ namespace server.Repositories
 
         if (!classExists)
         {
-          return new ResponseData<BiaSoDauBaiDto>(404, "ClassId not found");
+          return new BiaSoDauBaiResType(404, "ClassId not found");
         }
 
         model.DateCreated = DateTime.UtcNow;
@@ -89,17 +90,16 @@ namespace server.Repositories
           DateUpdated = model.DateUpdated,
         };
 
-        return new ResponseData<BiaSoDauBaiDto>(200, result);
+        return new BiaSoDauBaiResType(200, "Thành công", result);
       }
       catch (Exception ex)
       {
-        // Rollback the transaction if any exception occurs
         await transaction.RollbackAsync();
-        return new ResponseData<BiaSoDauBaiDto>(500, $"Server Error: {ex.Message}");
+        return new BiaSoDauBaiResType(500, $"Server Error: {ex.Message}");
       }
     }
 
-    public async Task<ResponseData<BiaSoDauBaiDto>> GetBiaSoDauBai(int id)
+    public async Task<BiaSoDauBaiResType> GetBiaSoDauBai(int id)
     {
       try
       {
@@ -112,7 +112,7 @@ namespace server.Repositories
 
         if (sodaubai is null)
         {
-          return new ResponseData<BiaSoDauBaiDto>(404, "Not found");
+          return new BiaSoDauBaiResType(404, "Not found");
         }
 
         // Map the result to the StudentDto
@@ -127,23 +127,23 @@ namespace server.Repositories
           DateUpdated = sodaubai.DateUpdated,
         };
 
-        return new ResponseData<BiaSoDauBaiDto>(200, result);
+        return new BiaSoDauBaiResType(200, "Thành công", result);
       }
       catch (Exception ex)
       {
-        return new ResponseData<BiaSoDauBaiDto>(500, $"Server error: {ex.Message}");
+        return new BiaSoDauBaiResType(500, $"Server error: {ex.Message}");
       }
     }
 
-    public async Task<List<BiaSoDauBaiDto>> GetBiaSoDauBais(int pageNumber, int pageSize)
+    public async Task<BiaSoDauBaiResType> GetBiaSoDauBais(int pageNumber, int pageSize)
     {
       try
       {
         var skip = (pageNumber - 1) * pageSize;
 
         var biaSoDauBai = await _context.BiaSoDauBais
-            .Skip(skip)     // Skip the first (pageNumber - 1) * pageSize records
-            .Take(pageSize) // Take pageSize records
+            .Skip(skip)
+            .Take(pageSize)
             .ToListAsync();
 
         var result = biaSoDauBai.Select(x => new BiaSoDauBaiDto
@@ -157,15 +157,15 @@ namespace server.Repositories
           DateUpdated = x.DateUpdated,
         }).ToList();
 
-        return result;
+        return new BiaSoDauBaiResType(200, "Thành công", result);
       }
       catch (Exception ex)
       {
-        throw new Exception($"Server error: {ex.Message}");
+        return new BiaSoDauBaiResType(500, $"Server error: {ex.Message}");
       }
     }
 
-    public async Task<List<BiaSoDauBaiDto>> GetBiaSoDauBaisBySchoolId(int pageNumber, int pageSize, int schoolId)
+    public async Task<BiaSoDauBaiResType> GetBiaSoDauBaisBySchoolId(int pageNumber, int pageSize, int schoolId)
     {
       try
       {
@@ -192,16 +192,15 @@ namespace server.Repositories
           DateUpdated = x.DateUpdated,
         }).ToList();
 
-        return result;
+        return new BiaSoDauBaiResType(200, "Thành công", result);
       }
       catch (Exception ex)
       {
-        Console.WriteLine(ex.Message);
-        throw new Exception($"Server error: {ex.Message}");
+        return new BiaSoDauBaiResType(500, $"Server error: {ex.Message}");
       }
     }
 
-    public async Task<ResponseData<BiaSoDauBaiDto>> UpdateBiaSoDauBai(int id, BiaSoDauBaiDto model)
+    public async Task<BiaSoDauBaiResType> UpdateBiaSoDauBai(int id, BiaSoDauBaiDto model)
     {
       using var transaction = await _context.Database.BeginTransactionAsync();
       try
@@ -213,7 +212,7 @@ namespace server.Repositories
 
         if (existingBiaSoDaiBai == null)
         {
-          return new ResponseData<BiaSoDauBaiDto>(404, "BiaSoDauBaiId not found");
+          return new BiaSoDauBaiResType(404, "BiaSoDauBaiId not found");
         }
 
         bool hasChanges = false;
@@ -277,11 +276,11 @@ namespace server.Repositories
           // Commit the transaction
           await transaction.CommitAsync();
 
-          return new ResponseData<BiaSoDauBaiDto>(200, "Updated successfully");
+          return new BiaSoDauBaiResType(200, "Updated successfully");
         }
         else
         {
-          return new ResponseData<BiaSoDauBaiDto>(200, "No changes detected");
+          return new BiaSoDauBaiResType(200, "No changes detected");
         }
       }
       catch (Exception ex)
@@ -289,11 +288,11 @@ namespace server.Repositories
         // Rollback the transaction in case of an error
         await transaction.RollbackAsync();
 
-        return new ResponseData<BiaSoDauBaiDto>(500, $"Server Error: {ex.Message}");
+        return new BiaSoDauBaiResType(500, $"Server Error: {ex.Message}");
       }
     }
 
-    public async Task<ResponseData<BiaSoDauBaiDto>> DeleteBiaSoDauBai(int id)
+    public async Task<BiaSoDauBaiResType> DeleteBiaSoDauBai(int id)
     {
       try
       {
@@ -304,20 +303,20 @@ namespace server.Repositories
 
         if (sodaubai is null)
         {
-          return new ResponseData<BiaSoDauBaiDto>(404, "Student not found");
+          return new BiaSoDauBaiResType(404, "Student not found");
         }
 
         var deleteQuery = "DELETE FROM BiaSoDauBai WHERE BiaSoDauBaiId = @id";
         await _context.Database.ExecuteSqlRawAsync(deleteQuery, new SqlParameter("@id", id));
-        return new ResponseData<BiaSoDauBaiDto>(200, "Deleted");
+        return new BiaSoDauBaiResType(200, "Deleted");
       }
       catch (Exception ex)
       {
-        return new ResponseData<BiaSoDauBaiDto>(500, $"Server error: {ex.Message}");
+        return new BiaSoDauBaiResType(500, $"Server error: {ex.Message}");
       }
     }
 
-    public async Task<ResponseData<string>> BulkDelete(List<int> ids)
+    public async Task<BiaSoDauBaiResType> BulkDelete(List<int> ids)
     {
       await using var transaction = await _context.Database.BeginTransactionAsync();
 
@@ -325,7 +324,7 @@ namespace server.Repositories
       {
         if (ids is null || ids.Count == 0)
         {
-          return new ResponseData<string>(400, "No IDs provided.");
+          return new BiaSoDauBaiResType(400, "No IDs provided.");
         }
 
         var idList = string.Join(",", ids);
@@ -336,21 +335,21 @@ namespace server.Repositories
 
         if (delete == 0)
         {
-          return new ResponseData<string>(404, "No BiaSoDauBaiId found to delete");
+          return new BiaSoDauBaiResType(404, "No BiaSoDauBaiId found to delete");
         }
 
         await transaction.CommitAsync();
 
-        return new ResponseData<string>(200, "Deleted succesfully");
+        return new BiaSoDauBaiResType(200, "Deleted succesfully");
       }
       catch (Exception ex)
       {
         await transaction.RollbackAsync();
-        return new ResponseData<string>(500, $"Server error: {ex.Message}");
+        return new BiaSoDauBaiResType(500, $"Server error: {ex.Message}");
       }
     }
 
-    public async Task<string> ImportExcel(IFormFile file)
+    public async Task<BiaSoDauBaiResType> ImportExcel(IFormFile file)
     {
       try
       {
@@ -412,18 +411,18 @@ namespace server.Repositories
             }
           }
 
-          return "Successfully inserted";
+          return new BiaSoDauBaiResType(200, "Successfully inserted");
         }
-        return "No file uploaded";
+        return new BiaSoDauBaiResType(400, "No file uploaded");
 
       }
       catch (Exception ex)
       {
-        throw new Exception($"Error while uploading file: {ex.Message}");
+        return new BiaSoDauBaiResType(500, $"Error while uploading file: {ex.Message}");
       }
     }
 
-    public async Task<List<BiaSoDauBaiDto>> SearchBiaSoDauBais(int? schoolId = null, int? classId = null)
+    public async Task<BiaSoDauBaiResType> SearchBiaSoDauBais(int? schoolId = null, int? classId = null)
     {
       var query = _context.BiaSoDauBais
           .AsNoTracking()
@@ -445,6 +444,12 @@ namespace server.Repositories
           .OrderBy(x => x.DateCreated)
           .ToListAsync();
 
+      // Check if any data was found
+      if (!biaSoDauBai.Any())
+      {
+        return new BiaSoDauBaiResType(400, "Không tìm thấy kết quả");
+      }
+
       var result = biaSoDauBai.Select(x => new BiaSoDauBaiDto
       {
         BiaSoDauBaiId = x.BiaSoDauBaiId,
@@ -456,7 +461,7 @@ namespace server.Repositories
         DateUpdated = x.DateUpdated,
       }).ToList();
 
-      return result;
+      return new BiaSoDauBaiResType(200, "Có kết quả", result);
     }
   }
 }

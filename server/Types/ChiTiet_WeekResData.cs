@@ -1,6 +1,6 @@
 namespace server.Types;
 
-public class ChiTiet_WeekResType
+public class ChiTiet_WeekResData
 {
   public int ChiTietSoDauBaiId { get; set; }
 

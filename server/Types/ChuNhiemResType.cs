@@ -2,11 +2,8 @@
 
 namespace server.Types
 {
-  public class ChuNhiemResType
+  public class ChuNhiemResType : ModelResType
   {
-    public string Message { get; set; } = string.Empty;
-    public int StatusCode { get; set; } = 0;
-
     public List<PhanCongData>? Datas { get; set; }
 
     public PhanCongData? Data { get; set; }

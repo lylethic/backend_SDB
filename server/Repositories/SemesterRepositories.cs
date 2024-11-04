@@ -92,7 +92,7 @@ namespace server.Repositories
       }
     }
 
-    public async Task<ResponseData<SemesterResType>> GetSemester(int id)
+    public async Task<ResponseData<SemesterResData>> GetSemester(int id)
     {
       try
       {
@@ -127,10 +127,10 @@ namespace server.Repositories
 
         if (semester is null)
         {
-          return new ResponseData<SemesterResType>(404, "Semester not found");
+          return new ResponseData<SemesterResData>(404, "Semester not found");
         }
 
-        var result = new SemesterResType
+        var result = new SemesterResData
         {
           SemesterId = id,
           SemesterName = semester.SemesterName,
@@ -142,11 +142,11 @@ namespace server.Repositories
           YearEnd = semester.AcademicYear.YearEnd
         };
 
-        return new ResponseData<SemesterResType>(200, result);
+        return new ResponseData<SemesterResData>(200, result);
       }
       catch (Exception ex)
       {
-        return new ResponseData<SemesterResType>(500, $"Server error: {ex.Message}");
+        return new ResponseData<SemesterResData>(500, $"Server error: {ex.Message}");
       }
     }
 

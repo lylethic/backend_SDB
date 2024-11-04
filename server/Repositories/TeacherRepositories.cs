@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using server.Data;
 using server.Dtos;
 using server.Models;
+using server.Types;
 using System.Text;
 
 namespace server.Repositories
@@ -17,7 +18,7 @@ namespace server.Repositories
       this._context = context;
     }
 
-    public async Task<ResponseData<TeacherDto>> CreateTeacher(TeacherDto model)
+    public async Task<TeacherResType> CreateTeacher(TeacherDto model)
     {
       try
       {
@@ -29,7 +30,7 @@ namespace server.Repositories
 
         if (teacher is not null)
         {
-          return new ResponseData<TeacherDto>(409, "Teacher already exists");
+          return new TeacherResType(409, "Teacher already exists");
         }
 
         var sqlInsert = @"INSERT INTO Teacher (AccountId, SchoolId, Fullname, DateOfBirth, Gender, Address, Status, DateCreate, DateUpdate) 
@@ -64,39 +65,15 @@ namespace server.Repositories
           DateUpdate = model.DateUpdate
         };
 
-        return new ResponseData<TeacherDto>(200, result);
+        return new TeacherResType(200, "Tạo mới thành công", result);
       }
       catch (Exception ex)
       {
-        return new ResponseData<TeacherDto>(200, $"Server error: {ex.Message}");
+        return new TeacherResType(500, $"Server error: {ex.Message}");
       }
     }
 
-    public async Task<ResponseData<TeacherDto>> DeleteTeacher(int id)
-    {
-      try
-      {
-        var findTeacher = "SELECT * FROM Teacher WHERE TeacherId = @id";
-        var teacher = await _context.Teachers
-          .FromSqlRaw(findTeacher, new SqlParameter("@id", id))
-          .FirstOrDefaultAsync();
-
-        if (teacher is null)
-        {
-          return new ResponseData<TeacherDto>(404, "Teacher not found");
-        }
-
-        var deleteQuery = "DELETE FROM Teacher WHERE TeacherId = @id";
-        await _context.Database.ExecuteSqlRawAsync(deleteQuery, new SqlParameter("@id", id));
-        return new ResponseData<TeacherDto>(200, "Deleted");
-      }
-      catch (Exception ex)
-      {
-        return new ResponseData<TeacherDto>(500, $"Server error: {ex.Message}");
-      }
-    }
-
-    public async Task<ResponseData<TeacherDto>> GetTeacher(int id)
+    public async Task<TeacherResType> GetTeacher(int id)
     {
       try
       {
@@ -138,7 +115,7 @@ namespace server.Repositories
 
         if (teacher is null)
         {
-          return new ResponseData<TeacherDto>(404, "Teacher not found");
+          return new TeacherResType(404, "Teacher not found");
         }
 
 
@@ -156,15 +133,31 @@ namespace server.Repositories
           SchoolType = teacher.School.SchoolType
         };
 
-        return new ResponseData<TeacherDto>(200, result);
+        return new TeacherResType(200, "Thành công", result);
       }
       catch (Exception ex)
       {
-        return new ResponseData<TeacherDto>(500, $"Server error: {ex.Message}");
+        return new TeacherResType(500, $"Server error: {ex.Message}");
       }
     }
 
-    public async Task<List<TeacherDto>> GetTeachers(int pageNumber, int pageSize)
+    public async Task<int> GetCountTeachersBySchool(int id)
+    {
+      try
+      {
+        var teachers = await _context.Teachers
+          .Where(x => x.SchoolId == id)
+          .CountAsync();
+
+        return teachers;
+      }
+      catch (Exception ex)
+      {
+        throw new Exception($"Server error: {ex.Message}");
+      }
+    }
+
+    public async Task<TeacherResType> GetTeachers(int pageNumber, int pageSize)
     {
       try
       {
@@ -193,16 +186,15 @@ namespace server.Repositories
           Status = x.Status,
         }).ToList();
 
-        return result;
+        return new TeacherResType(200, "Thành công", result);
       }
       catch (Exception ex)
       {
-        Console.WriteLine(ex.Message);
-        throw new Exception($"Server error: {ex.Message}");
+        return new TeacherResType(500, $"Server error: {ex.Message}");
       }
     }
 
-    public async Task<List<TeacherDto>> GetTeachersBySchool(int pageNumber, int pageSize, int schoolId)
+    public async Task<TeacherResType> GetTeachersBySchool(int pageNumber, int pageSize, int schoolId)
     {
       try
       {
@@ -233,16 +225,15 @@ namespace server.Repositories
           Status = x.Status,
         }).ToList();
 
-        return result;
+        return new TeacherResType(200, "Thành công", result);
       }
       catch (Exception ex)
       {
-        Console.WriteLine(ex.Message);
-        throw new Exception($"Server error: {ex.Message}");
+        return new TeacherResType(500, $"Server error: {ex.Message}");
       }
     }
 
-    public async Task<ResponseData<TeacherDto>> UpdateTeacher(int id, TeacherDto model)
+    public async Task<TeacherResType> UpdateTeacher(int id, TeacherDto model)
     {
       using var transaction = await _context.Database.BeginTransactionAsync();
       try
@@ -255,7 +246,7 @@ namespace server.Repositories
 
         if (existingTeacher is null)
         {
-          return new ResponseData<TeacherDto>(404, "Teacher not found");
+          return new TeacherResType(404, "Teacher not found");
         }
 
         bool hasChanges = false;
@@ -339,18 +330,18 @@ namespace server.Repositories
 
           // Commit the transaction
           await transaction.CommitAsync();
-          return new ResponseData<TeacherDto>(200, "Teacher updated successfully");
+          return new TeacherResType(200, "Teacher updated successfully");
         }
         else
         {
-          return new ResponseData<TeacherDto>(200, "No changes detected");
+          return new TeacherResType(200, "No changes detected");
         }
       }
       catch (Exception ex)
       {
         await transaction.RollbackAsync();
 
-        return new ResponseData<TeacherDto>(500, $"Server Error: {ex.Message}");
+        return new TeacherResType(500, $"Server Error: {ex.Message}");
       }
     }
 
@@ -425,6 +416,30 @@ namespace server.Repositories
       catch (Exception ex)
       {
         throw new Exception($"Error while uploading file: {ex.Message}");
+      }
+    }
+
+    public async Task<TeacherResType> DeleteTeacher(int id)
+    {
+      try
+      {
+        var findTeacher = "SELECT * FROM Teacher WHERE TeacherId = @id";
+        var teacher = await _context.Teachers
+          .FromSqlRaw(findTeacher, new SqlParameter("@id", id))
+          .FirstOrDefaultAsync();
+
+        if (teacher is null)
+        {
+          return new TeacherResType(404, "Teacher not found");
+        }
+
+        var deleteQuery = "DELETE FROM Teacher WHERE TeacherId = @id";
+        await _context.Database.ExecuteSqlRawAsync(deleteQuery, new SqlParameter("@id", id));
+        return new TeacherResType(200, "Deleted");
+      }
+      catch (Exception ex)
+      {
+        return new TeacherResType(500, $"Server error: {ex.Message}");
       }
     }
 

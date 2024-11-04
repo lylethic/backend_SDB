@@ -2,14 +2,12 @@
 
 namespace server.Types
 {
-  public class LoginResType
+  public class LoginResType : ModelResType
   {
-    public bool IsSuccess { get; set; }
-    public int StatusCode { get; set; }
-    public string Message { get; set; } = String.Empty;
-
     public LoginResData? Data { get; set; }
+
     public List<Error>? Errors { get; set; }
+
     public LoginResType() { }
 
     public LoginResType(bool isSccess, string message)

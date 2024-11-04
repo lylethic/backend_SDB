@@ -2,11 +2,9 @@
 
 namespace server.Types
 {
-  public class WeekResType
+  public class WeekResType : ModelResType
   {
-    public string Message { get; set; } = string.Empty;
-
-    public List<SevenDaysInWeek> Data { get; set; }
+    public List<SevenDaysInWeek>? Data { get; set; }
 
     public WeekResType(string message)
     {

@@ -1,12 +1,7 @@
 ﻿namespace server.Types
 {
-  public class LogoutResType
+  public class LogoutResType : ModelResType
   {
-    public bool IsSuccess { get; set; } = false;
-    public int StatusCode { get; set; }
-
-    public string Message { get; set; } = String.Empty;
-
     public LogoutResType()
     {
     }

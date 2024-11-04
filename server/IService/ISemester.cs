@@ -7,7 +7,7 @@ namespace server.IService
   {
     Task<ResponseData<SemesterDto>> CreateSemester(SemesterDto model);
 
-    Task<ResponseData<SemesterResType>> GetSemester(int id);
+    Task<ResponseData<SemesterResData>> GetSemester(int id);
 
     Task<List<SemesterDto>> GetSemesters(int pageNumber, int pageSize);
 

@@ -14,26 +14,31 @@ namespace server.Controllers
   {
     readonly IBiaSoDauBai _biaSodaubai;
 
-    public BiaSoDauBaisController(IBiaSoDauBai biasodaubai) { this._biaSodaubai = biasodaubai; }
+    public BiaSoDauBaisController(IBiaSoDauBai biasodaubai)
+    {
+      this._biaSodaubai = biasodaubai;
+    }
 
     // GET: api/<BiaSoDauBaisController>
     [HttpGet]
     public async Task<IActionResult> GetAll([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 50)
     {
-      try
+      var result = await _biaSodaubai.GetBiaSoDauBais(pageNumber, pageSize);
+      if (result.StatusCode == 200)
       {
-        var result = await _biaSodaubai.GetBiaSoDauBais(pageNumber, pageSize);
-        if (result is null)
+        return Ok(new
         {
-          return NotFound(); // 404
-        }
+          statusCode = result.StatusCode,
+          message = result.Message,
+          data = result.Datas
+        });
+      }
 
-        return Ok(result);
-      }
-      catch (Exception ex)
+      return StatusCode(500, new
       {
-        throw new Exception($"Error: {ex.Message}");
-      }
+        statusCode = result.StatusCode,
+        message = result.Message
+      });
     }
 
     // GET api/<BiaSoDauBaisController>/5
@@ -42,31 +47,39 @@ namespace server.Controllers
     {
       var result = await _biaSodaubai.GetBiaSoDauBai(id);
 
-      if (result.StatusCode != 200)
+      if (result.StatusCode == 200)
       {
-        return BadRequest();
+        return Ok(new
+        {
+          statusCode = result.StatusCode,
+          message = result.Message,
+          data = result.Data
+        });
       }
 
-      return Ok(result.Data);
+      return StatusCode(500, new
+      {
+        message = result.Message,
+      });
     }
 
     [HttpGet("getbyschool")]
     public async Task<IActionResult> GetBiaSoDauBaisBySchool(int pageNumber, int pageSize, int schoolId)
     {
-      try
+      var result = await _biaSodaubai.GetBiaSoDauBaisBySchoolId(pageNumber, pageSize, schoolId);
+      if (result.StatusCode == 200)
       {
-        var result = await _biaSodaubai.GetBiaSoDauBaisBySchoolId(pageNumber, pageSize, schoolId);
-        if (result is null || !result.Any())
+        return Ok(new
         {
-          return NotFound("Khong co ket qua"); // 404
-        }
+          message = result.Message,
+          data = result.Datas
+        });
+      }
 
-        return Ok(result);
-      }
-      catch (Exception ex)
+      return StatusCode(500, new
       {
-        throw new Exception($"Error: {ex.Message}");
-      }
+        message = result.Message,
+      });
     }
 
     // POST api/<BiaSoDauBaisController>
@@ -76,12 +89,38 @@ namespace server.Controllers
     {
       var result = await _biaSodaubai.CreateBiaSoDauBai(model);
 
-      if (result.StatusCode != 200)
+      if (result.StatusCode == 200)
       {
-        return BadRequest(result.Message);
+        return Ok(new
+        {
+          statusCode = result.StatusCode,
+          message = result.Message,
+          data = result.Data
+        });
       }
 
-      return Ok(result.Data);
+      if (result.StatusCode == 409)
+      {
+        return Ok(new
+        {
+          statusCode = result.StatusCode,
+          message = result.Message,
+        });
+      }
+
+      if (result.StatusCode == 404)
+      {
+        return Ok(new
+        {
+          statusCode = result.StatusCode,
+          message = result.Message,
+        });
+      }
+
+      return StatusCode(500, new
+      {
+        message = result.Message,
+      });
     }
 
     // PUT api/<BiaSoDauBaisController>/5
@@ -91,12 +130,20 @@ namespace server.Controllers
     {
       var result = await _biaSodaubai.UpdateBiaSoDauBai(id, model);
 
-      if (result.StatusCode != 200)
+      if (result.StatusCode == 200)
       {
-        return BadRequest(result.Message);
+        return Ok(new
+        {
+          statusCode = result.StatusCode,
+          message = result.Message,
+          data = result.Data
+        });
       }
 
-      return Ok(result);
+      return StatusCode(500, new
+      {
+        message = result.Message,
+      });
     }
 
     // DELETE api/<BiaSoDauBaisController>/5
@@ -106,12 +153,29 @@ namespace server.Controllers
     {
       var result = await _biaSodaubai.DeleteBiaSoDauBai(id);
 
-      if (result.StatusCode != 200)
+      if (result.StatusCode == 200)
       {
-        return BadRequest(result.Message);
+        return Ok(new
+        {
+          statusCode = result.StatusCode,
+          message = result.Message,
+          data = result.Data
+        });
       }
 
-      return Ok(result.Data);
+      if (result.StatusCode == 404)
+      {
+        return Ok(new
+        {
+          statusCode = result.StatusCode,
+          message = result.Message,
+        });
+      }
+
+      return StatusCode(500, new
+      {
+        message = result.Message,
+      });
     }
 
     [Authorize(Policy = "SuperAdminAndAdmin")]
@@ -120,33 +184,68 @@ namespace server.Controllers
     {
       var result = await _biaSodaubai.BulkDelete(ids);
 
-      if (result.StatusCode != 200)
+      if (result.StatusCode == 200)
       {
-        return BadRequest(result.Message);
+        return Ok(new
+        {
+          statusCode = result.StatusCode,
+          message = result.Message,
+          data = result.Data
+        });
       }
 
-      return Ok(result.Data);
+      if (result.StatusCode == 400)
+      {
+        return Ok(new
+        {
+          statusCode = result.StatusCode,
+          message = result.Message,
+        });
+      }
+
+      if (result.StatusCode == 404)
+      {
+        return Ok(new
+        {
+          statusCode = result.StatusCode,
+          message = result.Message,
+        });
+      }
+
+      return StatusCode(500, new
+      {
+        message = result.Message,
+      });
     }
 
     [Authorize(Policy = "SuperAdminAndAdmin")]
     [HttpPost("upload")]
     public async Task<IActionResult> ImportExcel(IFormFile file)
     {
-      try
+      var result = await _biaSodaubai.ImportExcel(file);
+      if (result.StatusCode == 200)
       {
-        var result = await _biaSodaubai.ImportExcel(file);
-
-        if (result.Contains("Successfully"))
+        return Ok(new
         {
-          return Ok(result);
-        }
+          statusCode = result.StatusCode,
+          message = result.Message,
+        });
+      }
 
-        return BadRequest(result);
-      }
-      catch (Exception ex)
+      if (result.StatusCode == 404)
       {
-        return StatusCode(500, $"Server Error: {ex.Message}");
+        return Ok(new
+        {
+          statusCode = result.StatusCode,
+          message = result.Message,
+        });
       }
+
+      return StatusCode(500, new
+      {
+        message = result.Message,
+      });
+
     }
 
     //GET /api/BiaSoDauBais/Search? schoolName = ABC & schoolId = 1 & classId = 2
@@ -156,12 +255,29 @@ namespace server.Controllers
     {
       var result = await _biaSodaubai.SearchBiaSoDauBais(schoolId, classId);
 
-      if (result == null || !result.Any())
+      if (result.StatusCode == 200)
       {
-        return NotFound("No results found.");
+        return Ok(new
+        {
+          statusCode = result.StatusCode,
+          message = result.Message,
+          data = result.Data
+        });
       }
 
-      return Ok(result);
+      if (result.StatusCode == 400)
+      {
+        return Ok(new
+        {
+          statusCode = result.StatusCode,
+          message = result.Message,
+        });
+      }
+
+      return StatusCode(500, new
+      {
+        message = result.Message,
+      });
     }
   }
 }

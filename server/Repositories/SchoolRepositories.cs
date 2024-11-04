@@ -162,7 +162,7 @@ namespace server.Repositories
 
         if (getName is null)
         {
-          return "Không tùm thấy trường học";
+          return "Không tìm thấy trường học";
         }
 
         return getName.NameSchcool;

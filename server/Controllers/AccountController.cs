@@ -35,114 +35,120 @@ namespace server.Controllers
     [HttpGet]
     public async Task<IActionResult> GetAccounts(int pageNumber = 1, int pageSize = 50)
     {
-      try
+
+      var result = await _acc.GetAccounts(pageNumber, pageSize);
+      if (result.StatusCode == 404)
       {
-        var accounts = await _acc.GetAccounts(pageNumber, pageSize);
-        if (accounts.IsSuccess == false)
+        return NotFound(new
         {
-          return NotFound(new
-          {
-            isSuccess = false,
-            statusCode = 404,
-            message = "No results found"
-          });
-        }
-        return Ok(new
-        {
-          statusCode = accounts.StatusCode,
-          message = accounts.Message,
-          data = accounts.Data,
-        }); // 200
-      }
-      catch (Exception ex)
-      {
-        Console.WriteLine(ex.Message);
-        return StatusCode(500, new
-        {
-          isSuccess = false,
-          statusCode = 500,
-          message = $"An error occurred while retrieving accounts: {ex.Message}"
+          statusCode = 404,
+          message = result.Message
         });
       }
+      if (result.StatusCode == 200)
+      {
+
+        return Ok(new
+        {
+          statusCode = result.StatusCode,
+          message = result.Message,
+          data = result.Data,
+        });
+      }
+      return StatusCode(500, new
+      {
+        statusCode = result.StatusCode,
+        message = result.Message,
+      });
     }
 
-    [HttpGet, Route("GetAccountsByRole")]
+    [HttpGet, Route("get-accounts-by-role")]
     public async Task<IActionResult> GetAccountsByRole(int pageNumber, int pageSize, int roleId)
     {
-      try
+      var result = await _acc.GetAccountsByRole(pageNumber, pageSize, roleId);
+      if (result.StatusCode == 404)
       {
-        var accounts = await _acc.GetAccountsByRole(pageNumber, pageSize, roleId);
-        if (accounts == null || accounts.Count == 0)
+        return NotFound(new
         {
-          return NotFound("No results"); // 404
-        }
-        return Ok(accounts); // 200
-      }
-      catch (Exception ex)
-      {
-        Console.WriteLine(ex.Message);
-        return StatusCode(500, "Server error"); // 500
-      }
-    }
-
-    [HttpGet, Route("GetAccountsBySchool")]
-    public async Task<IActionResult> GetAccountsBySchool(int pageNumber, int pageSize, int schoolId)
-    {
-      try
-      {
-        var accounts = await _acc.GetAccountsBySchoolId(pageNumber, pageSize, schoolId);
-        if (accounts.IsSuccess == false)
-        {
-          return NotFound(new
-          {
-            isSuccess = false,
-            statusCode = 404,
-            message = "No results found"
-          });
-        }
-        return Ok(new
-        {
-          statusCode = accounts.StatusCode,
-          message = accounts.Message,
-          data = accounts.Data,
-        }); // 200
-      }
-      catch (Exception ex)
-      {
-        Console.WriteLine(ex.Message);
-        return StatusCode(500, new
-        {
-          isSuccess = false,
-          statusCode = 500,
-          message = $"An error occurred while retrieving accounts: {ex.Message}"
+          statusCode = result.StatusCode,
+          message = result.Message
         });
       }
+
+      if (result.StatusCode == 200)
+      {
+        return Ok(new
+        {
+          statusCode = result.StatusCode,
+          message = result.Message,
+          data = result.AccountDto,
+        });
+      }
+
+      return StatusCode(500, new
+      {
+        statusCode = result.StatusCode,
+        message = result.Message
+      });
+    }
+
+    [HttpGet, Route("get-accounts-by-school")]
+    public async Task<IActionResult> GetAccountsBySchool(int pageNumber, int pageSize, int schoolId)
+    {
+      var result = await _acc.GetAccountsBySchoolId(pageNumber, pageSize, schoolId);
+      if (result.StatusCode == 404)
+      {
+        return NotFound(new
+        {
+          statusCode = result.StatusCode,
+          message = result.Message
+        });
+      }
+
+      if (result.StatusCode == 200)
+        return Ok(new
+        {
+          statusCode = result.StatusCode,
+          message = result.Message,
+          data = result.Data,
+        });
+
+      return StatusCode(500, new
+      {
+        statusCode = result.StatusCode,
+        message = result.Message,
+      });
     }
 
     // GET: api/Auth/5
     [HttpGet("{id}")]
     public async Task<IActionResult> GetAccountById(int id)
     {
-      var account = await _acc.GetAccount(id);
+      var result = await _acc.GetAccount(id);
 
-      if (account.StatusCode == 200)
+      if (result.StatusCode == 200)
       {
         return Ok(new
         {
-          message = account.Message,
-          data = account.Data
+          statusCode = result.StatusCode,
+          message = result.Message,
+          data = result.AccountResData
         });
       }
 
-      if (account.StatusCode == 404)
+      if (result.StatusCode == 404)
       {
         return NotFound(new
         {
-          message = account.Message,
-          data = account.Data,
+          statusCode = result.StatusCode,
+          message = result.Message,
         });
       }
-      return BadRequest(account);
+      return StatusCode(500, new
+      {
+        statusCode = result.StatusCode,
+        message = result.Message,
+      });
     }
 
     [HttpGet, Route("detail/{id}")]
@@ -155,7 +161,7 @@ namespace server.Controllers
         return Ok(new
         {
           message = account.Message,
-          data = account.Data
+          data = account.AccountData
         });
       }
 
@@ -173,40 +179,65 @@ namespace server.Controllers
     [HttpGet("search")]
     public async Task<IActionResult> RelativeSearchAccounts([FromQuery] string? TeacherName, [FromQuery] int? schoolId, [FromQuery] int? roleId, [FromQuery] int pageNumber, [FromQuery] int pageSize)
     {
-      try
+      if (pageNumber < 1 || pageSize < 1)
       {
-        if (pageNumber < 1 || pageSize < 1)
-        {
-          return BadRequest("Page number and page size must be positive integers.");
-        }
-
-        var results = await _acc.RelativeSearchAccounts(TeacherName, schoolId, roleId, pageNumber, pageSize);
-
-        if (results == null || !results.Any())
-        {
-          return NotFound("No accounts found matching the criteria."); // 404 if no results
-        }
-
-        return Ok(results); // return 200 with the search results
+        return BadRequest("Page number and page size must be positive integers.");
       }
-      catch (Exception ex)
+
+      var results = await _acc.RelativeSearchAccounts(TeacherName, schoolId, roleId, pageNumber, pageSize);
+
+      if (results.StatusCode == 404)
       {
-        // return a 500 Internal Server Error in case of any exceptions
-        return StatusCode(500, $"Internal server error: {ex.Message}");
+        return NotFound(new
+        {
+          statusCode = results.StatusCode,
+          message = results.Message,
+        });
       }
+      if (results.StatusCode == 200)
+        return Ok(new
+        {
+          statusCode = results.StatusCode,
+          message = results.Message,
+          data = results.AccountsResData
+        });
+
+      return StatusCode(500, new
+      {
+        statusCode = results.StatusCode,
+        message = results.Message,
+      });
     }
 
     // PUT: api/Auth/5
     [Authorize(Policy = "SuperAdminAndAdmin")]
     [HttpPut, Route("{id}")]
-    public async Task<IActionResult> PutAccount(int id, AccountDto account)
+    public async Task<IActionResult> UpdateAccount(int id, AccountBody model)
     {
-      var result = await _acc.UpdateAccount(id, account);
-      if (result.StatusCode != 200)
+      var result = await _acc.UpdateAccount(id, model);
+      if (result.StatusCode == 200)
       {
-        return BadRequest(result);
+        return Ok(new
+        {
+          statusCode = result.StatusCode,
+          message = result.Message,
+        });
       }
-      return Ok(result);
+
+      if (result.StatusCode == 404)
+      {
+        return NotFound(new
+        {
+          statusCode = result.StatusCode,
+          message = result.Message,
+        });
+      }
+
+      return StatusCode(500, new
+      {
+        statusCode = result.StatusCode,
+        message = result.Message,
+      });
     }
 
     // POST: api/Auth
@@ -214,7 +245,7 @@ namespace server.Controllers
     [HttpPost]
     public async Task<IActionResult> CreateAccount(RegisterDto account)
     {
-      var result = await _acc.AddAccount(account);
+      var result = await _acc.CreateAccount(account);
 
       if (result.StatusCode == 422)
       {
@@ -265,6 +296,7 @@ namespace server.Controllers
       {
         return NotFound(new
         {
+          statusCode = result.StatusCode,
           message = result.Message,
         });
       }
@@ -273,12 +305,14 @@ namespace server.Controllers
       {
         return Ok(new
         {
+          statusCode = result.StatusCode,
           message = result.Message,
         });
       }
 
       return StatusCode(500, new
       {
+        statusCode = result.StatusCode,
         message = result.Message,
       });
     }
@@ -288,33 +322,60 @@ namespace server.Controllers
     public async Task<IActionResult> BulkDelete(List<int> ids)
     {
       var result = await _acc.BulkDelete(ids);
-      if (result.StatusCode != 200)
+      if (result.StatusCode == 200)
       {
-        return BadRequest(result);
+        return Ok(new
+        {
+          statusCode = result.StatusCode,
+          message = result.Message,
+        });
       }
 
-      return Ok(result);
+      if (result.StatusCode == 400)
+      {
+        return BadRequest(new
+        {
+          statusCode = result.StatusCode,
+          message = result.Message,
+        });
+      }
+
+      if (result.StatusCode == 404)
+      {
+        return NotFound(new
+        {
+          statusCode = result.StatusCode,
+          message = result.Message,
+        });
+      }
+
+      return StatusCode(500, new
+      {
+        statusCode = result.StatusCode,
+        message = result.Message,
+      });
     }
 
     [Authorize(Policy = "SuperAdminAndAdmin")]
     [HttpPost, Route("upload")]
     public async Task<IActionResult> ImportExcel(IFormFile file)
     {
-      try
+      var result = await _acc.ImportExcel(file);
+
+      if (result.StatusCode == 400)
       {
-        var result = await _acc.ImportExcel(file);
-        if (!result.Contains("Successfully"))
+        return BadRequest(new
         {
-          return BadRequest(result);
-        }
-
-        return Ok(result);
+          statusCode = result.StatusCode,
+          message = result.Message,
+        });
       }
-      catch (Exception ex)
+
+      return Ok(new
       {
-        return StatusCode(500, $"Server Error: {ex.Message}");
-      }
-
+        statusCode = result.StatusCode,
+        message = result.Message,
+      });
     }
   }
 }

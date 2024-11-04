@@ -1,6 +1,6 @@
 ﻿namespace server.Types
 {
-  public class SemesterResType
+  public class SemesterResData
   {
     public int SemesterId { get; set; }
 

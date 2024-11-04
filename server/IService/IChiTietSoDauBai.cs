@@ -30,7 +30,7 @@ namespace server.IService
     */
     /// </summary>
     /// <returns></returns>
-    Task<ResponseData<ChiTiet_BiaSoDauBaiResType>> GetChiTiet_Bia_Class_Teacher(int chiTietId);
+    Task<ResponseData<ChiTiet_BiaSoDauBaiResData>> GetChiTiet_Bia_Class_Teacher(int chiTietId);
 
     /// <summary>Get chitietid show info Week</summary>
     /// <param name="chiTietId"></param>
@@ -49,7 +49,7 @@ namespace server.IService
     ///  }
     ///}
     /// </returns>
-    Task<ResponseData<ChiTiet_WeekResType>> GetChiTiet_Week_XepLoai(int chiTietId);
+    Task<ResponseData<ChiTiet_WeekResData>> GetChiTiet_Week_XepLoai(int chiTietId);
 
     /// <summary>
     /// Get chi tiet sdb by SchoolId and weekId and BiaSoDauBaiId and ClassId
@@ -61,7 +61,7 @@ namespace server.IService
     ///  t.teacherId, 
     ///  t.fullname
     ///  </returns>
-    Task<ResponseData<IEnumerable<ChiTietSDBResType>>> GetChiTietBySchool(int schoolId, int weekId, int biaId, int classId, int pageNumber, int pageSize);
+    Task<ResponseData<IEnumerable<ChiTietSDBResData>>> GetChiTietBySchool(int schoolId, int weekId, int biaId, int classId, int pageNumber, int pageSize);
 
   }
 }

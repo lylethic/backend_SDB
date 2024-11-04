@@ -1,20 +1,23 @@
 ﻿using server.Dtos;
+using server.Types;
 
 namespace server.IService
 {
   public interface ITeacher
   {
-    Task<ResponseData<TeacherDto>> CreateTeacher(TeacherDto model);
+    Task<TeacherResType> CreateTeacher(TeacherDto model);
 
-    Task<ResponseData<TeacherDto>> GetTeacher(int id);
+    Task<TeacherResType> GetTeacher(int id);
 
-    Task<List<TeacherDto>> GetTeachers(int pageNumber, int pageSize);
+    Task<int> GetCountTeachersBySchool(int id);
 
-    Task<List<TeacherDto>> GetTeachersBySchool(int pageNumber, int pageSize, int schoolId);
+    Task<TeacherResType> GetTeachers(int pageNumber, int pageSize);
 
-    Task<ResponseData<TeacherDto>> DeleteTeacher(int id);
+    Task<TeacherResType> GetTeachersBySchool(int pageNumber, int pageSize, int schoolId);
 
-    Task<ResponseData<TeacherDto>> UpdateTeacher(int id, TeacherDto model);
+    Task<TeacherResType> DeleteTeacher(int id);
+
+    Task<TeacherResType> UpdateTeacher(int id, TeacherDto model);
 
     Task<string> ImportExcelFile(IFormFile file);
 

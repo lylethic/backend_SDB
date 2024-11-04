@@ -1,6 +1,6 @@
 ﻿namespace server.Types
 {
-  public class ClassResType
+  public class ClassResData
   {
     public int ClassId { get; set; }
 

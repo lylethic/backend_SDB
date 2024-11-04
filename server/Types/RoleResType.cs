@@ -3,13 +3,12 @@ using server.Models;
 
 namespace server.Types
 {
-  public class RoleResType
+  public class RoleResType : ModelResType
   {
-    public int StatusCode { get; set; }
-    public string Message { get; set; } = String.Empty;
-
     public List<RoleDto>? RoleData { get; set; }
+
     public RoleDto? RolebyId { get; set; }
+
     public List<Error>? Errors { get; set; }
 
     public RoleResType() { }

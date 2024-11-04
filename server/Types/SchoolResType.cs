@@ -3,11 +3,8 @@ using server.Models;
 
 namespace server.Types
 {
-  public class SchoolResType
+  public class SchoolResType : ModelResType
   {
-    public int StatusCode { get; set; }
-    public string Message { get; set; } = String.Empty;
-
     public List<SchoolDto>? SchoolData { get; set; }
     public SchoolDto? SchoolById { get; set; }
     public List<Error>? Errors { get; set; }

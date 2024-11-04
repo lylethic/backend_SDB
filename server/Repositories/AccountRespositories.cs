@@ -31,7 +31,7 @@ namespace server.Repositories
       return Regex.IsMatch(email, regex);
     }
 
-    public async Task<AccountsResType> AddAccount(RegisterDto acc)
+    public async Task<AccountsResType> CreateAccount(RegisterDto acc)
     {
       try
       {
@@ -97,7 +97,7 @@ namespace server.Repositories
             new SqlParameter("@DateUpdated", DBNull.Value)
         );
 
-        var accountAddResType = new AccountAddResType
+        var accountAddResType = new AccountAddBody
         {
           RoleId = acc.RoleId,
           SchoolId = acc.SchoolId,
@@ -114,7 +114,7 @@ namespace server.Repositories
       }
     }
 
-    public async Task<ResponseData<AccountResType>> GetAccount(int id)
+    public async Task<AccountsResType> GetAccount(int id)
     {
       try
       {
@@ -144,10 +144,10 @@ namespace server.Repositories
 
         if (account is null)
         {
-          return new ResponseData<AccountResType>(404, "Account not found");
+          return new AccountsResType(404, "Account not found");
         }
 
-        var result = new AccountResType
+        var result = new AccountResData
         {
           AccountId = account.AccountId,
           RoleId = account.RoleId,
@@ -158,15 +158,15 @@ namespace server.Repositories
           StatusTeacher = account.Teacher?.Status
         };
 
-        return new ResponseData<AccountResType>(200, "Success", result);
+        return new AccountsResType(200, "Success", result);
       }
       catch (Exception ex)
       {
-        return new ResponseData<AccountResType>(500, $"Server error: {ex.Message}");
+        return new AccountsResType(500, $"Server error: {ex.Message}");
       }
     }
 
-    public async Task<ResponseData<AccountData>> GetAccountById(int id)
+    public async Task<AccountsResType> GetAccountById(int id)
     {
       try
       {
@@ -186,14 +186,14 @@ namespace server.Repositories
 
         if (account is null)
         {
-          return new ResponseData<AccountData>(404, "Account not found");
+          return new AccountsResType(404, "Account not found");
         }
 
-        return new ResponseData<AccountData>(200, "Success", account);
+        return new AccountsResType(200, "Success", account);
       }
       catch (Exception ex)
       {
-        return new ResponseData<AccountData>(500, $"Server error: {ex.Message}");
+        return new AccountsResType(500, $"Server error: {ex.Message}");
       }
     }
 
@@ -209,7 +209,7 @@ namespace server.Repositories
                             from role in roleGroup.DefaultIfEmpty()
                             join school in _context.Schools on account.SchoolId equals school.SchoolId into schoolGroup
                             from school in schoolGroup.DefaultIfEmpty()
-                            select new AccountsData
+                            select new AccountsResData
                             {
                               AccountId = account.AccountId,
                               RoleId = account.RoleId,
@@ -223,43 +223,22 @@ namespace server.Repositories
 
         // Apply pagination
         var pagedAccounts = await accountsQuery
-                            .OrderBy(a => a.Email)
+                            .OrderBy(a => a.AccountId)
                             .Skip(skip)
                             .Take(pageSize)
                             .ToListAsync();
 
         if (pagedAccounts == null || pagedAccounts.Count == 0)
         {
-          return new AccountsResType
-          {
-            IsSuccess = false,
-            StatusCode = 404,
-            Message = "Không tìm thấy accounts",
-            Data = null
-          };
+          return new AccountsResType(404, "Không tìm thấy accounts");
         }
 
-        // Create the success response
-        var response = new AccountsResType
-        {
-          IsSuccess = true,
-          StatusCode = 200,
-          Message = "Success",
-          Data = pagedAccounts
-        };
-
-        return response;
+        return new AccountsResType(200, "Thành công", pagedAccounts);
       }
       catch (Exception ex)
       {
         Console.WriteLine($"Error occurred: {ex.Message}, Inner Exception: {ex.InnerException?.Message}");
-        return new AccountsResType
-        {
-          IsSuccess = false,
-          StatusCode = 500,
-          Message = $"An error occurred: {ex.Message}",
-          Data = null
-        };
+        return new AccountsResType(500, $"An error occurred: {ex.Message}");
       }
     }
 
@@ -275,7 +254,7 @@ namespace server.Repositories
                             from role in roleGroup.DefaultIfEmpty()
                             join school in _context.Schools on account.SchoolId equals school.SchoolId into schoolGroup
                             from school in schoolGroup.DefaultIfEmpty()
-                            select new AccountsData
+                            select new AccountsResData
                             {
                               AccountId = account.AccountId,
                               RoleId = account.RoleId,
@@ -297,40 +276,20 @@ namespace server.Repositories
 
         if (pagedAccounts == null || pagedAccounts.Count == 0)
         {
-          return new AccountsResType
-          {
-            IsSuccess = false,
-            StatusCode = 404,
-            Message = "Không tìm thấy accounts",
-            Data = null
-          };
+          return new AccountsResType(404, "Không tìm thấy accounts");
         }
 
         // Create the success response
-        var response = new AccountsResType
-        {
-          IsSuccess = true,
-          StatusCode = 200,
-          Message = "Success",
-          Data = pagedAccounts
-        };
-
-        return response;
+        return new AccountsResType(200, "Thành công", pagedAccounts);
       }
       catch (Exception ex)
       {
         Console.WriteLine($"Error occurred: {ex.Message}, Inner Exception: {ex.InnerException?.Message}");
-        return new AccountsResType
-        {
-          IsSuccess = false,
-          StatusCode = 500,
-          Message = $"An error occurred: {ex.Message}",
-          Data = null
-        };
+        return new AccountsResType(500, $"An error occurred: {ex.Message}");
       }
     }
 
-    public async Task<List<AccountDto>> GetAccountsByRole(int pageNumber, int pageSize, int roleId)
+    public async Task<AccountsResType> GetAccountsByRole(int pageNumber, int pageSize, int roleId)
     {
       try
       {
@@ -357,22 +316,21 @@ namespace server.Repositories
           Email = acc.Email
         }).ToList();
 
-        return result;
+        return new AccountsResType(200, "Thành công", result);
       }
       catch (Exception ex)
       {
-        Console.WriteLine(ex.Message);
-        throw new Exception($"Server error: {ex.Message}");
+        return new AccountsResType(500, $"Server error: {ex.Message}");
       }
     }
 
-    public async Task<ResponseData<AccountDto>> UpdateAccount(int accountId, AccountDto model)
+    public async Task<AccountsResType> UpdateAccount(int accountId, AccountBody model)
     {
       try
       {
         if (!IsValidEmail(model.Email))
         {
-          return new ResponseData<AccountDto>(400, "Invalid Email format");
+          return new AccountsResType(400, "Invalid Email format");
         }
 
         var query = "SELECT * FROM ACCOUNT WHERE AccountId = @accountId";
@@ -383,7 +341,7 @@ namespace server.Repositories
 
         if (existingAccount is null)
         {
-          return new ResponseData<AccountDto>(404, "Account not found");
+          return new AccountsResType(404, "Account not found");
         }
 
         bool hasChanges = false;
@@ -437,21 +395,22 @@ namespace server.Repositories
           // Execute the update query
           var updateQuery = queryBuilder.ToString();
           await _context.Database.ExecuteSqlRawAsync(updateQuery, [.. parameters]);
-          return new ResponseData<AccountDto>(200, "Updated");
+
+          return new AccountsResType(200, "Updated");
 
         }
         else
         {
-          return new ResponseData<AccountDto>(200, "No changes detected");
+          return new AccountsResType(200, "No changes detected");
         }
       }
       catch (Exception ex)
       {
-        return new ResponseData<AccountDto>(500, $"Server Error: {ex.Message}");
+        return new AccountsResType(500, $"Server Error: {ex.Message}");
       }
     }
 
-    public async Task<ResponseData<AccountsResType>> DeleteAccount(int accountId)
+    public async Task<AccountsResType> DeleteAccount(int accountId)
     {
       try
       {
@@ -464,7 +423,7 @@ namespace server.Repositories
         // Check account null??
         if (account is null)
         {
-          return new ResponseData<AccountsResType>(404, "Account not found!");
+          return new AccountsResType(404, "Account not found!");
         }
 
         // Delete query
@@ -472,15 +431,15 @@ namespace server.Repositories
         await _context.Database
           .ExecuteSqlRawAsync(deleteQuery, new SqlParameter("@accountId", accountId));
 
-        return new ResponseData<AccountsResType>(200, "Deleted");
+        return new AccountsResType(200, "Deleted");
       }
       catch (Exception ex)
       {
-        return new ResponseData<AccountsResType>(500, $"Server error deleting account: {ex.Message}");
+        return new AccountsResType(500, $"Server error deleting account: {ex.Message}");
       }
     }
 
-    public async Task<string> ImportExcel(IFormFile file)
+    public async Task<AccountsResType> ImportExcel(IFormFile file)
     {
       try
       {
@@ -573,18 +532,18 @@ namespace server.Repositories
             } while (reader.NextResult());
           }
 
-          return "Successfully inserted";
+          return new AccountsResType(200, "Successfully inserted");
         }
-        return "No file uploaded";
+        return new AccountsResType(400, "No file uploaded");
 
       }
       catch (Exception ex)
       {
-        throw new Exception($"Error while uploading file: {ex.Message}");
+        return new AccountsResType(500, $"Error while uploading file: {ex.Message}");
       }
     }
 
-    public async Task<ResponseData<string>> BulkDelete(List<int> ids)
+    public async Task<AccountsResType> BulkDelete(List<int> ids)
     {
       await using var transaction = await _context.Database.BeginTransactionAsync();
 
@@ -592,7 +551,7 @@ namespace server.Repositories
       {
         if (ids is null || ids.Count == 0)
         {
-          return new ResponseData<string>(400, "No IDs provided.");
+          return new AccountsResType(400, "No IDs provided.");
         }
 
         var idList = string.Join(",", ids);
@@ -603,21 +562,21 @@ namespace server.Repositories
 
         if (delete == 0)
         {
-          return new ResponseData<string>(404, "No AccountId found to delete");
+          return new AccountsResType(404, "No AccountId found to delete");
         }
 
         await transaction.CommitAsync();
 
-        return new ResponseData<string>(200, "Deleted succesfully");
+        return new AccountsResType(200, "Deleted succesfully");
       }
       catch (Exception ex)
       {
         await transaction.RollbackAsync();
-        return new ResponseData<string>(500, $"Server error: {ex.Message}");
+        return new AccountsResType(500, $"Server error: {ex.Message}");
       }
     }
 
-    public async Task<List<AccountResType>> RelativeSearchAccounts(string? TeacherName, int? schoolId, int? roleId, int pageNumber, int pageSize)
+    public async Task<AccountsResType> RelativeSearchAccounts(string? TeacherName, int? schoolId, int? roleId, int pageNumber, int pageSize)
     {
       try
       {
@@ -647,7 +606,7 @@ namespace server.Repositories
         query = query.Skip((pageNumber - 1) * pageSize).Take(pageSize);
 
         var results = await query
-          .Select(a => new AccountResType
+          .Select(a => new AccountResData
           {
             AccountId = a.AccountId,
             RoleId = a.RoleId,
@@ -659,11 +618,16 @@ namespace server.Repositories
           })
           .ToListAsync();
 
-        return results;
+        if (results is null)
+        {
+          return new AccountsResType(404, "Không có kết quả");
+        }
+
+        return new AccountsResType(200, "Thành công", results);
       }
       catch (Exception ex)
       {
-        throw new Exception($"Server error: {ex.Message}");
+        return new AccountsResType(500, $"Server error: {ex.Message}");
       }
     }
 
@@ -684,7 +648,10 @@ namespace server.Repositories
     {
       try
       {
-        var accounts = await _context.Accounts.Where(x => x.SchoolId == schoolId).CountAsync();
+        var accounts = await _context.Accounts
+          .Where(x => x.SchoolId == schoolId)
+          .CountAsync();
+
         return accounts;
       }
       catch (Exception ex)

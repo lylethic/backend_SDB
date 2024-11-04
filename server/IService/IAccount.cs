@@ -11,24 +11,24 @@ namespace server.IService
 
     Task<AccountsResType> GetAccounts(int pageNumber, int pageSize);
 
-    Task<List<AccountDto>> GetAccountsByRole(int pageNumber, int pageSize, int roleId);
+    Task<AccountsResType> GetAccountsByRole(int pageNumber, int pageSize, int roleId);
 
-    Task<ResponseData<AccountResType>> GetAccount(int id);
+    Task<AccountsResType> GetAccount(int id);
 
-    Task<ResponseData<AccountData>> GetAccountById(int id);
+    Task<AccountsResType> GetAccountById(int id);
 
-    Task<AccountsResType> AddAccount(RegisterDto acc);
+    Task<AccountsResType> CreateAccount(RegisterDto model);
 
-    Task<ResponseData<AccountDto>> UpdateAccount(int accountId, AccountDto acc);
+    Task<AccountsResType> UpdateAccount(int accountId, AccountBody model);
 
-    Task<ResponseData<AccountsResType>> DeleteAccount(int id);
+    Task<AccountsResType> DeleteAccount(int id);
 
-    Task<string> ImportExcel(IFormFile file);
+    Task<AccountsResType> ImportExcel(IFormFile file);
 
-    Task<ResponseData<string>> BulkDelete(List<int> ids);
+    Task<AccountsResType> BulkDelete(List<int> ids);
 
     Task<AccountsResType> GetAccountsBySchoolId(int pageNumber, int pageSize, int schoolId);
 
-    Task<List<AccountResType>> RelativeSearchAccounts(string? TeacherName, int? schoolId, int? roleId, int pageNumber, int pageSize);
+    Task<AccountsResType> RelativeSearchAccounts(string? TeacherName, int? schoolId, int? roleId, int pageNumber, int pageSize);
   }
 }

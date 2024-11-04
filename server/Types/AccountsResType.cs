@@ -1,26 +1,62 @@
-﻿using server.Models;
+﻿using server.Dtos;
+using server.Models;
 
 namespace server.Types
 {
-  public class AccountsResType
+  public class AccountsResType : ModelResType
   {
-    public bool IsSuccess { get; set; }
-    public int StatusCode { get; set; }
-    public string Message { get; set; } = String.Empty;
+    public List<AccountsResData>? Data { get; set; }
 
-    public List<AccountsData>? Data { get; set; }
-    public AccountAddResType AccountAddResType { get; set; }
+    public List<AccountDto>? AccountDto { get; set; }
+
+    public AccountDto? Account { get; set; }
+
+    public AccountData? AccountData { get; set; }
+
+    public AccountResData? AccountResData { get; set; }
+
+    public List<AccountResData>? AccountsResData { get; set; }
+
+    public AccountAddBody? AccountAddResType { get; set; }
 
     public List<Error>? Errors { get; set; }
 
 
     public AccountsResType() { }
 
-    public AccountsResType(int statusCode, string message, List<AccountsData> data)
+    public AccountsResType(int statusCode, string message, List<AccountsResData> data)
     {
       this.StatusCode = statusCode;
       this.Message = message;
       this.Data = data;
+    }
+
+    public AccountsResType(int statusCode, string message, List<AccountResData> data)
+    {
+      this.StatusCode = statusCode;
+      this.Message = message;
+      this.AccountsResData = data;
+    }
+
+    public AccountsResType(int statusCode, string message, AccountDto data)
+    {
+      this.StatusCode = statusCode;
+      this.Message = message;
+      this.Account = data;
+    }
+
+    public AccountsResType(int statusCode, string message, AccountData data)
+    {
+      this.StatusCode = statusCode;
+      this.Message = message;
+      this.AccountData = data;
+    }
+
+    public AccountsResType(int statusCode, string message, List<AccountDto> data)
+    {
+      this.StatusCode = statusCode;
+      this.Message = message;
+      this.AccountDto = data;
     }
 
     public AccountsResType(int statusCode, string message)
@@ -38,11 +74,19 @@ namespace server.Types
       this.IsSuccess = isSuccess;
     }
 
-    public AccountsResType(int statusCode, string message, AccountAddResType data)
+    public AccountsResType(int statusCode, string message, AccountAddBody data)
     {
       this.StatusCode = statusCode;
       this.Message = message;
       this.AccountAddResType = data;
+    }
+
+
+    public AccountsResType(int statusCode, string message, AccountResData data)
+    {
+      this.StatusCode = statusCode;
+      this.Message = message;
+      this.AccountResData = data;
     }
   }
 }

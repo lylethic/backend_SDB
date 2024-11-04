@@ -1,6 +1,6 @@
 ﻿namespace server.Types
 {
-  public class AccountResType
+  public class AccountResData
   {
     public int AccountId { get; set; }
 

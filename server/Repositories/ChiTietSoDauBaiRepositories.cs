@@ -536,7 +536,7 @@ namespace server.Repositories
       }
     }
 
-    public async Task<ResponseData<ChiTiet_BiaSoDauBaiResType>> GetChiTiet_Bia_Class_Teacher(int chiTietId)
+    public async Task<ResponseData<ChiTiet_BiaSoDauBaiResData>> GetChiTiet_Bia_Class_Teacher(int chiTietId)
     {
       try
       {
@@ -555,7 +555,7 @@ namespace server.Repositories
 
         var chitietSoDauBai = await _context.ChiTietSoDauBais.FromSqlRaw(find,
         new SqlParameter("@id", chiTietId))
-        .Select(ct => new ChiTiet_BiaSoDauBaiResType
+        .Select(ct => new ChiTiet_BiaSoDauBaiResData
         {
           ChiTietSoDauBaiId = ct.ChiTietSoDauBaiId,
           BiaSoDauBaiId = ct.BiaSoDauBaiId,
@@ -569,10 +569,10 @@ namespace server.Repositories
 
         if (chitietSoDauBai is null)
         {
-          return new ResponseData<ChiTiet_BiaSoDauBaiResType>(404, "Chi tiet so dau bai id not found");
+          return new ResponseData<ChiTiet_BiaSoDauBaiResData>(404, "Chi tiet so dau bai id not found");
         }
 
-        var result = new ChiTiet_BiaSoDauBaiResType
+        var result = new ChiTiet_BiaSoDauBaiResData
         {
           ChiTietSoDauBaiId = chitietSoDauBai.ChiTietSoDauBaiId,
           BiaSoDauBaiId = chitietSoDauBai.BiaSoDauBaiId,
@@ -583,7 +583,7 @@ namespace server.Repositories
           TeacherFullName = chitietSoDauBai.TeacherFullName
         };
 
-        return new ResponseData<ChiTiet_BiaSoDauBaiResType>(200, result);
+        return new ResponseData<ChiTiet_BiaSoDauBaiResData>(200, result);
 
       }
       catch (System.Exception ex)
@@ -592,7 +592,7 @@ namespace server.Repositories
       }
     }
 
-    public async Task<ResponseData<ChiTiet_WeekResType>> GetChiTiet_Week_XepLoai(int chiTietId)
+    public async Task<ResponseData<ChiTiet_WeekResData>> GetChiTiet_Week_XepLoai(int chiTietId)
     {
       try
       {
@@ -613,7 +613,7 @@ namespace server.Repositories
 
         var chitietSoDauBai = await _context.ChiTietSoDauBais.FromSqlRaw(find,
         new SqlParameter("@id", chiTietId))
-        .Select(ct => new ChiTiet_WeekResType
+        .Select(ct => new ChiTiet_WeekResData
         {
           ChiTietSoDauBaiId = ct.ChiTietSoDauBaiId,
           WeekId = ct.WeekId,
@@ -627,10 +627,10 @@ namespace server.Repositories
 
         if (chitietSoDauBai is null)
         {
-          return new ResponseData<ChiTiet_WeekResType>(404, "Chi tiet so dau bai id not found");
+          return new ResponseData<ChiTiet_WeekResData>(404, "Chi tiet so dau bai id not found");
         }
 
-        var result = new ChiTiet_WeekResType
+        var result = new ChiTiet_WeekResData
         {
           ChiTietSoDauBaiId = chitietSoDauBai.ChiTietSoDauBaiId,
           WeekId = chitietSoDauBai.WeekId,
@@ -641,7 +641,7 @@ namespace server.Repositories
           SoDiem = chitietSoDauBai.SoDiem
         };
 
-        return new ResponseData<ChiTiet_WeekResType>(200, result);
+        return new ResponseData<ChiTiet_WeekResData>(200, result);
 
       }
       catch (Exception ex)
@@ -650,7 +650,7 @@ namespace server.Repositories
       }
     }
 
-    public async Task<ResponseData<IEnumerable<ChiTietSDBResType>>> GetChiTietBySchool(int schoolId, int weekId, int biaId, int classId, int pageNumber, int pageSize)
+    public async Task<ResponseData<IEnumerable<ChiTietSDBResData>>> GetChiTietBySchool(int schoolId, int weekId, int biaId, int classId, int pageNumber, int pageSize)
     {
       try
       {
@@ -691,7 +691,7 @@ namespace server.Repositories
         new SqlParameter("@skip", skip),
         new SqlParameter("@pageSize", pageSize)
         )
-        .Select(ct => new ChiTietSDBResType
+        .Select(ct => new ChiTietSDBResData
         {
           ChiTietSoDauBaiId = ct.ChiTietSoDauBaiId,
           BiaSoDauBaiId = ct.BiaSoDauBaiId,
@@ -717,10 +717,10 @@ namespace server.Repositories
 
         if (chitietSoDauBai is null || chitietSoDauBai.Count == 0)
         {
-          return new ResponseData<IEnumerable<ChiTietSDBResType>>(404, "No results");
+          return new ResponseData<IEnumerable<ChiTietSDBResData>>(404, "No results");
         }
 
-        return new ResponseData<IEnumerable<ChiTietSDBResType>>(200, chitietSoDauBai);
+        return new ResponseData<IEnumerable<ChiTietSDBResData>>(200, chitietSoDauBai);
 
       }
       catch (System.Exception ex)

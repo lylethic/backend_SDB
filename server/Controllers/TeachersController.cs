@@ -21,40 +21,63 @@ namespace server.Controllers
     [HttpGet]
     public async Task<IActionResult> GetTeachers(int pageNumber = 1, int pageSize = 50)
     {
-      try
+      var teachers = await _teacherRepo.GetTeachers(pageNumber, pageSize);
+
+      if (teachers.StatusCode == 404)
       {
-        var teachers = await _teacherRepo.GetTeachers(pageNumber, pageSize);
-        if (teachers == null)
+        return NotFound(new
         {
-          return NotFound(); // 404
-        }
-        return Ok(teachers); // 200
+          statusCode = teachers.StatusCode,
+          message = teachers.Message,
+        });
       }
-      catch (Exception ex)
+
+      if (teachers.StatusCode == 200)
       {
-        Console.WriteLine(ex.Message);
-        return StatusCode(500, $"Server error: {ex.Message}"); // 500
+        return Ok(new
+        {
+          statusCode = teachers.StatusCode,
+          message = teachers.Message,
+          data = teachers.Datas
+        });
       }
+
+      return StatusCode(500, new
+      {
+        statusCode = teachers.StatusCode,
+        message = teachers.Message,
+      });
     }
 
-    [HttpGet, Route("GetTeachersBySchool")]
+    [HttpGet, Route("get-teachers-by-school")]
     public async Task<IActionResult> GetTeachersBySchool(int pageNumber, int pageSize, int schoolId)
     {
-      try
-      {
-        var teachers = await _teacherRepo.GetTeachersBySchool(pageNumber, pageSize, schoolId);
-        if (teachers == null)
-        {
-          return NotFound(); // 404
-        }
+      var teachers = await _teacherRepo.GetTeachersBySchool(pageNumber, pageSize, schoolId);
 
-        return Ok(teachers); // 200
-      }
-      catch (Exception ex)
+      if (teachers.StatusCode == 404)
       {
-        Console.WriteLine(ex.Message);
-        return StatusCode(500, $"Server error: {ex.Message}"); // 500
+        return NotFound(new
+        {
+          statusCode = teachers.StatusCode,
+          message = teachers.Message,
+        });
       }
+
+      if (teachers.StatusCode == 200)
+      {
+        return Ok(new
+        {
+          statusCode = teachers.StatusCode,
+          message = teachers.Message,
+          data = teachers.Datas
+        });
+      }
+
+      return StatusCode(500, new
+      {
+        statusCode = teachers.StatusCode,
+        message = teachers.Message,
+      });
     }
 
     // GET: api/Teachers/5
@@ -63,26 +86,69 @@ namespace server.Controllers
     {
       var teacher = await _teacherRepo.GetTeacher(id);
 
-      if (teacher.StatusCode != 200)
+      if (teacher.StatusCode == 404)
       {
-        return BadRequest(teacher);
+        return NotFound(new
+        {
+          statusCode = teacher.StatusCode,
+          message = teacher.Message,
+        });
       }
 
-      return Ok(teacher);
+      if (teacher.StatusCode == 200)
+      {
+        return Ok(new
+        {
+          statusCode = teacher.StatusCode,
+          message = teacher.Message,
+          data = teacher.Datas
+        });
+      }
+
+      return StatusCode(500, new
+      {
+        statusCode = teacher.StatusCode,
+        message = teacher.Message,
+      });
+    }
+
+    [HttpGet, Route("count-amount-of-teachers/{id}")]
+    public async Task<IActionResult> GetCountAmountOfTeachers(int id)
+    {
+      var result = await _teacherRepo.GetCountTeachersBySchool(id);
+      return Ok(result);
     }
 
     // PUT: api/Teachers/5
     [HttpPut("{id}")]
-    public async Task<IActionResult> PutTeacher(int id, TeacherDto model)
+    public async Task<IActionResult> UpdateTeacher(int id, TeacherDto model)
     {
       var teacher = await _teacherRepo.UpdateTeacher(id, model);
 
-      if (teacher.StatusCode != 200)
+      if (teacher.StatusCode == 404)
       {
-        return BadRequest(teacher);
+        return NotFound(new
+        {
+          statusCode = teacher.StatusCode,
+          message = teacher.Message,
+        });
       }
 
-      return Ok(teacher);
+      if (teacher.StatusCode == 200)
+      {
+        return Ok(new
+        {
+          statusCode = teacher.StatusCode,
+          message = teacher.Message,
+          data = teacher.Datas
+        });
+      }
+
+      return StatusCode(500, new
+      {
+        statusCode = teacher.StatusCode,
+        message = teacher.Message,
+      });
     }
 
     // POST: api/Teachers
@@ -90,28 +156,64 @@ namespace server.Controllers
     [HttpPost]
     public async Task<IActionResult> PostTeacher(TeacherDto model)
     {
-      var teacher = await _teacherRepo.CreateTeacher(model);
+      var result = await _teacherRepo.CreateTeacher(model);
 
-      if (teacher.StatusCode != 200)
+      if (result.StatusCode == 409)
       {
-        return BadRequest(teacher);
+        return StatusCode(409, new
+        {
+          statusCode = result.StatusCode,
+          message = result.Message,
+        });
       }
 
-      return Ok(teacher);
+      if (result.StatusCode == 200)
+      {
+        return Ok(new
+        {
+          statusCode = result.StatusCode,
+          message = result.Message,
+          data = result.Datas
+        });
+      }
+
+      return StatusCode(500, new
+      {
+        statusCode = result.StatusCode,
+        message = result.Message,
+      });
     }
 
     // DELETE: api/Teachers/5
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeleteTeacher(int id)
     {
-      var teacher = await _teacherRepo.DeleteTeacher(id);
+      var result = await _teacherRepo.DeleteTeacher(id);
 
-      if (teacher.StatusCode != 200)
+      if (result.StatusCode == 404)
       {
-        return BadRequest(teacher);
+        return NotFound(new
+        {
+          statusCode = result.StatusCode,
+          message = result.Message,
+        });
       }
 
-      return Ok(teacher);
+      if (result.StatusCode == 200)
+      {
+        return Ok(new
+        {
+          statusCode = result.StatusCode,
+          message = result.Message,
+          data = result.Datas
+        });
+      }
+
+      return StatusCode(500, new
+      {
+        statusCode = result.StatusCode,
+        message = result.Message,
+      });
     }
 
     [Authorize(Policy = "SuperAdminAndAdmin")]
