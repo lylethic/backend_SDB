@@ -1,5 +1,5 @@
 ﻿using server.Dtos;
-using server.Types;
+using server.Types.BiaSoDauBai;
 
 namespace server.IService
 {
@@ -9,9 +9,15 @@ namespace server.IService
 
     Task<BiaSoDauBaiResType> GetBiaSoDauBai(int id);
 
+    Task<BiaSoDauBaiResType> GetBiaSoDauBais_Active(int pageNumber, int pageSize);
+
+    Task<BiaSoDauBaiResType> GetBiaSoDauBaisBySchool_Active(int pageNumber, int pageSize, int schoolId);
+
+    // status true && false
     Task<BiaSoDauBaiResType> GetBiaSoDauBais(int pageNumber, int pageSize);
 
-    Task<BiaSoDauBaiResType> GetBiaSoDauBaisBySchoolId(int pageNumber, int pageSize, int schoolId);
+    Task<BiaSoDauBaiResType> GetBiaSoDauBaisBySchool(int pageNumber, int pageSize, int schoolId);
+
 
     Task<BiaSoDauBaiResType> DeleteBiaSoDauBai(int id);
 

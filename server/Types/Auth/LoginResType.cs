@@ -1,6 +1,6 @@
 ﻿using server.Models;
 
-namespace server.Types
+namespace server.Types.Auth
 {
   public class LoginResType : ModelResType
   {

@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using server.Data;
 using server.Dtos;
 using server.IService;
-using server.Types;
+using server.Types.ChuNhiem;
 using System.Text;
 
 namespace server.Repositories

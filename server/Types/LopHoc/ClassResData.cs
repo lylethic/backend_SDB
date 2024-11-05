@@ -1,4 +1,4 @@
-﻿namespace server.Types
+﻿namespace server.Types.LopHoc
 {
   public class ClassResData
   {

@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using server.Data;
 using server.Dtos;
 using server.IService;
-using server.Types;
+using server.Types.BiaSoDauBai;
 using System.Text;
 
 namespace server.Repositories
@@ -135,29 +135,44 @@ namespace server.Repositories
       }
     }
 
-    public async Task<BiaSoDauBaiResType> GetBiaSoDauBais(int pageNumber, int pageSize)
+    public async Task<BiaSoDauBaiResType> GetBiaSoDauBais_Active(int pageNumber, int pageSize)
     {
       try
       {
         var skip = (pageNumber - 1) * pageSize;
 
-        var biaSoDauBai = await _context.BiaSoDauBais
+        var baiSoDauBaiQuery = from biaSo in _context.BiaSoDauBais
+                               join lop in _context.Classes on biaSo.ClassId equals lop.ClassId into lopHocGroup
+                               from lop in lopHocGroup.DefaultIfEmpty()
+                               join truong in _context.Schools on biaSo.SchoolId equals truong.SchoolId into schoolGroup
+                               from truong in schoolGroup.DefaultIfEmpty()
+                               join nienKhoa in _context.AcademicYears on biaSo.AcademicyearId equals nienKhoa.AcademicYearId into nienkhoaGroup
+                               from nienKhoa in nienkhoaGroup.DefaultIfEmpty()
+                               select new BiaSoDauBaiRes()
+                               {
+                                 BiaSoDauBaiId = biaSo.BiaSoDauBaiId,
+                                 SchoolId = biaSo.SchoolId,
+                                 SchoolName = truong.NameSchcool,
+                                 AcademicyearId = biaSo.AcademicyearId,
+                                 NienKhoaName = nienKhoa.DisplayAcademicYearName,
+                                 ClassId = biaSo.ClassId,
+                                 ClassName = lop.ClassName,
+                                 Status = biaSo.Status,
+                               };
+
+        var biaSoDauBai = await baiSoDauBaiQuery
+          .Where(x => x.Status == true)
+            .OrderBy(x => x.BiaSoDauBaiId)
             .Skip(skip)
             .Take(pageSize)
             .ToListAsync();
 
-        var result = biaSoDauBai.Select(x => new BiaSoDauBaiDto
+        if (biaSoDauBai is null || biaSoDauBai.Count == 0)
         {
-          BiaSoDauBaiId = x.BiaSoDauBaiId,
-          SchoolId = x.SchoolId,
-          AcademicyearId = x.AcademicyearId,
-          ClassId = x.ClassId,
-          Status = x.Status,
-          DateCreated = x.DateCreated,
-          DateUpdated = x.DateUpdated,
-        }).ToList();
+          return new BiaSoDauBaiResType(404, "Không có kết quả");
+        }
 
-        return new BiaSoDauBaiResType(200, "Thành công", result);
+        return new BiaSoDauBaiResType(200, "Thành công", biaSoDauBai);
       }
       catch (Exception ex)
       {
@@ -165,34 +180,137 @@ namespace server.Repositories
       }
     }
 
-    public async Task<BiaSoDauBaiResType> GetBiaSoDauBaisBySchoolId(int pageNumber, int pageSize, int schoolId)
+    public async Task<BiaSoDauBaiResType> GetBiaSoDauBaisBySchool_Active(int pageNumber, int pageSize, int schoolId)
     {
       try
       {
         var skip = (pageNumber - 1) * pageSize;
 
-        var query = _context.BiaSoDauBais
-            .AsNoTracking() // Optional: Improves performance for read-only queries
-            .Where(x => x.SchoolId == schoolId)
-            .OrderBy(x => x.DateCreated); // Ensure consistent ordering
+        var baiSoDauBaiQuery = from biaSo in _context.BiaSoDauBais
+                               join lop in _context.Classes on biaSo.ClassId equals lop.ClassId into lopHocGroup
+                               from lop in lopHocGroup.DefaultIfEmpty()
+                               join truong in _context.Schools on biaSo.SchoolId equals truong.SchoolId into schoolGroup
+                               from truong in schoolGroup.DefaultIfEmpty()
+                               join nienKhoa in _context.AcademicYears on biaSo.AcademicyearId equals nienKhoa.AcademicYearId into nienkhoaGroup
+                               from nienKhoa in nienkhoaGroup.DefaultIfEmpty()
+                               select new BiaSoDauBaiRes()
+                               {
+                                 BiaSoDauBaiId = biaSo.BiaSoDauBaiId,
+                                 SchoolId = biaSo.SchoolId,
+                                 SchoolName = truong.NameSchcool,
+                                 AcademicyearId = biaSo.AcademicyearId,
+                                 NienKhoaName = nienKhoa.DisplayAcademicYearName,
+                                 ClassId = biaSo.ClassId,
+                                 ClassName = lop.ClassName,
+                                 Status = biaSo.Status,
+                               };
 
-        var biaSoDauBai = await query
+
+        var biaSoDauBai = await baiSoDauBaiQuery
+            .Where(x => x.SchoolId.Equals(schoolId) && x.Status == true)
+            .AsNoTracking()
             .Skip(skip)     // Skip the first (pageNumber - 1) * pageSize records
             .Take(pageSize) // Take pageSize records
             .ToListAsync();
 
-        var result = biaSoDauBai.Select(x => new BiaSoDauBaiDto
+        if (biaSoDauBai is null || biaSoDauBai.Count == 0)
         {
-          BiaSoDauBaiId = x.BiaSoDauBaiId,
-          SchoolId = x.SchoolId,
-          AcademicyearId = x.AcademicyearId,
-          ClassId = x.ClassId,
-          Status = x.Status,
-          DateCreated = x.DateCreated,
-          DateUpdated = x.DateUpdated,
-        }).ToList();
+          return new BiaSoDauBaiResType(404, "Không có kết quả");
+        }
 
-        return new BiaSoDauBaiResType(200, "Thành công", result);
+        return new BiaSoDauBaiResType(200, "Thành công", biaSoDauBai);
+      }
+      catch (Exception ex)
+      {
+        return new BiaSoDauBaiResType(500, $"Server error: {ex.Message}");
+      }
+    }
+
+    // status true & false
+    public async Task<BiaSoDauBaiResType> GetBiaSoDauBais(int pageNumber, int pageSize)
+    {
+      try
+      {
+        var skip = (pageNumber - 1) * pageSize;
+
+        var baiSoDauBaiQuery = from biaSo in _context.BiaSoDauBais
+                               join lop in _context.Classes on biaSo.ClassId equals lop.ClassId into lopHocGroup
+                               from lop in lopHocGroup.DefaultIfEmpty()
+                               join truong in _context.Schools on biaSo.SchoolId equals truong.SchoolId into schoolGroup
+                               from truong in schoolGroup.DefaultIfEmpty()
+                               join nienKhoa in _context.AcademicYears on biaSo.AcademicyearId equals nienKhoa.AcademicYearId into nienkhoaGroup
+                               from nienKhoa in nienkhoaGroup.DefaultIfEmpty()
+                               select new BiaSoDauBaiRes()
+                               {
+                                 BiaSoDauBaiId = biaSo.BiaSoDauBaiId,
+                                 SchoolId = biaSo.SchoolId,
+                                 SchoolName = truong.NameSchcool,
+                                 AcademicyearId = biaSo.AcademicyearId,
+                                 NienKhoaName = nienKhoa.DisplayAcademicYearName,
+                                 ClassId = biaSo.ClassId,
+                                 ClassName = lop.ClassName,
+                                 Status = biaSo.Status,
+                               };
+
+        var biaSoDauBai = await baiSoDauBaiQuery
+            .OrderBy(x => x.BiaSoDauBaiId)
+            .Skip(skip)
+            .Take(pageSize)
+            .ToListAsync();
+
+        if (biaSoDauBai is null || biaSoDauBai.Count == 0)
+        {
+          return new BiaSoDauBaiResType(404, "Không có kết quả");
+        }
+
+        return new BiaSoDauBaiResType(200, "Thành công", biaSoDauBai);
+      }
+      catch (Exception ex)
+      {
+        return new BiaSoDauBaiResType(500, $"Server error: {ex.Message}");
+      }
+    }
+
+    // status true & false
+    public async Task<BiaSoDauBaiResType> GetBiaSoDauBaisBySchool(int pageNumber, int pageSize, int schoolId)
+    {
+      try
+      {
+        var skip = (pageNumber - 1) * pageSize;
+
+        var baiSoDauBaiQuery = from biaSo in _context.BiaSoDauBais
+                               join lop in _context.Classes on biaSo.ClassId equals lop.ClassId into lopHocGroup
+                               from lop in lopHocGroup.DefaultIfEmpty()
+                               join truong in _context.Schools on biaSo.SchoolId equals truong.SchoolId into schoolGroup
+                               from truong in schoolGroup.DefaultIfEmpty()
+                               join nienKhoa in _context.AcademicYears on biaSo.AcademicyearId equals nienKhoa.AcademicYearId into nienkhoaGroup
+                               from nienKhoa in nienkhoaGroup.DefaultIfEmpty()
+                               select new BiaSoDauBaiRes()
+                               {
+                                 BiaSoDauBaiId = biaSo.BiaSoDauBaiId,
+                                 SchoolId = biaSo.SchoolId,
+                                 SchoolName = truong.NameSchcool,
+                                 AcademicyearId = biaSo.AcademicyearId,
+                                 NienKhoaName = nienKhoa.DisplayAcademicYearName,
+                                 ClassId = biaSo.ClassId,
+                                 ClassName = lop.ClassName,
+                                 Status = biaSo.Status,
+                               };
+
+
+        var biaSoDauBai = await baiSoDauBaiQuery
+            .Where(x => x.SchoolId.Equals(schoolId))
+            .AsNoTracking()
+            .Skip(skip)     // Skip the first (pageNumber - 1) * pageSize records
+            .Take(pageSize) // Take pageSize records
+            .ToListAsync();
+
+        if (biaSoDauBai is null || biaSoDauBai.Count == 0)
+        {
+          return new BiaSoDauBaiResType(404, "Không có kết quả");
+        }
+
+        return new BiaSoDauBaiResType(200, "Thành công", biaSoDauBai);
       }
       catch (Exception ex)
       {

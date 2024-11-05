@@ -1,4 +1,4 @@
-﻿namespace server.Types
+﻿namespace server.Types.Account
 {
   public class AccountsResData
   {

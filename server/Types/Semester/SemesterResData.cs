@@ -1,4 +1,4 @@
-﻿namespace server.Types
+﻿namespace server.Types.Semester
 {
   public class SemesterResData
   {

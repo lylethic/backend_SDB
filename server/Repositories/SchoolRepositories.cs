@@ -4,7 +4,7 @@ using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using server.Dtos;
 using server.IService;
-using server.Types;
+using server.Types.School;
 using System.Text;
 
 namespace server.Repositories

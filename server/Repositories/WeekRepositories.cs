@@ -5,7 +5,7 @@ using server.Data;
 using server.Dtos;
 using server.IService;
 using server.Models;
-using server.Types;
+using server.Types.Week;
 using System.Globalization;
 using System.Text;
 

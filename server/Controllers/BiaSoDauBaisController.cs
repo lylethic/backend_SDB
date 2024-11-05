@@ -23,20 +23,54 @@ namespace server.Controllers
     [HttpGet]
     public async Task<IActionResult> GetAll([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 50)
     {
-      var result = await _biaSodaubai.GetBiaSoDauBais(pageNumber, pageSize);
+      var result = await _biaSodaubai.GetBiaSoDauBais_Active(pageNumber, pageSize);
       if (result.StatusCode == 200)
       {
         return Ok(new
         {
-          statusCode = result.StatusCode,
           message = result.Message,
-          data = result.Datas
+          data = result.ListBiaSoDauBaiRes
+        });
+      }
+
+      if (result.StatusCode == 404)
+      {
+        return NotFound(new
+        {
+          message = result.Message,
         });
       }
 
       return StatusCode(500, new
       {
-        statusCode = result.StatusCode,
+        message = result.Message
+      });
+    }
+
+    // Status true & false for Admin
+    [HttpGet, Route("get-all-bia-so")]
+    public async Task<IActionResult> GetAllBiaSo([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 50)
+    {
+      var result = await _biaSodaubai.GetBiaSoDauBais_Active(pageNumber, pageSize);
+      if (result.StatusCode == 200)
+      {
+        return Ok(new
+        {
+          message = result.Message,
+          data = result.ListBiaSoDauBaiRes
+        });
+      }
+
+      if (result.StatusCode == 404)
+      {
+        return NotFound(new
+        {
+          message = result.Message,
+        });
+      }
+
+      return StatusCode(500, new
+      {
         message = result.Message
       });
     }
@@ -53,7 +87,7 @@ namespace server.Controllers
         {
           statusCode = result.StatusCode,
           message = result.Message,
-          data = result.Data
+          data = result.BiaSoDauBaiDto
         });
       }
 
@@ -63,16 +97,52 @@ namespace server.Controllers
       });
     }
 
-    [HttpGet("getbyschool")]
+    [HttpGet("get-by-school")]
     public async Task<IActionResult> GetBiaSoDauBaisBySchool(int pageNumber, int pageSize, int schoolId)
     {
-      var result = await _biaSodaubai.GetBiaSoDauBaisBySchoolId(pageNumber, pageSize, schoolId);
+      var result = await _biaSodaubai.GetBiaSoDauBaisBySchool_Active(pageNumber, pageSize, schoolId);
       if (result.StatusCode == 200)
       {
         return Ok(new
         {
           message = result.Message,
-          data = result.Datas
+          data = result.ListBiaSoDauBaiRes
+        });
+      }
+
+      if (result.StatusCode == 404)
+      {
+        return NotFound(new
+        {
+          message = result.Message,
+        });
+      }
+
+      return StatusCode(500, new
+      {
+        message = result.Message,
+      });
+    }
+
+    // status true&false for admin
+    [HttpGet("get-all-bia-so-by-school")]
+    public async Task<IActionResult> GetAllBiaSoDauBaisBySchool(int pageNumber, int pageSize, int schoolId)
+    {
+      var result = await _biaSodaubai.GetBiaSoDauBaisBySchool_Active(pageNumber, pageSize, schoolId);
+      if (result.StatusCode == 200)
+      {
+        return Ok(new
+        {
+          message = result.Message,
+          data = result.ListBiaSoDauBaiRes
+        });
+      }
+
+      if (result.StatusCode == 404)
+      {
+        return NotFound(new
+        {
+          message = result.Message,
         });
       }
 
@@ -95,7 +165,7 @@ namespace server.Controllers
         {
           statusCode = result.StatusCode,
           message = result.Message,
-          data = result.Data
+          data = result.BiaSoDauBaiDto
         });
       }
 
@@ -136,7 +206,7 @@ namespace server.Controllers
         {
           statusCode = result.StatusCode,
           message = result.Message,
-          data = result.Data
+          data = result.BiaSoDauBaiDto
         });
       }
 
@@ -159,7 +229,7 @@ namespace server.Controllers
         {
           statusCode = result.StatusCode,
           message = result.Message,
-          data = result.Data
+          data = result.BiaSoDauBaiDto
         });
       }
 
@@ -190,7 +260,7 @@ namespace server.Controllers
         {
           statusCode = result.StatusCode,
           message = result.Message,
-          data = result.Data
+          data = result.BiaSoDauBaiDto
         });
       }
 
@@ -250,7 +320,7 @@ namespace server.Controllers
 
     //GET /api/BiaSoDauBais/Search? schoolName = ABC & schoolId = 1 & classId = 2
     /* Search keywords: Schoolname, SchoolId, classId */
-    [HttpGet("Search")]
+    [HttpGet("search")]
     public async Task<IActionResult> SearchBiaSoDauBais(int? schoolId, int? classId)
     {
       var result = await _biaSodaubai.SearchBiaSoDauBais(schoolId, classId);
@@ -261,7 +331,7 @@ namespace server.Controllers
         {
           statusCode = result.StatusCode,
           message = result.Message,
-          data = result.Data
+          data = result.BiaSoDauBaiDto
         });
       }
 

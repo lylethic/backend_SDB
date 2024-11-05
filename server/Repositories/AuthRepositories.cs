@@ -3,6 +3,7 @@ using server.Dtos;
 using server.IService;
 using server.Models;
 using server.Types;
+using server.Types.Auth;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;

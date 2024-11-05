@@ -1,4 +1,4 @@
-﻿namespace server.Types
+﻿namespace server.Types.Auth
 {
   public class LogoutResType : ModelResType
   {

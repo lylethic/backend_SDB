@@ -6,12 +6,12 @@ using server.Dtos;
 using server.Helpers;
 using server.IService;
 using server.Models;
-using server.Types;
+using server.Types.Semester;
 using System.Text;
 
 namespace server.Repositories
 {
-    public class SemesterRepositories : ISemester
+  public class SemesterRepositories : ISemester
   {
     readonly SoDauBaiContext _context;
 

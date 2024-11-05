@@ -1,5 +1,5 @@
 ﻿using server.Dtos;
-using server.Types;
+using server.Types.Account;
 
 namespace server.IService
 {

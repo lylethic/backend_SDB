@@ -5,6 +5,8 @@ using server.Data;
 using server.Dtos;
 using server.IService;
 using server.Types;
+using server.Types.ChiTietSoDauBai;
+using server.Types.Week;
 using System.Text;
 
 namespace server.Repositories

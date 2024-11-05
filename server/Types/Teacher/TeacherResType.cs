@@ -1,6 +1,6 @@
 ﻿using server.Dtos;
 
-namespace server.Types
+namespace server.Types.Teacher
 {
   public class TeacherResType : ModelResType
   {

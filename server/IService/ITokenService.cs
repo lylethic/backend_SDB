@@ -1,5 +1,5 @@
 ﻿using server.Dtos;
-using server.Types;
+using server.Types.Auth;
 using System.Security.Claims;
 
 namespace server.IService

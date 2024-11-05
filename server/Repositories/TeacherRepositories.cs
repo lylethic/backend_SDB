@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using server.Data;
 using server.Dtos;
 using server.Models;
-using server.Types;
+using server.Types.Teacher;
 using System.Text;
 
 namespace server.Repositories

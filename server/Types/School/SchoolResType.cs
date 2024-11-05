@@ -1,7 +1,7 @@
 ﻿using server.Dtos;
 using server.Models;
 
-namespace server.Types
+namespace server.Types.School
 {
   public class SchoolResType : ModelResType
   {

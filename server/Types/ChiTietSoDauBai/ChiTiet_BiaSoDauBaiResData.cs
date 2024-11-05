@@ -1,4 +1,4 @@
-﻿namespace server.Types
+﻿namespace server.Types.ChiTietSoDauBai
 {
   public class ChiTiet_BiaSoDauBaiResData
   {

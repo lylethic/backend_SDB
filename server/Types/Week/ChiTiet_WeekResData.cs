@@ -1,4 +1,4 @@
-namespace server.Types;
+namespace server.Types.Week;
 
 public class ChiTiet_WeekResData
 {

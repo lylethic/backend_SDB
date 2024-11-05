@@ -1,7 +1,7 @@
 ﻿using Microsoft.IdentityModel.Tokens;
 using server.Dtos;
 using server.IService;
-using server.Types;
+using server.Types.Auth;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Security.Cryptography;

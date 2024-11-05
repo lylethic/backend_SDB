@@ -1,5 +1,7 @@
 ﻿using server.Dtos;
 using server.Types;
+using server.Types.ChiTietSoDauBai;
+using server.Types.Week;
 
 namespace server.IService
 {

@@ -1,6 +1,6 @@
 ﻿using server.Dtos;
 
-namespace server.Types
+namespace server.Types.ChuNhiem
 {
   public class ChuNhiemResType : ModelResType
   {
