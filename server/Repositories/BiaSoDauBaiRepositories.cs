@@ -82,6 +82,7 @@ namespace server.Repositories
 
         var result = new BiaSoDauBaiDto
         {
+          BiaSoDauBaiId = insert,
           SchoolId = model.SchoolId,
           AcademicyearId = model.AcademicyearId,
           ClassId = model.ClassId,
@@ -161,7 +162,7 @@ namespace server.Repositories
                                };
 
         var biaSoDauBai = await baiSoDauBaiQuery
-          .Where(x => x.Status == true)
+            .Where(x => x.Status == true)
             .OrderBy(x => x.BiaSoDauBaiId)
             .Skip(skip)
             .Take(pageSize)
@@ -421,12 +422,17 @@ namespace server.Repositories
 
         if (sodaubai is null)
         {
-          return new BiaSoDauBaiResType(404, "Student not found");
+          return new BiaSoDauBaiResType(404, "Không tìm thấy id");
         }
 
         var deleteQuery = "DELETE FROM BiaSoDauBai WHERE BiaSoDauBaiId = @id";
+
+        var deleteRelatedQuery = "DELETE FROM PhanCongGiangDay WHERE biaSoDauBaiId = @id";
+
+        await _context.Database.ExecuteSqlRawAsync(deleteRelatedQuery, new SqlParameter("@id", id));
+
         await _context.Database.ExecuteSqlRawAsync(deleteQuery, new SqlParameter("@id", id));
-        return new BiaSoDauBaiResType(200, "Deleted");
+        return new BiaSoDauBaiResType(200, "Xóa thành công");
       }
       catch (Exception ex)
       {
@@ -447,18 +453,21 @@ namespace server.Repositories
 
         var idList = string.Join(",", ids);
 
+        var deleteRelatedQuery = $"DELETE FROM PhanCongGiangDay WHERE BiaSoDauBaiId IN ({idList})";
+        await _context.Database.ExecuteSqlRawAsync(deleteRelatedQuery);
+
         var deleteQuery = $"DELETE FROM BiaSoDauBai WHERE BiaSoDauBaiId IN ({idList})";
 
         var delete = await _context.Database.ExecuteSqlRawAsync(deleteQuery);
 
         if (delete == 0)
         {
-          return new BiaSoDauBaiResType(404, "No BiaSoDauBaiId found to delete");
+          return new BiaSoDauBaiResType(404, "Không tìm thấy id");
         }
 
         await transaction.CommitAsync();
 
-        return new BiaSoDauBaiResType(200, "Deleted succesfully");
+        return new BiaSoDauBaiResType(200, "Xóa thành công");
       }
       catch (Exception ex)
       {

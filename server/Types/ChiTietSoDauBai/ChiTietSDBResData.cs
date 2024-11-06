@@ -1,42 +1,13 @@
-﻿namespace server.Types.ChiTietSoDauBai
+﻿using server.Dtos;
+
+namespace server.Types.ChiTietSoDauBai
 {
-    public class ChiTietSDBResData
-    {
-        public int ChiTietSoDauBaiId { get; set; }
+  public class ChiTietSDBResData : ChiTietSoDauBaiDto
+  {
+    public string? ClassName { get; set; }
 
-        public int BiaSoDauBaiId { get; set; }
+    public int? TeacherId { get; set; }
 
-        public int SemesterId { get; set; }
-
-        public int WeekId { get; set; }
-
-        public int SubjectId { get; set; }
-
-        public int ClassificationId { get; set; }
-
-        public string DaysOfTheWeek { get; set; } = null!;
-
-        public DateTime ThoiGian { get; set; }
-
-        public string BuoiHoc { get; set; } = null!;
-
-        public int TietHoc { get; set; }
-
-        public string LessonContent { get; set; } = null!;
-
-        public int Attend { get; set; }
-
-        public string? NoteComment { get; set; }
-
-        public int? CreatedBy { get; set; }
-
-        public DateTime? CreatedAt { get; set; }
-
-        public DateTime? UpdatedAt { get; set; }
-
-        // 
-        public string? ClassName { get; set; }
-        public int? TeacherId { get; set; }
-        public string? TeacherName { get; set; }
-    }
+    public string? TeacherName { get; set; }
+  }
 }

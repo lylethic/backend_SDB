@@ -1,10 +1,10 @@
-﻿using ExcelDataReader;
+﻿using ClosedXML.Excel;
+using ExcelDataReader;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using server.Data;
 using server.Dtos;
 using server.IService;
-using server.Types;
 using server.Types.ChiTietSoDauBai;
 using server.Types.Week;
 using System.Text;
@@ -20,40 +20,7 @@ namespace server.Repositories
       this._context = context;
     }
 
-    public async Task<ResponseData<string>> BulkDelete(List<int> ids)
-    {
-      await using var transaction = await _context.Database.BeginTransactionAsync();
-
-      try
-      {
-        if (ids is null || ids.Count == 0)
-        {
-          return new ResponseData<string>(400, "No IDs provided.");
-        }
-
-        var idList = string.Join(",", ids);
-
-        var deleteQuery = $"DELETE FROM ChiTietSoDauBai WHERE ChiTietSoDauBaiId IN ({idList})";
-
-        var delete = await _context.Database.ExecuteSqlRawAsync(deleteQuery);
-
-        if (delete == 0)
-        {
-          return new ResponseData<string>(404, "No ChiTietSoDauBai found to delete");
-        }
-
-        await transaction.CommitAsync();
-
-        return new ResponseData<string>(200, "Deleted");
-      }
-      catch (Exception ex)
-      {
-        await transaction.RollbackAsync();
-        return new ResponseData<string>(500, $"Server error: {ex.Message}");
-      }
-    }
-
-    public async Task<ResponseData<ChiTietSoDauBaiDto>> CreateChiTietSoDauBai(ChiTietSoDauBaiDto model)
+    public async Task<ChiTietSoDauBaiResType> CreateChiTietSoDauBai(ChiTietSoDauBaiDto model)
     {
       await using var transaction = await _context.Database.BeginTransactionAsync();
 
@@ -68,7 +35,7 @@ namespace server.Repositories
 
         if (existingBia is null)
         {
-          return new ResponseData<ChiTietSoDauBaiDto>(404, "Not found");
+          return new ChiTietSoDauBaiResType(404, "Không tìm thấy id bìa sổ đầu bài");
         }
 
         // Tim semster ton tai khong?
@@ -80,7 +47,7 @@ namespace server.Repositories
 
         if (existingSemester is null)
         {
-          return new ResponseData<ChiTietSoDauBaiDto>(404, "Not found");
+          return new ChiTietSoDauBaiResType(404, "Không tìm thấy id học kỳ");
         }
 
         // Tim Week ton tai khong?
@@ -92,7 +59,7 @@ namespace server.Repositories
 
         if (existingWeek is null)
         {
-          return new ResponseData<ChiTietSoDauBaiDto>(404, "Not found");
+          return new ChiTietSoDauBaiResType(404, "Không tìm thấy id tuần học");
         }
 
         // Tim Mon hoc ton tai khong?
@@ -104,7 +71,7 @@ namespace server.Repositories
 
         if (existingSubject is null)
         {
-          return new ResponseData<ChiTietSoDauBaiDto>(404, "Not found");
+          return new ChiTietSoDauBaiResType(404, "Không tìm thấy id môn học");
         }
 
         // Tim Xep loai ton tai khong?
@@ -116,7 +83,7 @@ namespace server.Repositories
 
         if (existingXepLoai is null)
         {
-          return new ResponseData<ChiTietSoDauBaiDto>(404, "Not found");
+          return new ChiTietSoDauBaiResType(404, "Không tìm thấy id xếp loại");
         }
 
         var find = "SELECT * FROM ChiTietSodauBai WHERE ChiTietSodauBaiId = @id";
@@ -124,11 +91,6 @@ namespace server.Repositories
         var existingChiTietSoDauBai = await _context.ChiTietSoDauBais
          .FromSqlRaw(find, new SqlParameter("@id", model.ChiTietSoDauBaiId))
          .FirstOrDefaultAsync();
-
-        if (existingChiTietSoDauBai is not null)
-        {
-          return new ResponseData<ChiTietSoDauBaiDto>(409, "Chi tiet so dau bai already exists");
-        }
 
         var insertdata = @"INSERT INTO ChiTietSoDauBai (biaSoDauBaiId, semesterId, weekId, subjectId, 
                                     classificationId, daysOfTheWeek, thoiGian, buoiHoc, 
@@ -182,41 +144,16 @@ namespace server.Repositories
 
         await transaction.CommitAsync();
 
-        return new ResponseData<ChiTietSoDauBaiDto>(200, result);
+        return new ChiTietSoDauBaiResType(200, "Thành công", result);
       }
       catch (Exception ex)
       {
         await transaction.RollbackAsync();
-        throw new Exception($"Server Error: {ex.Message}");
+        return new ChiTietSoDauBaiResType(500, $"Server error: {ex.Message}");
       }
     }
 
-    public async Task<ResponseData<ChiTietSoDauBaiDto>> DeleteChiTietSoDauBai(int id)
-    {
-      try
-      {
-        var findChiTietSoDauBai = "SELECT * FROM ChiTietSoDauBai WHERE ChiTietSoDauBaiId = @id";
-
-        var chiTietSoDauBai = await _context.ChiTietSoDauBais
-          .FromSqlRaw(findChiTietSoDauBai, new SqlParameter("@id", id))
-          .FirstOrDefaultAsync();
-
-        if (chiTietSoDauBai is null)
-        {
-          return new ResponseData<ChiTietSoDauBaiDto>(404, "chiTietSoDauBai not found");
-        }
-
-        var deleteQuery = "DELETE FROM Teacher WHERE TeacherId = @id";
-        await _context.Database.ExecuteSqlRawAsync(deleteQuery, new SqlParameter("@id", id));
-        return new ResponseData<ChiTietSoDauBaiDto>(200, "Deleted");
-      }
-      catch (Exception ex)
-      {
-        return new ResponseData<ChiTietSoDauBaiDto>(500, $"Server error: {ex.Message}");
-      }
-    }
-
-    public async Task<ResponseData<ChiTietSoDauBaiDto>> GetChiTietSoDauBai(int id)
+    public async Task<ChiTietSoDauBaiResType> GetChiTietSoDauBai(int id)
     {
       try
       {
@@ -228,7 +165,7 @@ namespace server.Repositories
 
         if (chiTietSoDauBai is null)
         {
-          return new ResponseData<ChiTietSoDauBaiDto>(404, "Chi tiet so dau bai not found");
+          return new ChiTietSoDauBaiResType(404, "Chi tiet so dau bai not found");
         }
 
         var result = new ChiTietSoDauBaiDto
@@ -251,15 +188,15 @@ namespace server.Repositories
           UpdatedAt = chiTietSoDauBai.UpdatedAt,
         };
 
-        return new ResponseData<ChiTietSoDauBaiDto>(200, result);
+        return new ChiTietSoDauBaiResType(200, "Thành công", result);
       }
       catch (Exception ex)
       {
-        throw new Exception($"Error: {ex.Message}");
+        return new ChiTietSoDauBaiResType(500, $"Server error: {ex.Message}");
       }
     }
 
-    public async Task<List<ChiTietSoDauBaiDto>> GetChiTietSoDauBais(int pageNumber, int pageSize)
+    public async Task<ChiTietSoDauBaiResType> GetChiTietSoDauBais(int pageNumber, int pageSize)
     {
       try
       {
@@ -296,99 +233,78 @@ namespace server.Repositories
           UpdatedAt = x.UpdatedAt,
         }).ToList();
 
-        return result;
+        return new ChiTietSoDauBaiResType(200, "Thành công", result);
       }
       catch (Exception ex)
       {
-        Console.WriteLine(ex.Message);
-        throw new Exception($"Server error: {ex.Message}");
+        return new ChiTietSoDauBaiResType(500, $"Server error: {ex.Message}");
       }
     }
 
-    public async Task<string> ImportExcel(IFormFile file)
+    public async Task<ChiTietSoDauBaiResType> GetChiTietSoDauBaisByWeek(int pageNumber, int pageSize, int weekId)
     {
       try
       {
-        Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+        var skip = (pageNumber - 1) * pageSize;
 
-        if (file is not null && file.Length > 0)
+        var chiTietSoDauBaisByWeekQuery = from chitiet in _context.ChiTietSoDauBais
+                                          join week in _context.Weeks on chitiet.WeekId equals week.WeekId into weekGroup
+                                          from week in weekGroup.DefaultIfEmpty()
+                                          join bia in _context.BiaSoDauBais on chitiet.BiaSoDauBaiId equals bia.BiaSoDauBaiId into biaGroup
+                                          from bia in biaGroup.DefaultIfEmpty()
+                                          join semester in _context.Semesters on chitiet.SemesterId equals semester.SemesterId into semesterGroup
+                                          from semester in semesterGroup.DefaultIfEmpty()
+                                          join subject in _context.Subjects on chitiet.SubjectId equals subject.SubjectId into subjectGroup
+                                          from subject in subjectGroup.DefaultIfEmpty()
+                                          join xepLoai in _context.Classifications on chitiet.ClassificationId equals xepLoai.ClassificationId into xepLoaiGroup
+                                          from xepLoai in xepLoaiGroup.DefaultIfEmpty()
+                                          select (new ChiTietBody
+                                          {
+                                            ChiTietSoDauBaiId = chitiet.ChiTietSoDauBaiId,
+                                            BiaSoDauBaiId = chitiet.BiaSoDauBaiId,
+                                            SemesterId = chitiet.SemesterId,
+                                            WeekId = chitiet.WeekId,
+                                            SubjectId = chitiet.SubjectId,
+                                            ClassificationId = chitiet.ClassificationId,
+                                            DaysOfTheWeek = chitiet.DaysOfTheWeek,
+                                            ThoiGian = chitiet.ThoiGian,
+                                            BuoiHoc = chitiet.BuoiHoc,
+                                            TietHoc = chitiet.TietHoc,
+                                            LessonContent = chitiet.LessonContent,
+                                            Attend = chitiet.Attend,
+                                            NoteComment = chitiet.NoteComment,
+                                            CreatedBy = chitiet.CreatedBy,
+                                            CreatedAt = chitiet.CreatedAt,
+                                            UpdatedAt = chitiet.UpdatedAt,
+                                            HocKy = semester.SemesterName,
+                                            TenTuanHoc = week.WeekName,
+                                            MonHoc = subject.SubjectName,
+                                            TenLop = bia.Class.ClassName,
+                                            XepLoai = xepLoai.ClassifyName
+                                          });
+
+
+        var chiTietSoDauBai = await chiTietSoDauBaisByWeekQuery
+          .Where(x => x.WeekId == weekId)
+          .OrderBy(x => x.ChiTietSoDauBaiId)
+          .Skip(skip)
+          .Take(pageSize)
+          .ToListAsync();
+
+        if (chiTietSoDauBai is null || chiTietSoDauBai.Count == 0)
         {
-          var uploadsFolder = $"{Directory.GetCurrentDirectory()}\\Uploads";
-
-          if (!Directory.Exists(uploadsFolder))
-          {
-            Directory.CreateDirectory(uploadsFolder);
-          }
-
-          var filePath = Path.Combine(uploadsFolder, file.FileName);
-          using (var stream = new FileStream(filePath, FileMode.Create))
-          {
-            await file.CopyToAsync(stream);
-          }
-
-          using (var stream = File.Open(filePath, FileMode.Open, FileAccess.Read))
-          {
-            using var reader = ExcelReaderFactory.CreateReader(stream);
-
-            bool isHeaderSkipped = false;
-
-            do
-            {
-              while (reader.Read())
-              {
-                if (!isHeaderSkipped)
-                {
-                  isHeaderSkipped = true;
-                  continue;
-                }
-
-                // Check if there are no more rows or empty rows
-                if (reader.GetValue(1) == null && reader.GetValue(2) == null && reader.GetValue(3) == null
-                  && reader.GetValue(4) == null && reader.GetValue(5) == null && reader.GetValue(6) == null
-                  && reader.GetValue(7) == null && reader.GetValue(8) == null && reader.GetValue(9) == null
-                  && reader.GetValue(10) == null && reader.GetValue(11) == null && reader.GetValue(12) == null
-                  && reader.GetValue(13) == null)
-                {
-                  // Stop processing when an empty row is encountered
-                  break;
-                }
-
-                var myDetails = new Models.ChiTietSoDauBai
-                {
-                  BiaSoDauBaiId = Convert.ToInt16(reader.GetValue(1)),
-                  SemesterId = Convert.ToInt16(reader.GetValue(2)),
-                  WeekId = Convert.ToInt16(reader.GetValue(3)),
-                  SubjectId = Convert.ToInt16(reader.GetValue(4)),
-                  ClassificationId = Convert.ToInt16(reader.GetValue(5)),
-                  DaysOfTheWeek = reader.GetValue(6).ToString() ?? $"Thứ",
-                  ThoiGian = Convert.ToDateTime(reader.GetValue(7)),
-                  BuoiHoc = reader.GetValue(8).ToString() ?? "Buổi ",
-                  TietHoc = Convert.ToInt16((int)reader.GetValue(9)),
-                  LessonContent = reader.GetValue(10).ToString() ?? "Nội dung bài học",
-                  Attend = Convert.ToInt16((int)reader.GetValue(11)),
-                  NoteComment = reader.GetValue(12).ToString() ?? "Ghi chú",
-                  CreatedBy = Convert.ToInt16(reader.GetValue(13)),
-                  CreatedAt = DateTime.UtcNow,
-                  UpdatedAt = null
-                };
-
-                await _context.ChiTietSoDauBais.AddAsync(myDetails);
-                await _context.SaveChangesAsync();
-              }
-            } while (reader.NextResult());
-          }
-
-          return "Successfully inserted";
+          return new ChiTietSoDauBaiResType(404, "Không có kết quả");
         }
-        return "No file uploaded";
+
+        return new ChiTietSoDauBaiResType(200, "Thành công", chiTietSoDauBai);
       }
       catch (Exception ex)
       {
-        throw new Exception($"Error while uploading file: {ex.Message}");
+        return new ChiTietSoDauBaiResType(500, $"Server error: {ex.Message}");
       }
     }
 
-    public async Task<ResponseData<ChiTietSoDauBaiDto>> UpdateChiTietSoDauBai(int id, ChiTietSoDauBaiDto model)
+    public async Task<ChiTietSoDauBaiResType> UpdateChiTietSoDauBai(int id, ChiTietSoDauBaiDto model)
     {
       using var transaction = await _context.Database.BeginTransactionAsync();
 
@@ -403,7 +319,7 @@ namespace server.Repositories
 
         if (existingChiTietSoDauBai is null)
         {
-          return new ResponseData<ChiTietSoDauBaiDto>(404, "ChiTietSoDauBaiId not found");
+          return new ChiTietSoDauBaiResType(404, "Không tìm thấy id chi tiết sổ đầu bài");
         }
 
         bool hasChanges = false;
@@ -523,22 +439,22 @@ namespace server.Repositories
 
           // Commit the transaction
           await transaction.CommitAsync();
-          return new ResponseData<ChiTietSoDauBaiDto>(200, "Chi tiet so dau bai updated successfully");
+          return new ChiTietSoDauBaiResType(200, "Cập nhật thành công");
         }
         else
         {
-          return new ResponseData<ChiTietSoDauBaiDto>(200, "No changes detected");
+          return new ChiTietSoDauBaiResType(200, "Không có sự thay đổi");
         }
       }
       catch (Exception ex)
       {
         await transaction.RollbackAsync();
-
-        return new ResponseData<ChiTietSoDauBaiDto>(500, $"Server Error: {ex.Message}");
+        return new ChiTietSoDauBaiResType(500, $"Server Error: {ex.Message}");
       }
     }
 
-    public async Task<ResponseData<ChiTiet_BiaSoDauBaiResData>> GetChiTiet_Bia_Class_Teacher(int chiTietId)
+    // Chi tiet Tiet hoc nay ai day?, lop nao?,
+    public async Task<ChiTietSoDauBaiResType> GetChiTiet_Bia_Class_Teacher(int chiTietId)
     {
       try
       {
@@ -557,7 +473,7 @@ namespace server.Repositories
 
         var chitietSoDauBai = await _context.ChiTietSoDauBais.FromSqlRaw(find,
         new SqlParameter("@id", chiTietId))
-        .Select(ct => new ChiTiet_BiaSoDauBaiResData
+        .Select(ct => new ChiTietAndBiaSoDauBaiRes
         {
           ChiTietSoDauBaiId = ct.ChiTietSoDauBaiId,
           BiaSoDauBaiId = ct.BiaSoDauBaiId,
@@ -571,10 +487,10 @@ namespace server.Repositories
 
         if (chitietSoDauBai is null)
         {
-          return new ResponseData<ChiTiet_BiaSoDauBaiResData>(404, "Chi tiet so dau bai id not found");
+          return new ChiTietSoDauBaiResType(404, "Không tìm thấy id Chi tiết sổ đầu bài");
         }
 
-        var result = new ChiTiet_BiaSoDauBaiResData
+        var result = new ChiTietAndBiaSoDauBaiRes
         {
           ChiTietSoDauBaiId = chitietSoDauBai.ChiTietSoDauBaiId,
           BiaSoDauBaiId = chitietSoDauBai.BiaSoDauBaiId,
@@ -585,16 +501,15 @@ namespace server.Repositories
           TeacherFullName = chitietSoDauBai.TeacherFullName
         };
 
-        return new ResponseData<ChiTiet_BiaSoDauBaiResData>(200, result);
-
+        return new ChiTietSoDauBaiResType(200, "Thành công", result);
       }
-      catch (System.Exception ex)
+      catch (Exception ex)
       {
-        throw new Exception($"Server Error: {ex.Message}");
+        return new ChiTietSoDauBaiResType(500, $"Server error: {ex.Message}");
       }
     }
 
-    public async Task<ResponseData<ChiTiet_WeekResData>> GetChiTiet_Week_XepLoai(int chiTietId)
+    public async Task<ChiTietSoDauBaiResType> GetChiTiet_Week_XepLoai(int weekId)
     {
       try
       {
@@ -611,10 +526,10 @@ namespace server.Repositories
                           ON ct.classificationId = cla.classificationId
                     LEFT JOIN dbo.Week as we
                           ON ct.weekId = we.weekId
-                    WHERE ct.chiTietSoDauBaiId = @id";
+                    WHERE ct.weekId = @id";
 
         var chitietSoDauBai = await _context.ChiTietSoDauBais.FromSqlRaw(find,
-        new SqlParameter("@id", chiTietId))
+        new SqlParameter("@id", weekId))
         .Select(ct => new ChiTiet_WeekResData
         {
           ChiTietSoDauBaiId = ct.ChiTietSoDauBaiId,
@@ -625,34 +540,22 @@ namespace server.Repositories
           TenXepLoai = ct.Classification.ClassifyName,
           SoDiem = ct.Classification.Score
         })
-        .FirstOrDefaultAsync();
+        .ToListAsync();
 
         if (chitietSoDauBai is null)
         {
-          return new ResponseData<ChiTiet_WeekResData>(404, "Chi tiet so dau bai id not found");
+          return new ChiTietSoDauBaiResType(404, "Không tìm thấy id Chi tiết sổ đầu bài");
         }
 
-        var result = new ChiTiet_WeekResData
-        {
-          ChiTietSoDauBaiId = chitietSoDauBai.ChiTietSoDauBaiId,
-          WeekId = chitietSoDauBai.WeekId,
-          WeekName = chitietSoDauBai.WeekName,
-          Status = chitietSoDauBai.Status,
-          XepLoaiId = chitietSoDauBai.XepLoaiId,
-          TenXepLoai = chitietSoDauBai.TenXepLoai,
-          SoDiem = chitietSoDauBai.SoDiem
-        };
-
-        return new ResponseData<ChiTiet_WeekResData>(200, result);
-
+        return new ChiTietSoDauBaiResType(200, "Thành công", chitietSoDauBai);
       }
       catch (Exception ex)
       {
-        throw new Exception($"Server Error: {ex.Message}");
+        return new ChiTietSoDauBaiResType(500, $"Server error: {ex.Message}");
       }
     }
 
-    public async Task<ResponseData<IEnumerable<ChiTietSDBResData>>> GetChiTietBySchool(int schoolId, int weekId, int biaId, int classId, int pageNumber, int pageSize)
+    public async Task<ChiTietSoDauBaiResType> GetChiTietBySchool(int schoolId, int weekId, int biaId, int classId, int pageNumber, int pageSize)
     {
       try
       {
@@ -719,16 +622,265 @@ namespace server.Repositories
 
         if (chitietSoDauBai is null || chitietSoDauBai.Count == 0)
         {
-          return new ResponseData<IEnumerable<ChiTietSDBResData>>(404, "No results");
+          return new ChiTietSoDauBaiResType(404, "No results");
         }
 
-        return new ResponseData<IEnumerable<ChiTietSDBResData>>(200, chitietSoDauBai);
+        return new ChiTietSoDauBaiResType(200, "Thành công", chitietSoDauBai);
 
       }
-      catch (System.Exception ex)
+      catch (Exception ex)
       {
-        throw new Exception($"Server Error: {ex.Message}");
+        return new ChiTietSoDauBaiResType(500, $"Server error: {ex.Message}");
       }
     }
+
+    public async Task<ChiTietSoDauBaiResType> DeleteChiTietSoDauBai(int id)
+    {
+      try
+      {
+        var findChiTietSoDauBai = "SELECT * FROM ChiTietSoDauBai WHERE ChiTietSoDauBaiId = @id";
+
+        var chiTietSoDauBai = await _context.ChiTietSoDauBais
+          .FromSqlRaw(findChiTietSoDauBai, new SqlParameter("@id", id))
+          .FirstOrDefaultAsync();
+
+        if (chiTietSoDauBai is null)
+        {
+          return new ChiTietSoDauBaiResType(404, "Không tìm thấy id Chi tiết sổ đầu bài");
+        }
+
+        var deleteQuery = "DELETE FROM ChiTietSoDauBai WHERE ChiTietSoDauBaiId = @id";
+
+        await _context.Database.ExecuteSqlRawAsync(deleteQuery, new SqlParameter("@id", id));
+
+        return new ChiTietSoDauBaiResType(200, "Xóa thành công");
+      }
+      catch (Exception ex)
+      {
+        return new ChiTietSoDauBaiResType(500, $"Server error: {ex.Message}");
+      }
+    }
+
+    public async Task<ChiTietSoDauBaiResType> BulkDelete(List<int> ids)
+    {
+      await using var transaction = await _context.Database.BeginTransactionAsync();
+
+      try
+      {
+        if (ids is null || ids.Count == 0)
+        {
+          return new ChiTietSoDauBaiResType(400, "Danh sách id không được cung cấp");
+        }
+
+        var idList = string.Join(",", ids);
+
+        var deleteQuery = $"DELETE FROM ChiTietSoDauBai WHERE ChiTietSoDauBaiId IN ({idList})";
+
+        var delete = await _context.Database.ExecuteSqlRawAsync(deleteQuery);
+
+        if (delete == 0)
+        {
+          return new ChiTietSoDauBaiResType(404, "Không tìm thấy id Chi tiết sổ đầu bài nào để xóa");
+        }
+
+        await transaction.CommitAsync();
+
+        return new ChiTietSoDauBaiResType(200, "Xóa thành công");
+      }
+      catch (Exception ex)
+      {
+        await transaction.RollbackAsync();
+        return new ChiTietSoDauBaiResType(500, $"Server error: {ex.Message}");
+      }
+    }
+
+    public async Task<ChiTietSoDauBaiResType> ImportExcel(IFormFile file)
+    {
+      try
+      {
+        Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+
+        if (file is not null && file.Length > 0)
+        {
+          var uploadsFolder = $"{Directory.GetCurrentDirectory()}\\Uploads";
+
+          if (!Directory.Exists(uploadsFolder))
+          {
+            Directory.CreateDirectory(uploadsFolder);
+          }
+
+          var filePath = Path.Combine(uploadsFolder, file.FileName);
+          using (var stream = new FileStream(filePath, FileMode.Create))
+          {
+            await file.CopyToAsync(stream);
+          }
+
+          using (var stream = File.Open(filePath, FileMode.Open, FileAccess.Read))
+          {
+            using var reader = ExcelReaderFactory.CreateReader(stream);
+
+            bool isHeaderSkipped = false;
+
+            do
+            {
+              while (reader.Read())
+              {
+                if (!isHeaderSkipped)
+                {
+                  isHeaderSkipped = true;
+                  continue;
+                }
+
+                // Check if there are no more rows or empty rows
+                if (reader.GetValue(1) == null && reader.GetValue(2) == null && reader.GetValue(3) == null
+                  && reader.GetValue(4) == null && reader.GetValue(5) == null && reader.GetValue(6) == null
+                  && reader.GetValue(7) == null && reader.GetValue(8) == null && reader.GetValue(9) == null
+                  && reader.GetValue(10) == null && reader.GetValue(11) == null && reader.GetValue(12) == null
+                  && reader.GetValue(13) == null)
+                {
+                  // Stop processing when an empty row is encountered
+                  break;
+                }
+
+                var myDetails = new Models.ChiTietSoDauBai
+                {
+                  BiaSoDauBaiId = Convert.ToInt16(reader.GetValue(1)),
+                  SemesterId = Convert.ToInt16(reader.GetValue(2)),
+                  WeekId = Convert.ToInt16(reader.GetValue(3)),
+                  SubjectId = Convert.ToInt16(reader.GetValue(4)),
+                  ClassificationId = Convert.ToInt16(reader.GetValue(5)),
+                  DaysOfTheWeek = reader.GetValue(6).ToString() ?? $"Thứ",
+                  ThoiGian = Convert.ToDateTime(reader.GetValue(7)),
+                  BuoiHoc = reader.GetValue(8).ToString() ?? "Buổi ",
+                  TietHoc = Convert.ToInt16((int)reader.GetValue(9)),
+                  LessonContent = reader.GetValue(10).ToString() ?? "Nội dung bài học",
+                  Attend = Convert.ToInt16((int)reader.GetValue(11)),
+                  NoteComment = reader.GetValue(12).ToString() ?? "Ghi chú",
+                  CreatedBy = Convert.ToInt16(reader.GetValue(13)),
+                  CreatedAt = DateTime.UtcNow,
+                  UpdatedAt = null
+                };
+
+                await _context.ChiTietSoDauBais.AddAsync(myDetails);
+                await _context.SaveChangesAsync();
+              }
+            } while (reader.NextResult());
+          }
+
+          return new ChiTietSoDauBaiResType(200, "Thêm danh sách bằng excel thành công");
+        }
+
+        return new ChiTietSoDauBaiResType(400, "Không có file nào được tải lên");
+      }
+      catch (Exception ex)
+      {
+        return new ChiTietSoDauBaiResType(500, $"Server error: {ex.Message}");
+      }
+    }
+
+    public async Task<ChiTietSoDauBaiResType> ExportChiTietSoDauBaiToExcel(int weekId, int classId, string filePath)
+    {
+      try
+      {
+        // Fetch records filtered by weekId
+        var chiTietSoDauBais = await (from chitiet in _context.ChiTietSoDauBais
+                                      join week in _context.Weeks on chitiet.WeekId equals week.WeekId into weekGroup
+                                      from week in weekGroup.DefaultIfEmpty()
+                                      join bia in _context.BiaSoDauBais on chitiet.BiaSoDauBaiId equals bia.BiaSoDauBaiId into biaGroup
+                                      from bia in biaGroup.DefaultIfEmpty()
+                                      join semester in _context.Semesters on chitiet.SemesterId equals semester.SemesterId into semesterGroup
+                                      from semester in semesterGroup.DefaultIfEmpty()
+                                      join subject in _context.Subjects on chitiet.SubjectId equals subject.SubjectId into subjectGroup
+                                      from subject in subjectGroup.DefaultIfEmpty()
+                                      join xepLoai in _context.Classifications on chitiet.ClassificationId equals xepLoai.ClassificationId into xepLoaiGroup
+                                      from xepLoai in xepLoaiGroup.DefaultIfEmpty()
+                                      where chitiet.WeekId == weekId && bia.ClassId == classId
+                                      select new
+                                      {
+                                        chitiet.ChiTietSoDauBaiId,
+                                        chitiet.BiaSoDauBaiId,
+                                        chitiet.SemesterId,
+                                        chitiet.WeekId,
+                                        chitiet.SubjectId,
+                                        chitiet.ClassificationId,
+                                        chitiet.DaysOfTheWeek,
+                                        chitiet.ThoiGian,
+                                        chitiet.BuoiHoc,
+                                        chitiet.TietHoc,
+                                        chitiet.LessonContent,
+                                        chitiet.Attend,
+                                        chitiet.NoteComment,
+                                        chitiet.CreatedBy,
+                                        chitiet.CreatedAt,
+                                        chitiet.UpdatedAt,
+                                        HocKy = semester.SemesterName,
+                                        TenTuanHoc = week.WeekName,
+                                        MonHoc = subject.SubjectName,
+                                        TenLop = bia.Class.ClassName,
+                                        XepLoai = xepLoai.ClassifyName
+                                      }).ToListAsync();
+
+        if (chiTietSoDauBais == null || !chiTietSoDauBais.Any())
+        {
+          return new ChiTietSoDauBaiResType(404, "Không có kết quả cho tuần được yêu cầu.");
+        }
+
+        using (var workbook = new XLWorkbook())
+        {
+          var worksheet = workbook.Worksheets.Add("ChiTietSoDauBai");
+
+          // Add headers
+          worksheet.Cell(1, 1).Value = "Mã chi tiết sổ đầu bài";
+          worksheet.Cell(1, 2).Value = "Lớp";
+          worksheet.Cell(1, 3).Value = "Học kỳ";
+          worksheet.Cell(1, 4).Value = "Tuần học";
+          worksheet.Cell(1, 5).Value = "Môn học";
+          worksheet.Cell(1, 6).Value = "Xếp loại";
+          worksheet.Cell(1, 7).Value = "Ngày trong tuần";
+          worksheet.Cell(1, 8).Value = "Thời gian";
+          worksheet.Cell(1, 9).Value = "Buổi học";
+          worksheet.Cell(1, 10).Value = "Tiết học";
+          worksheet.Cell(1, 11).Value = "Nội dung bài học";
+          worksheet.Cell(1, 12).Value = "Sĩ số";
+          worksheet.Cell(1, 13).Value = "Ghi chú";
+          worksheet.Cell(1, 14).Value = "Ngày tạo";
+          worksheet.Cell(1, 15).Value = "Ngày cập nhật";
+
+          // Add data rows
+          for (int i = 0; i < chiTietSoDauBais.Count; i++)
+          {
+            var record = chiTietSoDauBais[i];
+            worksheet.Cell(i + 2, 1).Value = record.ChiTietSoDauBaiId;
+            worksheet.Cell(i + 2, 2).Value = record.TenLop;
+            worksheet.Cell(i + 2, 3).Value = record.HocKy;
+            worksheet.Cell(i + 2, 4).Value = record.TenTuanHoc;
+            worksheet.Cell(i + 2, 5).Value = record.MonHoc;
+            worksheet.Cell(i + 2, 6).Value = record.XepLoai;
+            worksheet.Cell(i + 2, 7).Value = record.DaysOfTheWeek;
+            worksheet.Cell(i + 2, 8).Value = record.ThoiGian;
+            worksheet.Cell(i + 2, 9).Value = record.BuoiHoc;
+            worksheet.Cell(i + 2, 10).Value = record.TietHoc;
+            worksheet.Cell(i + 2, 11).Value = record.LessonContent;
+            worksheet.Cell(i + 2, 12).Value = record.Attend;
+            worksheet.Cell(i + 2, 13).Value = record.NoteComment;
+            worksheet.Cell(i + 2, 14).Value = record.CreatedAt;
+            worksheet.Cell(i + 2, 15).Value = record.UpdatedAt;
+          }
+
+          // Adjust column widths
+          worksheet.Columns().AdjustToContents();
+
+          // Save the Excel file
+          workbook.SaveAs(filePath);
+        }
+
+        return new ChiTietSoDauBaiResType(200, "Xuất file Excel thành công.");
+      }
+      catch (Exception ex)
+      {
+        return new ChiTietSoDauBaiResType(500, $"Lỗi máy chủ: {ex.Message}");
+      }
+    }
+
   }
 }

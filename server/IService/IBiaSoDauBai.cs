@@ -18,7 +18,6 @@ namespace server.IService
 
     Task<BiaSoDauBaiResType> GetBiaSoDauBaisBySchool(int pageNumber, int pageSize, int schoolId);
 
-
     Task<BiaSoDauBaiResType> DeleteBiaSoDauBai(int id);
 
     Task<BiaSoDauBaiResType> UpdateBiaSoDauBai(int id, BiaSoDauBaiDto model);

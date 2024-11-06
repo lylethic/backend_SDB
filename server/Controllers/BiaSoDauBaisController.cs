@@ -51,7 +51,7 @@ namespace server.Controllers
     [HttpGet, Route("get-all-bia-so")]
     public async Task<IActionResult> GetAllBiaSo([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 50)
     {
-      var result = await _biaSodaubai.GetBiaSoDauBais_Active(pageNumber, pageSize);
+      var result = await _biaSodaubai.GetBiaSoDauBais(pageNumber, pageSize);
       if (result.StatusCode == 200)
       {
         return Ok(new
@@ -85,9 +85,16 @@ namespace server.Controllers
       {
         return Ok(new
         {
-          statusCode = result.StatusCode,
           message = result.Message,
           data = result.BiaSoDauBaiDto
+        });
+      }
+
+      if (result.StatusCode == 404)
+      {
+        return Ok(new
+        {
+          message = result.Message,
         });
       }
 
@@ -128,7 +135,7 @@ namespace server.Controllers
     [HttpGet("get-all-bia-so-by-school")]
     public async Task<IActionResult> GetAllBiaSoDauBaisBySchool(int pageNumber, int pageSize, int schoolId)
     {
-      var result = await _biaSodaubai.GetBiaSoDauBaisBySchool_Active(pageNumber, pageSize, schoolId);
+      var result = await _biaSodaubai.GetBiaSoDauBaisBySchool(pageNumber, pageSize, schoolId);
       if (result.StatusCode == 200)
       {
         return Ok(new
@@ -163,7 +170,6 @@ namespace server.Controllers
       {
         return Ok(new
         {
-          statusCode = result.StatusCode,
           message = result.Message,
           data = result.BiaSoDauBaiDto
         });
@@ -171,18 +177,16 @@ namespace server.Controllers
 
       if (result.StatusCode == 409)
       {
-        return Ok(new
+        return StatusCode(409, new
         {
-          statusCode = result.StatusCode,
           message = result.Message,
         });
       }
 
       if (result.StatusCode == 404)
       {
-        return Ok(new
+        return NotFound(new
         {
-          statusCode = result.StatusCode,
           message = result.Message,
         });
       }
@@ -204,9 +208,16 @@ namespace server.Controllers
       {
         return Ok(new
         {
-          statusCode = result.StatusCode,
           message = result.Message,
           data = result.BiaSoDauBaiDto
+        });
+      }
+
+      if (result.StatusCode == 404)
+      {
+        return NotFound(new
+        {
+          message = result.Message,
         });
       }
 
@@ -227,17 +238,14 @@ namespace server.Controllers
       {
         return Ok(new
         {
-          statusCode = result.StatusCode,
           message = result.Message,
-          data = result.BiaSoDauBaiDto
         });
       }
 
       if (result.StatusCode == 404)
       {
-        return Ok(new
+        return NotFound(new
         {
-          statusCode = result.StatusCode,
           message = result.Message,
         });
       }
@@ -258,26 +266,22 @@ namespace server.Controllers
       {
         return Ok(new
         {
-          statusCode = result.StatusCode,
           message = result.Message,
-          data = result.BiaSoDauBaiDto
         });
       }
 
       if (result.StatusCode == 400)
       {
-        return Ok(new
+        return BadRequest(new
         {
-          statusCode = result.StatusCode,
           message = result.Message,
         });
       }
 
       if (result.StatusCode == 404)
       {
-        return Ok(new
+        return NotFound(new
         {
-          statusCode = result.StatusCode,
           message = result.Message,
         });
       }
@@ -329,9 +333,8 @@ namespace server.Controllers
       {
         return Ok(new
         {
-          statusCode = result.StatusCode,
           message = result.Message,
-          data = result.BiaSoDauBaiDto
+          data = result.ListBiaSoDauBaiDto
         });
       }
 
@@ -339,7 +342,6 @@ namespace server.Controllers
       {
         return Ok(new
         {
-          statusCode = result.StatusCode,
           message = result.Message,
         });
       }

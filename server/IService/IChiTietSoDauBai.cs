@@ -1,25 +1,25 @@
 ﻿using server.Dtos;
-using server.Types;
 using server.Types.ChiTietSoDauBai;
-using server.Types.Week;
 
 namespace server.IService
 {
   public interface IChiTietSoDauBai
   {
-    Task<ResponseData<ChiTietSoDauBaiDto>> CreateChiTietSoDauBai(ChiTietSoDauBaiDto model);
+    Task<ChiTietSoDauBaiResType> CreateChiTietSoDauBai(ChiTietSoDauBaiDto model);
 
-    Task<ResponseData<ChiTietSoDauBaiDto>> GetChiTietSoDauBai(int id);
+    Task<ChiTietSoDauBaiResType> GetChiTietSoDauBai(int id);
 
-    Task<List<ChiTietSoDauBaiDto>> GetChiTietSoDauBais(int pageNumber, int pageSize);
+    Task<ChiTietSoDauBaiResType> GetChiTietSoDauBais(int pageNumber, int pageSize);
 
-    Task<ResponseData<ChiTietSoDauBaiDto>> DeleteChiTietSoDauBai(int id);
+    Task<ChiTietSoDauBaiResType> GetChiTietSoDauBaisByWeek(int pageNumber, int pageSize, int weekId);
 
-    Task<ResponseData<ChiTietSoDauBaiDto>> UpdateChiTietSoDauBai(int id, ChiTietSoDauBaiDto model);
+    Task<ChiTietSoDauBaiResType> DeleteChiTietSoDauBai(int id);
 
-    Task<string> ImportExcel(IFormFile file);
+    Task<ChiTietSoDauBaiResType> UpdateChiTietSoDauBai(int id, ChiTietSoDauBaiDto model);
 
-    Task<ResponseData<string>> BulkDelete(List<int> ids);
+    Task<ChiTietSoDauBaiResType> ImportExcel(IFormFile file);
+
+    Task<ChiTietSoDauBaiResType> BulkDelete(List<int> ids);
 
     /// <summary>
     /// ###Retrieves: 
@@ -32,7 +32,7 @@ namespace server.IService
     */
     /// </summary>
     /// <returns></returns>
-    Task<ResponseData<ChiTiet_BiaSoDauBaiResData>> GetChiTiet_Bia_Class_Teacher(int chiTietId);
+    Task<ChiTietSoDauBaiResType> GetChiTiet_Bia_Class_Teacher(int chiTietId);
 
     /// <summary>Get chitietid show info Week</summary>
     /// <param name="chiTietId"></param>
@@ -51,7 +51,7 @@ namespace server.IService
     ///  }
     ///}
     /// </returns>
-    Task<ResponseData<ChiTiet_WeekResData>> GetChiTiet_Week_XepLoai(int chiTietId);
+    Task<ChiTietSoDauBaiResType> GetChiTiet_Week_XepLoai(int chiTietId);
 
     /// <summary>
     /// Get chi tiet sdb by SchoolId and weekId and BiaSoDauBaiId and ClassId
@@ -63,7 +63,8 @@ namespace server.IService
     ///  t.teacherId, 
     ///  t.fullname
     ///  </returns>
-    Task<ResponseData<IEnumerable<ChiTietSDBResData>>> GetChiTietBySchool(int schoolId, int weekId, int biaId, int classId, int pageNumber, int pageSize);
+    Task<ChiTietSoDauBaiResType> GetChiTietBySchool(int schoolId, int weekId, int biaId, int classId, int pageNumber, int pageSize);
 
+    Task<ChiTietSoDauBaiResType> ExportChiTietSoDauBaiToExcel(int weekId, int classId, string filePath);
   }
 }

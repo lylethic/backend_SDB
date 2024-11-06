@@ -1,6 +1,6 @@
 ﻿namespace server.Types.ChiTietSoDauBai
 {
-  public class ChiTiet_BiaSoDauBaiResData
+  public class ChiTietAndBiaSoDauBaiRes
   {
     public int ChiTietSoDauBaiId { get; set; }
 
