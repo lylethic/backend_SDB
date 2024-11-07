@@ -1,6 +1,8 @@
-# **Website quản lý sổ đầu bài điện tử**
+# **Server quản lý sổ đầu bài điện tử**
 
-![Hình_ảnh_minh_họa](https://down-vn.img.susercontent.com/file/2ebde40caf3a2679ef1e3af4d8a9beba.webp)
+## Hình ảnh minh họa
+
+<img src="https://down-vn.img.susercontent.com/file/2ebde40caf3a2679ef1e3af4d8a9beba.webp" alt="Hình_ảnh_minh_họa" width="300"/>
 
 ## **Tính sáng tạo**:
 
