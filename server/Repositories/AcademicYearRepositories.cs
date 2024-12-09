@@ -123,11 +123,13 @@ namespace server.Repositories
       }
     }
 
-    public async Task<List<AcademicYearDto>> GetAcademicYears(int pageNumber, int pageSize)
+    public async Task<List<AcademicYearDto>> GetAcademicYears(QueryObject? queryObject)
     {
       try
       {
-        var skip = (pageNumber - 1) * pageSize;
+        queryObject ??= new QueryObject();
+        var skip = (queryObject.PageNumber - 1) * queryObject.PageSize;
+
         var query = @"SELECT * FROM AcademicYear 
                       ORDER BY ACADEMICYEARID
                       OFFSET @skip ROWS
@@ -136,7 +138,7 @@ namespace server.Repositories
         var academicYear = await _context.AcademicYears
           .FromSqlRaw(query,
           new SqlParameter("@skip", skip),
-          new SqlParameter("@pageSize", pageSize)
+          new SqlParameter("@pageSize", queryObject.PageSize)
           ).ToListAsync() ?? throw new Exception("Empty");
 
         var result = academicYear.Select(x => new AcademicYearDto

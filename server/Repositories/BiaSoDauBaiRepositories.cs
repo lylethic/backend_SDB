@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using server.Data;
 using server.Dtos;
 using server.IService;
+using server.Models;
 using server.Types.BiaSoDauBai;
 using System.Text;
 
@@ -136,11 +137,12 @@ namespace server.Repositories
       }
     }
 
-    public async Task<BiaSoDauBaiResType> GetBiaSoDauBais_Active(int pageNumber, int pageSize)
+    public async Task<BiaSoDauBaiResType> GetBiaSoDauBais_Active(QueryObject? queryObject)
     {
       try
       {
-        var skip = (pageNumber - 1) * pageSize;
+        queryObject ??= new QueryObject();
+        var skip = (queryObject.PageNumber - 1) * queryObject.PageSize;
 
         var baiSoDauBaiQuery = from biaSo in _context.BiaSoDauBais
                                join lop in _context.Classes on biaSo.ClassId equals lop.ClassId into lopHocGroup
@@ -162,10 +164,11 @@ namespace server.Repositories
                                };
 
         var biaSoDauBai = await baiSoDauBaiQuery
+        .AsNoTracking()
             .Where(x => x.Status == true)
             .OrderBy(x => x.BiaSoDauBaiId)
             .Skip(skip)
-            .Take(pageSize)
+            .Take(queryObject.PageSize)
             .ToListAsync();
 
         if (biaSoDauBai is null || biaSoDauBai.Count == 0)
@@ -181,11 +184,12 @@ namespace server.Repositories
       }
     }
 
-    public async Task<BiaSoDauBaiResType> GetBiaSoDauBaisBySchool_Active(int pageNumber, int pageSize, int schoolId)
+    public async Task<BiaSoDauBaiResType> GetBiaSoDauBaisBySchool_Active(QueryObject? queryObject, int schoolId)
     {
       try
       {
-        var skip = (pageNumber - 1) * pageSize;
+        queryObject ??= new QueryObject();
+        var skip = (queryObject.PageNumber - 1) * queryObject.PageSize;
 
         var baiSoDauBaiQuery = from biaSo in _context.BiaSoDauBais
                                join lop in _context.Classes on biaSo.ClassId equals lop.ClassId into lopHocGroup
@@ -211,7 +215,7 @@ namespace server.Repositories
             .Where(x => x.SchoolId.Equals(schoolId) && x.Status == true)
             .AsNoTracking()
             .Skip(skip)     // Skip the first (pageNumber - 1) * pageSize records
-            .Take(pageSize) // Take pageSize records
+            .Take(queryObject.PageSize) // Take pageSize records
             .ToListAsync();
 
         if (biaSoDauBai is null || biaSoDauBai.Count == 0)
@@ -228,11 +232,12 @@ namespace server.Repositories
     }
 
     // status true & false
-    public async Task<BiaSoDauBaiResType> GetBiaSoDauBais(int pageNumber, int pageSize)
+    public async Task<BiaSoDauBaiResType> GetBiaSoDauBais(QueryObject? queryObject)
     {
       try
       {
-        var skip = (pageNumber - 1) * pageSize;
+        queryObject ??= new QueryObject();
+        var skip = (queryObject.PageNumber - 1) * queryObject.PageSize;
 
         var baiSoDauBaiQuery = from biaSo in _context.BiaSoDauBais
                                join lop in _context.Classes on biaSo.ClassId equals lop.ClassId into lopHocGroup
@@ -256,7 +261,7 @@ namespace server.Repositories
         var biaSoDauBai = await baiSoDauBaiQuery
             .OrderBy(x => x.BiaSoDauBaiId)
             .Skip(skip)
-            .Take(pageSize)
+            .Take(queryObject.PageSize)
             .ToListAsync();
 
         if (biaSoDauBai is null || biaSoDauBai.Count == 0)
@@ -272,12 +277,13 @@ namespace server.Repositories
       }
     }
 
-    // status true & false
-    public async Task<BiaSoDauBaiResType> GetBiaSoDauBaisBySchool(int pageNumber, int pageSize, int schoolId)
+    // status true & false => admin
+    public async Task<BiaSoDauBaiResType> GetBiaSoDauBaisBySchool(QueryObject? queryObject, int schoolId)
     {
       try
       {
-        var skip = (pageNumber - 1) * pageSize;
+        queryObject ??= new QueryObject();
+        var skip = (queryObject.PageNumber - 1) * queryObject.PageSize;
 
         var baiSoDauBaiQuery = from biaSo in _context.BiaSoDauBais
                                join lop in _context.Classes on biaSo.ClassId equals lop.ClassId into lopHocGroup
@@ -303,7 +309,7 @@ namespace server.Repositories
             .Where(x => x.SchoolId.Equals(schoolId))
             .AsNoTracking()
             .Skip(skip)     // Skip the first (pageNumber - 1) * pageSize records
-            .Take(pageSize) // Take pageSize records
+            .Take(queryObject.PageSize) // Take pageSize records
             .ToListAsync();
 
         if (biaSoDauBai is null || biaSoDauBai.Count == 0)
@@ -549,21 +555,25 @@ namespace server.Repositories
       }
     }
 
-    public async Task<BiaSoDauBaiResType> SearchBiaSoDauBais(int? schoolId = null, int? classId = null)
+    public async Task<BiaSoDauBaiResType> SearchBiaSoDauBais(SearchBiaSoDauBaiObject? searchObject)
     {
+      searchObject ??= new SearchBiaSoDauBaiObject();
+
       var query = _context.BiaSoDauBais
           .AsNoTracking()
-          .Include(b => b.School)  // Assuming School navigation property exists
+          .Include(x => x.Class)
+          .Include(b => b.School)
+          .Include(b => b.Academicyear)
           .AsQueryable();
 
-      if (schoolId.HasValue)
+      if (searchObject.SchoolId.HasValue)
       {
-        query = query.Where(x => x.SchoolId == schoolId.Value);
+        query = query.Where(x => x.SchoolId == searchObject.SchoolId.Value);
       }
 
-      if (classId.HasValue)
+      if (searchObject.ClassId.HasValue)
       {
-        query = query.Where(x => x.ClassId == classId.Value);
+        query = query.Where(x => x.ClassId == searchObject.ClassId.Value);
       }
 
       // Execute the query and map the results to DTO
@@ -571,19 +581,19 @@ namespace server.Repositories
           .OrderBy(x => x.DateCreated)
           .ToListAsync();
 
-      // Check if any data was found
+      // Check if any data was not found
       if (!biaSoDauBai.Any())
       {
         return new BiaSoDauBaiResType(400, "Không tìm thấy kết quả");
       }
 
-      var result = biaSoDauBai.Select(x => new BiaSoDauBaiDto
+      var result = biaSoDauBai.Select(x => new BiaSoDauBai
       {
         BiaSoDauBaiId = x.BiaSoDauBaiId,
-        SchoolId = x.SchoolId,
-        AcademicyearId = x.AcademicyearId,
-        ClassId = x.ClassId,
+        Academicyear = x.Academicyear,
+        Class = x.Class,
         Status = x.Status,
+        School = x.School,
         DateCreated = x.DateCreated,
         DateUpdated = x.DateUpdated,
       }).ToList();

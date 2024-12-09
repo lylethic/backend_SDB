@@ -198,11 +198,12 @@ namespace server.Repositories
       }
     }
 
-    public async Task<AccountsResType> GetAccounts(int pageNumber, int pageSize)
+    public async Task<AccountsResType> GetAccounts(QueryObject? queryObject)
     {
       try
       {
-        var skip = (pageNumber - 1) * pageSize;
+        queryObject ??= new QueryObject();
+        var skip = (queryObject.PageNumber - 1) * queryObject.PageSize;
 
         // Use LINQ to join tables and select specific columns
         var accountsQuery = from account in _context.Accounts
@@ -224,9 +225,10 @@ namespace server.Repositories
 
         // Apply pagination
         var pagedAccounts = await accountsQuery
+                            .AsNoTracking()
                             .OrderBy(a => a.AccountId)
                             .Skip(skip)
-                            .Take(pageSize)
+                            .Take(queryObject.PageSize)
                             .ToListAsync();
 
         if (pagedAccounts == null || pagedAccounts.Count == 0)
@@ -243,11 +245,12 @@ namespace server.Repositories
       }
     }
 
-    public async Task<AccountsResType> GetAccountsBySchoolId(int pageNumber, int pageSize, int schoolId)
+    public async Task<AccountsResType> GetAccountsBySchoolId(QueryObjects? queryObject)
     {
       try
       {
-        var skip = (pageNumber - 1) * pageSize;
+        queryObject ??= new QueryObjects();
+        var skip = (queryObject.PageNumber - 1) * queryObject.PageSize;
 
         // Use LINQ to join tables and select specific columns
         var accountsQuery = from account in _context.Accounts
@@ -269,10 +272,11 @@ namespace server.Repositories
 
         // Apply pagination
         var pagedAccounts = await accountsQuery
-                            .Where(x => x.SchoolId == schoolId)
-                            .OrderBy(a => a.Email)
+                            .AsNoTracking()
+                            .Where(x => x.SchoolId == queryObject.SchoolId)
+                            .OrderBy(a => a.AccountId)
                             .Skip(skip)
-                            .Take(pageSize)
+                            .Take(queryObject.PageSize)
                             .ToListAsync();
 
         if (pagedAccounts == null || pagedAccounts.Count == 0)
@@ -290,11 +294,12 @@ namespace server.Repositories
       }
     }
 
-    public async Task<AccountsResType> GetAccountsByRole(int pageNumber, int pageSize, int roleId)
+    public async Task<AccountsResType> GetAccountsByRole(QueryObjects? queryObject)
     {
       try
       {
-        var skip = (pageNumber - 1) * pageSize;
+        queryObject ??= new QueryObjects();
+        var skip = (queryObject.PageNumber - 1) * queryObject.PageSize;
 
         var query = @"SELECT * FROM ACCOUNT 
                       WHERE RoleId = @roleId
@@ -304,9 +309,9 @@ namespace server.Repositories
 
         var accsList = await _context.Accounts
             .FromSqlRaw(query,
-                        new SqlParameter("@roleId", roleId),
+                        new SqlParameter("@roleId", queryObject.RoleId),
                         new SqlParameter("@skip", skip),
-                        new SqlParameter("@pageSize", pageSize)
+                        new SqlParameter("@pageSize", queryObject.PageSize)
             ).ToListAsync() ?? throw new Exception("Empty");
 
         var result = accsList.Select(acc => new AccountDto
@@ -316,6 +321,11 @@ namespace server.Repositories
           SchoolId = acc.SchoolId,
           Email = acc.Email
         }).ToList();
+
+        if (result is null || result.Count == 0)
+        {
+          return new AccountsResType(404, $"Vai trò {queryObject.RoleId} không có tài khoản nào.");
+        }
 
         return new AccountsResType(200, "Thành công", result);
       }
@@ -577,49 +587,56 @@ namespace server.Repositories
       }
     }
 
-    public async Task<AccountsResType> RelativeSearchAccounts(string? TeacherName, int? schoolId, int? roleId, int pageNumber, int pageSize)
+    public async Task<AccountsResType> RelativeSearchAccounts(QueryObjects? queryObject)
     {
       try
       {
+        queryObject ??= new QueryObjects();
+        var skip = (queryObject.PageNumber - 1) * queryObject.PageSize;
+
         var query = _context.Accounts
           .AsNoTracking()
-          .Include(t => t.Teachers) // gia su bao gom Bnag GiaoVien
+          .Include(t => t.Teachers)
+          .Include(x => x.Role)
+          .Include(x => x.School)
           .AsQueryable();
 
 
-        if (schoolId.HasValue)
+        if (queryObject.SchoolId.HasValue)
         {
-          query = query.Where(x => x.SchoolId == schoolId.Value);
+          query = query.Where(x => x.SchoolId == queryObject.SchoolId.Value);
         }
 
-        if (roleId.HasValue)
+        if (queryObject.RoleId.HasValue)
         {
-          query = query.Where(x => x.RoleId == roleId.Value);
+          query = query.Where(x => x.RoleId == queryObject.RoleId.Value);
         }
 
-        if (!string.IsNullOrEmpty(TeacherName))
+        if (!string.IsNullOrEmpty(queryObject.Name))
         {
-          var lowerdTeaherName = TeacherName.ToLower();
-          query = query.Where(t => t.Teachers
-          .Any(t => EF.Functions.Like(t.Fullname.ToLower(), $"%{lowerdTeaherName}%")));
+          var searchTerm = queryObject.Name.ToLower();
+          query = query.Where(x =>
+              EF.Functions.Like(x.Email.ToLower(), $"%{searchTerm}%") ||
+              x.Teachers.Any(t => EF.Functions.Like(t.Fullname.ToLower(), $"%{searchTerm}%")));
         }
 
-        query = query.Skip((pageNumber - 1) * pageSize).Take(pageSize);
+        query = query.Skip(skip).Take(queryObject.PageSize);
 
         var results = await query
-          .Select(a => new AccountResData
+          .Select(account => new AccountsResData
           {
-            AccountId = a.AccountId,
-            RoleId = a.RoleId,
-            SchoolId = a.SchoolId,
-            Email = a.Email,
-            TeacherId = a.Teachers.Select(a => a.TeacherId).FirstOrDefault(),
-            FullName = a.Teachers.Select(a => a.Fullname).FirstOrDefault(),
-            StatusTeacher = a.Teachers.Select(a => a.Status).FirstOrDefault()
+            AccountId = account.AccountId,
+            RoleId = account.RoleId,
+            SchoolId = account.SchoolId,
+            RoleName = account.Role.NameRole,
+            SchoolName = account.School.NameSchcool,
+            Email = account.Email,
+            DateCreated = account.DateCreated,
+            DateUpdated = account.DateUpdated
           })
           .ToListAsync();
 
-        if (results is null)
+        if (!results.Any())
         {
           return new AccountsResType(404, "Không có kết quả");
         }
@@ -652,6 +669,11 @@ namespace server.Repositories
         var accounts = await _context.Accounts
           .Where(x => x.SchoolId == schoolId)
           .CountAsync();
+
+        if (accounts == 0)
+        {
+          throw new Exception($"This schoolId {schoolId} doesn't have any accounts");
+        }
 
         return accounts;
       }

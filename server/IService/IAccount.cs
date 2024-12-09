@@ -9,9 +9,9 @@ namespace server.IService
 
     Task<int> GetCountAccountsBySchool(int schoolId);
 
-    Task<AccountsResType> GetAccounts(int pageNumber, int pageSize);
+    Task<AccountsResType> GetAccounts(QueryObject? query);
 
-    Task<AccountsResType> GetAccountsByRole(int pageNumber, int pageSize, int roleId);
+    Task<AccountsResType> GetAccountsByRole(QueryObjects? queryObject);
 
     Task<AccountsResType> GetAccount(int id);
 
@@ -27,8 +27,8 @@ namespace server.IService
 
     Task<AccountsResType> BulkDelete(List<int> ids);
 
-    Task<AccountsResType> GetAccountsBySchoolId(int pageNumber, int pageSize, int schoolId);
+    Task<AccountsResType> GetAccountsBySchoolId(QueryObjects? queryObject);
 
-    Task<AccountsResType> RelativeSearchAccounts(string? TeacherName, int? schoolId, int? roleId, int pageNumber, int pageSize);
+    Task<AccountsResType> RelativeSearchAccounts(QueryObjects? queryObject);
   }
 }

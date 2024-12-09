@@ -39,7 +39,11 @@ namespace server.Controllers
         isSuccess = result.IsSuccess,
         statusCode = result.StatusCode,
         message = result.Message,
-        data = result.Data
+        data = new
+        {
+          token = result.Data.Token,
+          expiresAt = result.Data.ExpiresAt
+        }
       });
     }
 
@@ -58,7 +62,11 @@ namespace server.Controllers
       {
         success = result.IsSuccess,
         message = result.Message,
-        accessToken = result.AccessToken,
+        data = new
+        {
+          token = result.Data.Token,
+          expiresAt = result.Data.ExpiresAt
+        }
       });
     }
 
@@ -85,7 +93,6 @@ namespace server.Controllers
         data = new
         {
           token = result.Data.Token,
-          refreshToken = result.Data.RefreshToken,
           expiresAt = result.Data.ExpiresAt
         }
       });

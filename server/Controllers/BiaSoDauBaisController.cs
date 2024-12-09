@@ -21,9 +21,9 @@ namespace server.Controllers
 
     // GET: api/<BiaSoDauBaisController>
     [HttpGet]
-    public async Task<IActionResult> GetAll([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 50)
+    public async Task<IActionResult> GetAll([FromQuery] QueryObject? queryObject)
     {
-      var result = await _biaSodaubai.GetBiaSoDauBais_Active(pageNumber, pageSize);
+      var result = await _biaSodaubai.GetBiaSoDauBais_Active(queryObject);
       if (result.StatusCode == 200)
       {
         return Ok(new
@@ -49,9 +49,9 @@ namespace server.Controllers
 
     // Status true & false for Admin
     [HttpGet, Route("get-all-bia-so")]
-    public async Task<IActionResult> GetAllBiaSo([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 50)
+    public async Task<IActionResult> GetAllBiaSo([FromQuery] QueryObject? queryObject)
     {
-      var result = await _biaSodaubai.GetBiaSoDauBais(pageNumber, pageSize);
+      var result = await _biaSodaubai.GetBiaSoDauBais(queryObject);
       if (result.StatusCode == 200)
       {
         return Ok(new
@@ -105,9 +105,9 @@ namespace server.Controllers
     }
 
     [HttpGet("get-by-school")]
-    public async Task<IActionResult> GetBiaSoDauBaisBySchool(int pageNumber, int pageSize, int schoolId)
+    public async Task<IActionResult> GetBiaSoDauBaisBySchool(QueryObject? queryObject, int schoolId)
     {
-      var result = await _biaSodaubai.GetBiaSoDauBaisBySchool_Active(pageNumber, pageSize, schoolId);
+      var result = await _biaSodaubai.GetBiaSoDauBaisBySchool_Active(queryObject, schoolId);
       if (result.StatusCode == 200)
       {
         return Ok(new
@@ -133,9 +133,9 @@ namespace server.Controllers
 
     // status true&false for admin
     [HttpGet("get-all-bia-so-by-school")]
-    public async Task<IActionResult> GetAllBiaSoDauBaisBySchool(int pageNumber, int pageSize, int schoolId)
+    public async Task<IActionResult> GetAllBiaSoDauBaisBySchool(QueryObject? queryObject, int schoolId)
     {
-      var result = await _biaSodaubai.GetBiaSoDauBaisBySchool(pageNumber, pageSize, schoolId);
+      var result = await _biaSodaubai.GetBiaSoDauBaisBySchool(queryObject, schoolId);
       if (result.StatusCode == 200)
       {
         return Ok(new
@@ -325,9 +325,10 @@ namespace server.Controllers
     //GET /api/BiaSoDauBais/Search? schoolName = ABC & schoolId = 1 & classId = 2
     /* Search keywords: Schoolname, SchoolId, classId */
     [HttpGet("search")]
-    public async Task<IActionResult> SearchBiaSoDauBais(int? schoolId, int? classId)
+    public async Task<IActionResult> SearchBiaSoDauBais(SearchBiaSoDauBaiObject? searchObject)
     {
-      var result = await _biaSodaubai.SearchBiaSoDauBais(schoolId, classId);
+      searchObject ??= new SearchBiaSoDauBaiObject();
+      var result = await _biaSodaubai.SearchBiaSoDauBais(searchObject);
 
       if (result.StatusCode == 200)
       {

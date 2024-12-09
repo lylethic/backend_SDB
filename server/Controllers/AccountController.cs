@@ -33,10 +33,9 @@ namespace server.Controllers
 
     // GET: api/Auth
     [HttpGet]
-    public async Task<IActionResult> GetAccounts(int pageNumber = 1, int pageSize = 50)
+    public async Task<IActionResult> GetAccounts([FromQuery] QueryObject? query)
     {
-
-      var result = await _acc.GetAccounts(pageNumber, pageSize);
+      var result = await _acc.GetAccounts(query);
       if (result.StatusCode == 404)
       {
         return NotFound(new
@@ -63,9 +62,9 @@ namespace server.Controllers
     }
 
     [HttpGet, Route("get-accounts-by-role")]
-    public async Task<IActionResult> GetAccountsByRole(int pageNumber, int pageSize, int roleId)
+    public async Task<IActionResult> GetAccountsByRole([FromQuery] QueryObjects? queryObject)
     {
-      var result = await _acc.GetAccountsByRole(pageNumber, pageSize, roleId);
+      var result = await _acc.GetAccountsByRole(queryObject);
       if (result.StatusCode == 404)
       {
         return NotFound(new
@@ -93,9 +92,9 @@ namespace server.Controllers
     }
 
     [HttpGet, Route("get-accounts-by-school")]
-    public async Task<IActionResult> GetAccountsBySchool(int pageNumber, int pageSize, int schoolId)
+    public async Task<IActionResult> GetAccountsBySchool([FromQuery] QueryObjects? queryObject)
     {
-      var result = await _acc.GetAccountsBySchoolId(pageNumber, pageSize, schoolId);
+      var result = await _acc.GetAccountsBySchoolId(queryObject);
       if (result.StatusCode == 404)
       {
         return NotFound(new
@@ -177,14 +176,15 @@ namespace server.Controllers
     }
 
     [HttpGet("search")]
-    public async Task<IActionResult> RelativeSearchAccounts([FromQuery] string? TeacherName, [FromQuery] int? schoolId, [FromQuery] int? roleId, [FromQuery] int pageNumber, [FromQuery] int pageSize)
+    public async Task<IActionResult> RelativeSearchAccounts([FromQuery] QueryObjects? queryObject)
     {
-      if (pageNumber < 1 || pageSize < 1)
+      queryObject ??= new QueryObjects();
+      if (queryObject.PageNumber < 1 || queryObject.PageSize < 1)
       {
         return BadRequest("Page number and page size must be positive integers.");
       }
 
-      var results = await _acc.RelativeSearchAccounts(TeacherName, schoolId, roleId, pageNumber, pageSize);
+      var results = await _acc.RelativeSearchAccounts(queryObject);
 
       if (results.StatusCode == 404)
       {
@@ -199,7 +199,7 @@ namespace server.Controllers
         {
           statusCode = results.StatusCode,
           message = results.Message,
-          data = results.AccountsResData
+          data = results.Data
         });
 
       return StatusCode(500, new

@@ -8,6 +8,9 @@ namespace server.Types.BiaSoDauBai
 
     public BiaSoDauBaiDto? BiaSoDauBaiDto { get; set; }
 
+    public Models.BiaSoDauBai? BiaSoDauBai { get; set; }
+    public List<Models.BiaSoDauBai>? BiaSoDauBaiList { get; set; }
+
     public BiaSoDauBaiRes? BiaSoDauBaiRes { get; set; }
 
     public List<BiaSoDauBaiRes>? ListBiaSoDauBaiRes { get; set; }
@@ -26,6 +29,13 @@ namespace server.Types.BiaSoDauBai
       StatusCode = statusCode;
       Message = message;
       BiaSoDauBaiDto = biaSoDauBaiDto;
+    }
+
+    public BiaSoDauBaiResType(int statusCode, string message, List<Models.BiaSoDauBai> biaSoDauBai)
+    {
+      StatusCode = statusCode;
+      Message = message;
+      BiaSoDauBaiList = biaSoDauBai;
     }
 
     public BiaSoDauBaiResType(int statusCode, string message, BiaSoDauBaiRes biaSoDauBaiRes)

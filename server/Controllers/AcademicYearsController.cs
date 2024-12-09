@@ -20,11 +20,12 @@ namespace server.Controllers
 
     // GET: api/AcademicYears
     [HttpGet]
-    public async Task<IActionResult> GetAcademicYears(int pageNumber = 1, int pageSize = 50)
+    public async Task<IActionResult> GetAcademicYears([FromQuery] QueryObject? query)
     {
       try
       {
-        var academicYears = await _acaYearRepo.GetAcademicYears(pageNumber, pageSize);
+        query ??= new QueryObject();
+        var academicYears = await _acaYearRepo.GetAcademicYears(query);
         if (academicYears == null)
         {
           return NotFound(); // 404

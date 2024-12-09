@@ -9,14 +9,14 @@ namespace server.IService
 
     Task<BiaSoDauBaiResType> GetBiaSoDauBai(int id);
 
-    Task<BiaSoDauBaiResType> GetBiaSoDauBais_Active(int pageNumber, int pageSize);
+    Task<BiaSoDauBaiResType> GetBiaSoDauBais_Active(QueryObject? queryObject);
 
-    Task<BiaSoDauBaiResType> GetBiaSoDauBaisBySchool_Active(int pageNumber, int pageSize, int schoolId);
+    Task<BiaSoDauBaiResType> GetBiaSoDauBaisBySchool_Active(QueryObject? queryObject, int schoolId);
 
     // status true && false
-    Task<BiaSoDauBaiResType> GetBiaSoDauBais(int pageNumber, int pageSize);
+    Task<BiaSoDauBaiResType> GetBiaSoDauBais(QueryObject? queryObject);
 
-    Task<BiaSoDauBaiResType> GetBiaSoDauBaisBySchool(int pageNumber, int pageSize, int schoolId);
+    Task<BiaSoDauBaiResType> GetBiaSoDauBaisBySchool(QueryObject? queryObject, int schoolId);
 
     Task<BiaSoDauBaiResType> DeleteBiaSoDauBai(int id);
 
@@ -26,6 +26,6 @@ namespace server.IService
 
     Task<BiaSoDauBaiResType> BulkDelete(List<int> ids);
 
-    Task<BiaSoDauBaiResType> SearchBiaSoDauBais(int? schoolId, int? classId);
+    Task<BiaSoDauBaiResType> SearchBiaSoDauBais(SearchBiaSoDauBaiObject? searchObject);
   }
 }

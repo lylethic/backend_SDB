@@ -117,7 +117,6 @@ namespace server.Repositories
       }
 
       string? accessToken = model.AccessToken;
-      string? refreshToken = model.RefreshToken;
 
       try
       {
@@ -152,7 +151,7 @@ namespace server.Repositories
                          .FirstOrDefault();
 
 
-        if (tokenStored is null || tokenStored.Token != refreshToken)
+        if (tokenStored is null)
         {
           return new LoginResType(false, 404, "Invalid or expired refresh token.");
 
@@ -169,15 +168,13 @@ namespace server.Repositories
 
         // Generate new access and refresh tokens
         var newAccessToken = GenerateAccessToken(principal.Claims);
-        var newRefreshToken = GenerateRefreshToken();
 
         // Update refresh token in the database
-        tokenStored.Token = newRefreshToken;
+        tokenStored.Token = newAccessToken;
         await _context.SaveChangesAsync();
 
         // Luu vao cookies (Server-side-ren)
         SetJWTTokenCookie(newAccessToken);
-        SetRefreshTokenCookie(newRefreshToken);
 
         return new LoginResType
         {
@@ -187,8 +184,7 @@ namespace server.Repositories
           Data = new LoginResData
           {
             Token = newAccessToken,
-            RefreshToken = newRefreshToken, // Refresh-token old
-            ExpiresAt = tokenStored.ExpiresAt.ToString() // old
+            ExpiresAt = DateTime.UtcNow.AddHours(Convert.ToInt16(_config["JwtSettings:AccessTokenExpirationHours"])).ToString(),
           }
         };
       }
@@ -224,7 +220,7 @@ namespace server.Repositories
         HttpOnly = true,
         Secure = true,
         SameSite = SameSiteMode.Strict,
-        Expires = DateTime.UtcNow.AddMonths(Convert.ToInt16(_config["JwtSettings:RefreshTokenExpirationMonths"])),
+        Expires = DateTime.UtcNow.AddHours(Convert.ToInt16(_config["JwtSettings:AccessTokenExpirationHours"])),
       };
       try
       {

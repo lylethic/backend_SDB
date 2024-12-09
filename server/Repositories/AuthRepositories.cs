@@ -44,6 +44,102 @@ namespace server.Repositories
     //	message: z.string(),
     //});
     //</returns>
+
+    // public async Task<LoginResType> Login(AuthDto model)
+    // {
+    //   if (model is null)
+    //   {
+    //     return new LoginResType(false, "Invalid client request");
+    //   }
+
+    //   var user = await _context.Accounts.FirstOrDefaultAsync(u => u.Email == model.Email);
+
+    //   if (user is null)
+    //   {
+    //     return new LoginResType
+    //     {
+    //       Message = "Lỗi xảy ra khi xác thực dữ liệu...",
+    //       Errors = new List<Error>
+    //         {
+    //             new Error("Email", "Email hoặc mật khẩu không đúng")
+    //         },
+    //       StatusCode = 422,
+    //       IsSuccess = false
+    //     };
+
+    //   }
+
+    //   // Validate password
+    //   bool isPasswordValid = ValidateHash(model.Password!, user.MatKhau, user.PasswordSalt);
+    //   if (!isPasswordValid)
+    //   {
+    //     return new LoginResType
+    //     {
+    //       Message = "Lỗi xảy ra khi xác thực dữ liệu...",
+    //       Errors = new List<Error>
+    //         {
+    //             new Error("Password", "Email hoặc mật khẩu không đúng")
+    //         },
+    //       StatusCode = 422,
+    //       IsSuccess = false
+    //     };
+    //   }
+
+    //   // Lay ten role
+    //   var getRole = await _context.Roles.FirstOrDefaultAsync(r => r.RoleId == user.RoleId);
+    //   var role = getRole?.RoleId;
+
+    //   // Add additional claims
+    //   var claims = new List<Claim>()
+    //   {
+    //     new Claim("AccountId", user.AccountId.ToString()),
+    //     new Claim("Email", model.Email!),
+    //     new Claim("RoleId", role.ToString()!),
+    //     new Claim("SchoolId", user.SchoolId.ToString()!),
+    //   };
+
+    //   // Generate JWT tokens
+    //   var accessToken = _tokenService.GenerateAccessToken(claims);
+    //   var refreshToken = _tokenService.GenerateRefreshToken();
+
+    //   // Set cookies
+    //   _tokenService.SetJWTTokenCookie(accessToken);
+    //   _tokenService.SetRefreshTokenCookie(refreshToken);
+
+    //   var session = new Session
+    //   {
+    //     AccountId = user.AccountId,
+    //     Token = refreshToken,
+    //     ExpiresAt = DateTime.UtcNow.AddMonths(Convert.ToInt16(_config["JwtSettings:RefreshTokenExpirationMonths"])), // Expires của refreshToken 
+    //     CreatedAt = DateTime.UtcNow,
+    //   };
+
+    //   await _context.Sessions.AddAsync(session);
+    //   await _context.SaveChangesAsync();
+
+    //   // Construct the account data to be returned
+    //   var accountData = new AccountData
+    //   {
+    //     AccountId = user.AccountId,
+    //     RoleId = user.RoleId,
+    //     SchoolId = user?.SchoolId,
+    //     Email = user?.Email
+    //   };
+
+    //   return new LoginResType
+    //   {
+    //     IsSuccess = true,
+    //     StatusCode = 200,
+    //     Message = "Login successful",
+    //     Data = new LoginResData
+    //     {
+    //       Token = accessToken,
+    //       RefreshToken = refreshToken,
+    //       ExpiresAt = DateTime.UtcNow.AddMonths(Convert.ToInt16(_config["JwtSettings:RefreshTokenExpirationMonths"])).ToString(),
+    //     }
+    //   };
+    // }
+
     public async Task<LoginResType> Login(AuthDto model)
     {
       if (model is null)
@@ -99,17 +195,15 @@ namespace server.Repositories
 
       // Generate JWT tokens
       var accessToken = _tokenService.GenerateAccessToken(claims);
-      var refreshToken = _tokenService.GenerateRefreshToken();
 
       // Set cookies
       _tokenService.SetJWTTokenCookie(accessToken);
-      _tokenService.SetRefreshTokenCookie(refreshToken);
 
       var session = new Session
       {
         AccountId = user.AccountId,
-        Token = refreshToken,
-        ExpiresAt = DateTime.UtcNow.AddMonths(Convert.ToInt16(_config["JwtSettings:RefreshTokenExpirationMonths"])), // Expires của refreshToken 
+        Token = accessToken,
+        ExpiresAt = DateTime.UtcNow.AddHours(Convert.ToInt16(_config["JwtSettings:AccessTokenExpirationHours"])),
         CreatedAt = DateTime.UtcNow,
       };
 
@@ -133,8 +227,7 @@ namespace server.Repositories
         Data = new LoginResData
         {
           Token = accessToken,
-          RefreshToken = refreshToken,
-          ExpiresAt = DateTime.UtcNow.AddMonths(Convert.ToInt16(_config["JwtSettings:RefreshTokenExpirationMonths"])).ToString(),
+          ExpiresAt = DateTime.UtcNow.AddHours(Convert.ToInt16(_config["JwtSettings:AccessTokenExpirationHours"])).ToString(),
         }
       };
     }
@@ -181,12 +274,12 @@ namespace server.Repositories
       }
     }
 
-    public async Task<ResponseDto> Register(RegisterDto model)
+    public async Task<LoginResType> Register(RegisterDto model)
     {
       // request empty
       if (model == null)
       {
-        return new ResponseDto
+        return new LoginResType
         {
           IsSuccess = false,
           Message = "Invalid registration request",
@@ -199,7 +292,7 @@ namespace server.Repositories
 
       if (existingUser != null)
       {
-        return new ResponseDto
+        return new LoginResType
         {
           IsSuccess = false,
           Message = "Email already registered",
@@ -236,26 +329,29 @@ namespace server.Repositories
       };
 
       var accessToken = _tokenService.GenerateAccessToken(claims);
-      var refreshToken = _tokenService.GenerateRefreshToken();
       _tokenService.SetJWTTokenCookie(accessToken);
 
       // Save token into table TokenStored
       var tokenResult = new Session
       {
         AccountId = user.AccountId,
-        Token = refreshToken,
-        ExpiresAt = DateTime.UtcNow.AddMonths(Convert.ToInt16(_config["JwtSettings:RefreshTokenExpirationMonths"])),
+        Token = accessToken,
+        ExpiresAt = DateTime.UtcNow.AddHours(Convert.ToInt16(_config["JwtSettings:AccessTokenExpirationHours"])),
         CreatedAt = DateTime.UtcNow,
       };
 
       await _context.Sessions.AddAsync(tokenResult);
       await _context.SaveChangesAsync();
 
-      return new ResponseDto
+      return new LoginResType
       {
         IsSuccess = true,
         Message = "Registration successful",
-        AccessToken = accessToken,
+        Data = new LoginResData
+        {
+          Token = accessToken,
+          ExpiresAt = DateTime.UtcNow.AddHours(Convert.ToInt16(_config["JwtSettings:AccessTokenExpirationHours"])).ToString(),
+        }
       };
     }
 
