@@ -145,7 +145,7 @@ namespace server.Repositories
 
         if (account is null)
         {
-          return new AccountsResType(404, "Account not found");
+          return new AccountsResType(404, "Không tìm thấy tài khoản");
         }
 
         var result = new AccountResData
@@ -187,10 +187,10 @@ namespace server.Repositories
 
         if (account is null)
         {
-          return new AccountsResType(404, "Account not found");
+          return new AccountsResType(404, "Không tìm thấy tài khoản");
         }
 
-        return new AccountsResType(200, "Success", account);
+        return new AccountsResType(200, "Thành công", account);
       }
       catch (Exception ex)
       {
@@ -233,7 +233,7 @@ namespace server.Repositories
 
         if (pagedAccounts == null || pagedAccounts.Count == 0)
         {
-          return new AccountsResType(404, "Không tìm thấy accounts");
+          return new AccountsResType(404, "Không tìm thấy danh sách tài khoản");
         }
 
         return new AccountsResType(200, "Thành công", pagedAccounts);
@@ -281,10 +281,8 @@ namespace server.Repositories
 
         if (pagedAccounts == null || pagedAccounts.Count == 0)
         {
-          return new AccountsResType(404, "Không tìm thấy accounts");
+          return new AccountsResType(404, "Không tìm thấy danh sách tài khoản");
         }
-
-        // Create the success response
         return new AccountsResType(200, "Thành công", pagedAccounts);
       }
       catch (Exception ex)
@@ -341,7 +339,7 @@ namespace server.Repositories
       {
         if (!IsValidEmail(model.Email))
         {
-          return new AccountsResType(400, "Invalid Email format");
+          return new AccountsResType(400, "Định dạng không hợp lệ");
         }
 
         var query = "SELECT * FROM ACCOUNT WHERE AccountId = @accountId";
@@ -352,7 +350,7 @@ namespace server.Repositories
 
         if (existingAccount is null)
         {
-          return new AccountsResType(404, "Account not found");
+          return new AccountsResType(404, "Không tìm thấy tài khoản");
         }
 
         bool hasChanges = false;
@@ -407,12 +405,12 @@ namespace server.Repositories
           var updateQuery = queryBuilder.ToString();
           await _context.Database.ExecuteSqlRawAsync(updateQuery, [.. parameters]);
 
-          return new AccountsResType(200, "Updated");
+          return new AccountsResType(200, "Đã cập nhật thành công");
 
         }
         else
         {
-          return new AccountsResType(200, "No changes detected");
+          return new AccountsResType(200, "Không phát hiện sự thay đổi");
         }
       }
       catch (Exception ex)
@@ -434,7 +432,7 @@ namespace server.Repositories
         // Check account null??
         if (account is null)
         {
-          return new AccountsResType(404, "Account not found!");
+          return new AccountsResType(404, "Không tìm thấy tài khoản");
         }
 
         // Delete query
@@ -442,7 +440,7 @@ namespace server.Repositories
         await _context.Database
           .ExecuteSqlRawAsync(deleteQuery, new SqlParameter("@accountId", accountId));
 
-        return new AccountsResType(200, "Deleted");
+        return new AccountsResType(200, "Xóa thành công");
       }
       catch (Exception ex)
       {
@@ -543,7 +541,7 @@ namespace server.Repositories
             } while (reader.NextResult());
           }
 
-          return new AccountsResType(200, "Successfully inserted");
+          return new AccountsResType(200, "Thêm mới dữ liệu thành công");
         }
         return new AccountsResType(400, "No file uploaded");
 
@@ -573,12 +571,12 @@ namespace server.Repositories
 
         if (delete == 0)
         {
-          return new AccountsResType(404, "No AccountId found to delete");
+          return new AccountsResType(404, "Không tìm thấy");
         }
 
         await transaction.CommitAsync();
 
-        return new AccountsResType(200, "Deleted succesfully");
+        return new AccountsResType(200, "Xóa thành công");
       }
       catch (Exception ex)
       {

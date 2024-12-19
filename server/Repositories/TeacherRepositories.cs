@@ -43,7 +43,7 @@ namespace server.Repositories
           new SqlParameter("@AccountId", model.AccountId),
           new SqlParameter("@SchoolId", model.SchoolId),
           new SqlParameter("@Fullname", model.Fullname),
-          new SqlParameter("@DateOfBirth", model.DateOfBirth.ToString("dd/MM/yyyy")),
+          new SqlParameter("@DateOfBirth", model.DateOfBirth),
           new SqlParameter("@Gender", model.Gender),
           new SqlParameter("@Address", model.Address),
           new SqlParameter("@Status", model.Status),
@@ -87,7 +87,9 @@ namespace server.Repositories
                                   t.status,
 			                            s.schoolId, 
                                   s.nameSchcool, 
-                                  s.schoolType
+                                  s.schoolType,
+                                  t.dateCreate,
+			                            t.dateUpdate
                             FROM TEACHER T
                             LEFT JOIN SCHOOL S
                             ON T.schoolId = S.schoolId
@@ -109,7 +111,76 @@ namespace server.Repositories
             {
               NameSchcool = x.School.NameSchcool,
               SchoolType = x.School.SchoolType
-            }
+            },
+            DateCreate = x.DateCreate,
+            DateUpdate = x.DateUpdate
+          })
+          .FirstOrDefaultAsync();
+
+        if (teacher is null)
+        {
+          return new TeacherResType(404, "Teacher not found");
+        }
+
+
+        var result = new TeacherDetail
+        {
+          TeacherId = id,
+          AccountId = teacher.AccountId,
+          Fullname = teacher.Fullname,
+          DateOfBirth = teacher.DateOfBirth.ToString("dd/MM/yyyy HH:mm:ss") ?? string.Empty,
+          Gender = teacher.Gender,
+          Address = teacher.Address,
+          Status = teacher.Status,
+          SchoolId = teacher.SchoolId,
+          NameSchool = teacher.School.NameSchcool,
+          SchoolType = teacher.School.SchoolType ? "Công lập" : "Dân lập",
+          DateCreate = teacher.DateCreate?.ToString("dd/MM/yyyy HH:mm:ss") ?? string.Empty,
+          DateUpdate = teacher.DateUpdate?.ToString("dd/MM/yyyy HH:mm:ss") ?? string.Empty,
+        };
+
+        return new TeacherResType(200, "Thành công", result);
+      }
+      catch (Exception ex)
+      {
+        return new TeacherResType(500, $"Server error: {ex.Message}");
+      }
+    }
+
+    public async Task<TeacherResType> GetTeacherToUpdate(int id)
+    {
+      try
+      {
+        var findTeacher = @"SELECT 
+			                            t.teacherId, 
+                                  t.accountId, 
+			                            s.schoolId, 
+                                  t.fullname, 
+                                  t.dateOfBirth, 
+                                  t.gender, 
+                                  t.address, 
+                                  t.status,
+                                  t.dateCreate,
+			                            t.dateUpdate
+                            FROM TEACHER t
+                            LEFT JOIN SCHOOL s
+                            ON t.schoolId = s.schoolId
+                            WHERE t.teacherId = @id";
+
+        var teacher = await _context.Teachers
+          .FromSqlRaw(findTeacher, new SqlParameter("@id", id))
+          .Select(static x => new Teacher
+          {
+            TeacherId = x.TeacherId,
+            AccountId = x.AccountId,
+            SchoolId = x.SchoolId,
+            Fullname = x.Fullname,
+            DateOfBirth = x.DateOfBirth,
+            Gender = x.Gender,
+            Address = x.Address,
+            Status = x.Status,
+            DateCreate = x.DateCreate,
+            DateUpdate = x.DateUpdate
           })
           .FirstOrDefaultAsync();
 
@@ -129,8 +200,8 @@ namespace server.Repositories
           Address = teacher.Address,
           Status = teacher.Status,
           SchoolId = teacher.SchoolId,
-          NameSchool = teacher.School.NameSchcool,
-          SchoolType = teacher.School.SchoolType
+          DateCreate = teacher.DateCreate,
+          DateUpdate = teacher.DateUpdate
         };
 
         return new TeacherResType(200, "Thành công", result);
@@ -141,15 +212,16 @@ namespace server.Repositories
       }
     }
 
-    public async Task<int> GetCountTeachersBySchool(int id)
+    public async Task<int> GetCountTeachersBySchool(int? id = null)
     {
       try
       {
-        var teachers = await _context.Teachers
-          .Where(x => x.SchoolId == id)
-          .CountAsync();
-
-        return teachers;
+        var query = _context.Teachers.AsQueryable();
+        if (id.HasValue && id > 0)
+        {
+          query = query.Where(x => x.SchoolId == id.Value);
+        }
+        return await query.CountAsync();
       }
       catch (Exception ex)
       {
@@ -157,11 +229,13 @@ namespace server.Repositories
       }
     }
 
-    public async Task<TeacherResType> GetTeachers(int pageNumber, int pageSize)
+    public async Task<TeacherResType> GetTeachers(QueryObject? queryObject)
     {
       try
       {
-        var skip = (pageNumber - 1) * pageSize;
+        queryObject ??= new QueryObject();
+
+        var skip = (queryObject.PageNumber - 1) * queryObject.PageSize;
 
         var query = @"SELECT * FROM Teacher
                       ORDER BY TEACHERID
@@ -171,19 +245,25 @@ namespace server.Repositories
         var teachers = await _context.Teachers
           .FromSqlRaw(query,
           new SqlParameter("@skip", skip),
-          new SqlParameter("@pageSize", pageSize)
-          ).ToListAsync() ?? throw new Exception("Empty");
+          new SqlParameter("@pageSize", queryObject.PageSize)
+          )
+          .Include("School")
+          .ToListAsync() ?? throw new Exception("Empty");
 
-        var result = teachers.Select(x => new TeacherDto
+        var result = teachers.Select(x => new TeacherDetail
         {
           TeacherId = x.TeacherId,
           AccountId = x.AccountId,
           SchoolId = x.SchoolId,
+          NameSchool = x.School.NameSchcool,
           Fullname = x.Fullname,
-          DateOfBirth = x.DateOfBirth,
+          DateOfBirth = x.DateOfBirth.ToString("dd/MM/yyyy HH:mm:ss"),
           Gender = x.Gender,
           Address = x.Address,
           Status = x.Status,
+          DateCreate = x.DateCreate?.ToString("dd/MM/yyyy HH:mm:ss") ?? string.Empty,
+          DateUpdate = x.DateUpdate?.ToString("dd/MM/yyyy HH:mm:ss") ?? string.Empty,
+          SchoolType = x.School.SchoolType ? "Công lập" : "Dân lập"
         }).ToList();
 
         return new TeacherResType(200, "Thành công", result);
@@ -194,11 +274,12 @@ namespace server.Repositories
       }
     }
 
-    public async Task<TeacherResType> GetTeachersBySchool(int pageNumber, int pageSize, int schoolId)
+    public async Task<TeacherResType> GetTeachersBySchool(QueryObject? queryObject, int schoolId)
     {
       try
       {
-        var skip = (pageNumber - 1) * pageSize;
+        queryObject ??= new QueryObject();
+        var skip = (queryObject.PageNumber - 1) * queryObject.PageSize;
 
         var query = @"SELECT * FROM Teacher
                       WHERE schoolId = @schoolId
@@ -210,19 +291,25 @@ namespace server.Repositories
           .FromSqlRaw(query,
           new SqlParameter("@schoolId", schoolId),
           new SqlParameter("@skip", skip),
-          new SqlParameter("@pageSize", pageSize)
-          ).ToListAsync() ?? throw new Exception("Empty");
+          new SqlParameter("@pageSize", queryObject.PageSize)
+          )
+          .Include(x => x.School)
+          .ToListAsync() ?? throw new Exception("Empty");
 
-        var result = teachers.Select(x => new TeacherDto
+        var result = teachers.Select(x => new TeacherDetail
         {
           TeacherId = x.TeacherId,
           AccountId = x.AccountId,
           SchoolId = x.SchoolId,
+          NameSchool = x.School.NameSchcool,
           Fullname = x.Fullname,
-          DateOfBirth = x.DateOfBirth,
+          DateOfBirth = x.DateOfBirth.ToString("dd/MM/yyyy HH:mm:ss") ?? string.Empty,
           Gender = x.Gender,
           Address = x.Address,
           Status = x.Status,
+          DateCreate = x.DateCreate?.ToString("dd/MM/yyyy HH:mm:ss") ?? string.Empty,
+          DateUpdate = x.DateUpdate?.ToString("dd/MM/yyyy HH:mm:ss") ?? string.Empty,
+          SchoolType = x.School.SchoolType ? "Công lập" : "Dân lập"
         }).ToList();
 
         return new TeacherResType(200, "Thành công", result);
@@ -345,7 +432,7 @@ namespace server.Repositories
       }
     }
 
-    public async Task<string> ImportExcelFile(IFormFile file)
+    public async Task<TeacherResType> ImportExcelFile(IFormFile file)
     {
       try
       {
@@ -409,13 +496,14 @@ namespace server.Repositories
             } while (reader.NextResult());
           }
 
-          return "Successfully inserted";
+          return new TeacherResType(200, "Tải danh sách thành công");
         }
-        return "No file uploaded";
+        return new TeacherResType(400, "Không có danh sách nào được tải lên");
+
       }
       catch (Exception ex)
       {
-        throw new Exception($"Error while uploading file: {ex.Message}");
+        return new TeacherResType(500, $"Tải lên thất bại. Vui lòng kiểm tra định dạng file {ex.Message}");
       }
     }
 
@@ -435,7 +523,7 @@ namespace server.Repositories
 
         var deleteQuery = "DELETE FROM Teacher WHERE TeacherId = @id";
         await _context.Database.ExecuteSqlRawAsync(deleteQuery, new SqlParameter("@id", id));
-        return new TeacherResType(200, "Deleted");
+        return new TeacherResType(200, "Xóa thành công");
       }
       catch (Exception ex)
       {
@@ -473,6 +561,82 @@ namespace server.Repositories
       {
         await transaction.RollbackAsync();
         return new ResponseData<string>(500, $"Server error: {ex.Message}");
+      }
+    }
+
+    public async Task<TeacherResType> SearchTeacher(QueryObjects? queryObject)
+    {
+      try
+      {
+        queryObject ??= new QueryObjects();
+        var skip = (queryObject.PageNumber - 1) * queryObject.PageSize;
+
+        var query = _context.Teachers
+          .AsNoTracking()
+          .Include(x => x.School)
+          .Include(x => x.Account)
+          .AsQueryable();
+
+        if (queryObject.SchoolId.HasValue)
+        {
+          query = query.Where(x => x.SchoolId == queryObject.SchoolId.Value);
+        }
+
+        if (queryObject.RoleId.HasValue)
+        {
+          query = query.Where(x => x.Account.RoleId == queryObject.RoleId.Value);
+        }
+
+        if (!string.IsNullOrEmpty(queryObject.Name))
+        {
+          var searchTerm = queryObject.Name.ToLower();
+          query = query.Where(x =>
+              EF.Functions.Like(x.Fullname.ToLower(), $"%{searchTerm}%"));
+        }
+        query = query.Skip(skip).Take(queryObject.PageSize);
+
+        int totalResults = await query.CountAsync();
+
+        var rawResults = await query.Select(x => new
+        {
+          x.TeacherId,
+          x.AccountId,
+          x.SchoolId,
+          NameSchool = x.School.NameSchcool,
+          x.Fullname,
+          x.DateOfBirth,
+          x.Gender,
+          x.Address,
+          x.Status,
+          x.DateCreate,
+          x.DateUpdate
+        }).ToListAsync();
+
+        var results = rawResults.Select(x => new TeacherDetail
+        {
+          TeacherId = x.TeacherId,
+          AccountId = x.AccountId,
+          SchoolId = x.SchoolId,
+          NameSchool = x.NameSchool,
+          Fullname = x.Fullname,
+          DateOfBirth = x.DateOfBirth.ToString("dd/MM/yyyy HH:mm:ss") ?? string.Empty,
+          Gender = x.Gender,
+          Address = x.Address,
+          Status = x.Status,
+          DateCreate = x.DateCreate?.ToString("dd/MM/yyyy HH:mm:ss") ?? string.Empty,
+          DateUpdate = x.DateUpdate?.ToString("dd/MM/yyyy HH:mm:ss") ?? string.Empty
+        }).ToList();
+
+        if (results.Count == 0)
+        {
+          return new TeacherResType(404, "Không có kết quả");
+        }
+
+        return new TeacherResType(200, "Thành công", results, totalResults);
+      }
+      catch (Exception ex)
+      {
+        return new TeacherResType(500, $"Server error: {ex.Message}");
       }
     }
   }

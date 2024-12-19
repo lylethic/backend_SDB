@@ -5,6 +5,12 @@ namespace server.IService
 {
   public interface IBiaSoDauBai
   {
+    // Admin, includes status true and false
+    Task<int> CountBiaSoDauBaiAsync();
+
+    // User, includes only status true
+    Task<int> CountBiaSoDauBaiActiveAsync();
+
     Task<BiaSoDauBaiResType> CreateBiaSoDauBai(BiaSoDauBaiDto model);
 
     Task<BiaSoDauBaiResType> GetBiaSoDauBai(int id);

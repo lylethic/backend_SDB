@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using server.Data;
 using server.Dtos;
 using server.IService;
+using server.Types.PhanCongGDBia;
 using System.Text;
 
 namespace server.Repositories
@@ -17,49 +18,83 @@ namespace server.Repositories
       this._context = context;
     }
 
-    public async Task<List<PC_GiangDay_BiaSDBDto>> GetPC_GiangDay_BiaSDBs(int pageNumber, int pageSize)
+    public async Task<PhanCongGiangDayBiaResType> GetPC_GiangDay_BiaSDBs(QueryObject queryObject)
     {
       try
       {
-        var skip = (pageNumber - 1) * pageSize;
+        queryObject ??= new QueryObject();
+        var skip = (queryObject.PageNumber - 1) * queryObject.PageSize;
 
-        var fetch = @"SELECT * FROM PhanCongGiangDay
+        // Show nhung GV nao day lop nao   
+        var query = @"SELECT pc.phanCongGiangDayId, 
+                      pc.biaSoDauBaiId, 
+                      pc.teacherId, 
+                      pc.status, 
+                      pc.dateCreated, 
+                      pc.dateUpdated, 
+                      t.fullname,
+                      c.className,
+                      c.classId
+                      FROM PhanCongGiangDay as pc
+                      LEFT JOIN TEACHER AS T 
+                      ON pc.teacherId = T.teacherId
+                      LEFT JOIN CLASS AS C ON t.teacherId = c.teacherId
                       ORDER BY BIASODAUBAIID 
                       OFFSET @skip ROWS
                       FETCH NEXT @pageSize ROWS ONLY";
 
         var phancongSBD = await _context.PhanCongGiangDays
-          .FromSqlRaw(fetch,
+          .FromSqlRaw(query,
                       new SqlParameter("@skip", skip),
-                      new SqlParameter("@pageSize", pageSize)
-          ).ToListAsync() ?? throw new Exception("Empty");
+                      new SqlParameter("@pageSize", queryObject.PageSize)
+          ).Select(static x => new
+          {
+            x.BiaSoDauBaiId,
+            x.PhanCongGiangDayId,
+            x.TeacherId,
+            x.Status,
+            x.DateCreated,
+            x.DateUpdated,
+            teacherName = x.Teacher.Fullname,
+            classId = x.Teacher.Classes.First().ClassId,
+            className = x.Teacher.Classes.First().ClassName,
+          })
+          .ToListAsync() ?? throw new Exception("Empty");
 
-        var result = phancongSBD.Select(x => new PC_GiangDay_BiaSDBDto
+        if (!phancongSBD.Any())
+        {
+          return new PhanCongGiangDayBiaResType(400, "No data found");
+        }
+
+        var result = phancongSBD.Select(x => new MapData
         {
           PhanCongGiangDayId = x.PhanCongGiangDayId,
           TeacherId = x.TeacherId,
-          biaSoDauBaiId = x.BiaSoDauBaiId,
+          BiaSoDauBaiId = x.BiaSoDauBaiId,
           Status = x.Status,
           DateCreated = x.DateCreated,
-          DateUpdated = x.DateUpdated
+          DateUpdated = x.DateUpdated,
+          ClassId = x.classId,
+          ClassName = x.className,
+          Fullname = x.teacherName
         }).ToList();
 
-        return result;
+        return new PhanCongGiangDayBiaResType(200, "Thành công", result);
       }
       catch (Exception ex)
       {
-        throw new Exception($"Server error: {ex.Message}");
+        return new PhanCongGiangDayBiaResType(500, $"Server error: {ex.Message}");
       }
     }
 
-    public async Task<ResponseData<string>> BulkDelete(List<int> ids)
+    public async Task<PhanCongGiangDayBiaResType> BulkDelete(List<int> ids)
     {
       await using var transaction = await _context.Database.BeginTransactionAsync();
       try
       {
         if (ids == null || ids.Count == 0)
         {
-          return new ResponseData<string>(400, "No IDs provided");
+          return new PhanCongGiangDayBiaResType(400, "No IDs provided");
         }
 
 
@@ -74,21 +109,21 @@ namespace server.Repositories
 
         if (affectedRows == 0)
         {
-          return new ResponseData<string>(404, "No ids found to delete");
+          return new PhanCongGiangDayBiaResType(404, "No ids found to delete");
         }
 
         await transaction.CommitAsync();
 
-        return new ResponseData<string>(200, "Deleted successfully");
+        return new PhanCongGiangDayBiaResType(200, "Deleted successfully");
       }
       catch (Exception ex)
       {
         await transaction.RollbackAsync();
-        return new ResponseData<string>(500, $"Server error: {ex.Message}");
+        return new PhanCongGiangDayBiaResType(500, $"Server error: {ex.Message}");
       }
     }
 
-    public async Task<ResponseData<PC_GiangDay_BiaSDBDto>> CreatePC_GiangDay_BiaSDB(PC_GiangDay_BiaSDBDto model)
+    public async Task<PhanCongGiangDayBiaResType> CreatePC_GiangDay_BiaSDB(PC_GiangDay_BiaSDBDto model)
     {
       try
       {
@@ -100,7 +135,7 @@ namespace server.Repositories
 
         if (teacherExists is null)
         {
-          return new ResponseData<PC_GiangDay_BiaSDBDto>(404, "Teacher Not found");
+          return new PhanCongGiangDayBiaResType(404, "Teacher Not found");
         }
 
         //check PC_GiangDay_BiaSDB
@@ -112,7 +147,7 @@ namespace server.Repositories
 
         if (getClass is not null)
         {
-          return new ResponseData<PC_GiangDay_BiaSDBDto>(409, "PC_GiangDay_BiaSDB already exists");
+          return new PhanCongGiangDayBiaResType(409, "PC_GiangDay_BiaSDB already exists");
         }
 
         var sqlInsert = @"INSERT INTO PhanCongGiangDay (TeacherId, biaSoDauBaiId, Status, DateCreated, DateUpdated)
@@ -121,7 +156,7 @@ namespace server.Repositories
 
         var insert = await _context.Database.ExecuteSqlRawAsync(sqlInsert,
           new SqlParameter("@TeacherId", model.TeacherId),
-          new SqlParameter("@biaSoDauBaiId", model.biaSoDauBaiId),
+          new SqlParameter("@biaSoDauBaiId", model.BiaSoDauBaiId),
           new SqlParameter("@Status", model.Status),
           new SqlParameter("@DateCreated", DateTime.UtcNow),
           new SqlParameter("@DateUpdated", DBNull.Value)
@@ -131,19 +166,19 @@ namespace server.Repositories
         {
           PhanCongGiangDayId = insert,
           TeacherId = model.TeacherId,
-          biaSoDauBaiId = model.biaSoDauBaiId,
+          BiaSoDauBaiId = model.BiaSoDauBaiId,
           Status = model.Status,
         };
 
-        return new ResponseData<PC_GiangDay_BiaSDBDto>(200, result);
+        return new PhanCongGiangDayBiaResType(200, "Thành công", result);
       }
       catch (Exception ex)
       {
-        return new ResponseData<PC_GiangDay_BiaSDBDto>(500, $"Server error: {ex.Message}");
+        return new PhanCongGiangDayBiaResType(500, $"Server error: {ex.Message}");
       }
     }
 
-    public async Task<ResponseData<PC_GiangDay_BiaSDBDto>> DeletePC_GiangDay_BiaSDB(int id)
+    public async Task<PhanCongGiangDayBiaResType> DeletePC_GiangDay_BiaSDB(int id)
     {
       try
       {
@@ -154,22 +189,22 @@ namespace server.Repositories
 
         if (getClass is null)
         {
-          return new ResponseData<PC_GiangDay_BiaSDBDto>(404, "Not found");
+          return new PhanCongGiangDayBiaResType(404, "Not found");
         }
 
         var deleteQuery = "DELETE FROM PhanCongGiangDay WHERE PhanCongGiangDayId = @id";
 
         await _context.Database.ExecuteSqlRawAsync(deleteQuery, new SqlParameter("@id", id));
 
-        return new ResponseData<PC_GiangDay_BiaSDBDto>(200, "Deleted");
+        return new PhanCongGiangDayBiaResType(200, "Deleted");
       }
       catch (Exception ex)
       {
-        return new ResponseData<PC_GiangDay_BiaSDBDto>(500, $"Server error: {ex.Message}");
+        return new PhanCongGiangDayBiaResType(500, $"Server error: {ex.Message}");
       }
     }
 
-    public async Task<ResponseData<PC_GiangDay_BiaSDBDto>> GetPC_GiangDay_BiaSDB(int id)
+    public async Task<PhanCongGiangDayBiaResType> GetPC_GiangDay_BiaSDB(int id)
     {
       try
       {
@@ -180,26 +215,26 @@ namespace server.Repositories
 
         if (phancongSDB is null)
         {
-          return new ResponseData<PC_GiangDay_BiaSDBDto>(404, "Not found");
+          return new PhanCongGiangDayBiaResType(404, "Not found");
         }
 
         var result = new PC_GiangDay_BiaSDBDto
         {
           PhanCongGiangDayId = id,
           TeacherId = phancongSDB.TeacherId,
-          biaSoDauBaiId = phancongSDB.BiaSoDauBaiId,
+          BiaSoDauBaiId = phancongSDB.BiaSoDauBaiId,
           Status = phancongSDB.Status,
         };
 
-        return new ResponseData<PC_GiangDay_BiaSDBDto>(200, result);
+        return new PhanCongGiangDayBiaResType(200, "Thành công", result);
       }
       catch (Exception ex)
       {
-        return new ResponseData<PC_GiangDay_BiaSDBDto>(500, $"Server Error: {ex.Message}");
+        return new PhanCongGiangDayBiaResType(500, $"Server Error: {ex.Message}");
       }
     }
 
-    public async Task<string> ImportExcelFile(IFormFile file)
+    public async Task<PhanCongGiangDayBiaResType> ImportExcelFile(IFormFile file)
     {
       try
       {
@@ -260,10 +295,10 @@ namespace server.Repositories
             }
           }
 
-          return "Successfully inserted.";
+          return new PhanCongGiangDayBiaResType(200, "Successfully inserted.");
         }
 
-        return "No file uploaded";
+        return new PhanCongGiangDayBiaResType(400, "No file uploaded");
       }
       catch (Exception ex)
       {
@@ -271,7 +306,7 @@ namespace server.Repositories
       }
     }
 
-    public async Task<ResponseData<PC_GiangDay_BiaSDBDto>> UpdatePC_GiangDay_BiaSDB(int id, PC_GiangDay_BiaSDBDto model)
+    public async Task<PhanCongGiangDayBiaResType> UpdatePC_GiangDay_BiaSDB(int id, PC_GiangDay_BiaSDBDto model)
     {
       try
       {
@@ -283,7 +318,7 @@ namespace server.Repositories
 
         if (existingPhanCongGiangDay is null)
         {
-          return new ResponseData<PC_GiangDay_BiaSDBDto>(404, "Not found");
+          return new PhanCongGiangDayBiaResType(404, "Not found");
         }
 
         bool hasChanges = false;
@@ -298,10 +333,10 @@ namespace server.Repositories
           hasChanges = true;
         }
 
-        if (model.biaSoDauBaiId != 0 && model.biaSoDauBaiId != existingPhanCongGiangDay.BiaSoDauBaiId)
+        if (model.BiaSoDauBaiId != 0 && model.BiaSoDauBaiId != existingPhanCongGiangDay.BiaSoDauBaiId)
         {
           queryBuilder.Append("biaSoDauBaiId = @biaSoDauBaiId, ");
-          parameters.Add(new SqlParameter("@biaSoDauBaiId", model.biaSoDauBaiId));
+          parameters.Add(new SqlParameter("@biaSoDauBaiId", model.BiaSoDauBaiId));
           hasChanges = true;
         }
 
@@ -326,16 +361,16 @@ namespace server.Repositories
           var updateQuery = queryBuilder.ToString();
           await _context.Database.ExecuteSqlRawAsync(updateQuery, [.. parameters]);
 
-          return new ResponseData<PC_GiangDay_BiaSDBDto>(200, "Updated");
+          return new PhanCongGiangDayBiaResType(200, "Updated");
         }
         else
         {
-          return new ResponseData<PC_GiangDay_BiaSDBDto>(200, "No changes detected");
+          return new PhanCongGiangDayBiaResType(200, "No changes detected");
         }
       }
       catch (Exception ex)
       {
-        return new ResponseData<PC_GiangDay_BiaSDBDto>(500, $"Server error: {ex.Message}");
+        return new PhanCongGiangDayBiaResType(500, $"Server error: {ex.Message}");
       }
     }
   }

@@ -9,9 +9,9 @@ namespace server.IService
 
     Task<ChiTietSoDauBaiResType> GetChiTietSoDauBai(int id);
 
-    Task<ChiTietSoDauBaiResType> GetChiTietSoDauBais(int pageNumber, int pageSize);
+    Task<ChiTietSoDauBaiResType> GetChiTietSoDauBais(QueryObject? query);
 
-    Task<ChiTietSoDauBaiResType> GetChiTietSoDauBaisByWeek(int pageNumber, int pageSize, int weekId);
+    Task<ChiTietSoDauBaiResType> GetChiTietSoDauBaisByWeek(QueryObject? query, int weekId);
 
     Task<ChiTietSoDauBaiResType> DeleteChiTietSoDauBai(int id);
 
@@ -63,7 +63,7 @@ namespace server.IService
     ///  t.teacherId, 
     ///  t.fullname
     ///  </returns>
-    Task<ChiTietSoDauBaiResType> GetChiTietBySchool(int schoolId, int weekId, int biaId, int classId, int pageNumber, int pageSize);
+    Task<ChiTietSoDauBaiResType> GetChiTietBySchool(int schoolId, int weekId, int biaId, QueryObject? query);
 
     Task<ChiTietSoDauBaiResType> ExportChiTietSoDauBaiToExcel(int weekId, int classId, string filePath);
   }

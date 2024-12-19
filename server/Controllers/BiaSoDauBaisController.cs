@@ -20,6 +20,23 @@ namespace server.Controllers
     }
 
     // GET: api/<BiaSoDauBaisController>
+    [HttpGet("count-bia-so-dau-bai")]
+    public async Task<IActionResult> CountBiaSoDauBaiAsync()
+    {
+      var result = await _biaSodaubai.CountBiaSoDauBaiAsync();
+      return Ok(result);
+    }
+
+    // GET: api/<BiaSoDauBaisController>
+    [HttpGet("count-bia-so-dau-bai-active")]
+    public async Task<IActionResult> CountBiaSoDauBaiActiveAsync()
+    {
+      var result = await _biaSodaubai.CountBiaSoDauBaiActiveAsync();
+      return Ok(result);
+    }
+
+    // GET: api/<BiaSoDauBaisController>
+    // GetBiaSoDauBais_Active for user
     [HttpGet]
     public async Task<IActionResult> GetAll([FromQuery] QueryObject? queryObject)
     {
@@ -56,6 +73,7 @@ namespace server.Controllers
       {
         return Ok(new
         {
+          status = 200,
           message = result.Message,
           data = result.ListBiaSoDauBaiRes
         });
@@ -65,12 +83,14 @@ namespace server.Controllers
       {
         return NotFound(new
         {
+          status = 404,
           message = result.Message,
         });
       }
 
       return StatusCode(500, new
       {
+        status = 500,
         message = result.Message
       });
     }
@@ -105,13 +125,14 @@ namespace server.Controllers
     }
 
     [HttpGet("get-by-school")]
-    public async Task<IActionResult> GetBiaSoDauBaisBySchool(QueryObject? queryObject, int schoolId)
+    public async Task<IActionResult> GetBiaSoDauBaisBySchool([FromQuery] QueryObject? queryObject, int schoolId)
     {
       var result = await _biaSodaubai.GetBiaSoDauBaisBySchool_Active(queryObject, schoolId);
       if (result.StatusCode == 200)
       {
         return Ok(new
         {
+          status = 200,
           message = result.Message,
           data = result.ListBiaSoDauBaiRes
         });
@@ -121,19 +142,30 @@ namespace server.Controllers
       {
         return NotFound(new
         {
+          status = 404,
+          message = result.Message,
+        });
+      }
+
+      if (result.StatusCode == 400)
+      {
+        return BadRequest(new
+        {
+          status = 400,
           message = result.Message,
         });
       }
 
       return StatusCode(500, new
       {
+        status = 500,
         message = result.Message,
       });
     }
 
     // status true&false for admin
     [HttpGet("get-all-bia-so-by-school")]
-    public async Task<IActionResult> GetAllBiaSoDauBaisBySchool(QueryObject? queryObject, int schoolId)
+    public async Task<IActionResult> GetAllBiaSoDauBaisBySchool([FromQuery] QueryObject? queryObject, int schoolId)
     {
       var result = await _biaSodaubai.GetBiaSoDauBaisBySchool(queryObject, schoolId);
       if (result.StatusCode == 200)

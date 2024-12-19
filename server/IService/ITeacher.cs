@@ -9,18 +9,22 @@ namespace server.IService
 
     Task<TeacherResType> GetTeacher(int id);
 
-    Task<int> GetCountTeachersBySchool(int id);
+    Task<TeacherResType> GetTeacherToUpdate(int id);
 
-    Task<TeacherResType> GetTeachers(int pageNumber, int pageSize);
+    Task<int> GetCountTeachersBySchool(int? id = null);
 
-    Task<TeacherResType> GetTeachersBySchool(int pageNumber, int pageSize, int schoolId);
+    Task<TeacherResType> GetTeachers(QueryObject? queryObject);
+
+    Task<TeacherResType> GetTeachersBySchool(QueryObject? queryObject, int schoolId);
 
     Task<TeacherResType> DeleteTeacher(int id);
 
     Task<TeacherResType> UpdateTeacher(int id, TeacherDto model);
 
-    Task<string> ImportExcelFile(IFormFile file);
+    Task<TeacherResType> ImportExcelFile(IFormFile file);
 
     Task<ResponseData<string>> BulkDelete(List<int> ids);
+
+    Task<TeacherResType> SearchTeacher(QueryObjects? queryObject);
   }
 }

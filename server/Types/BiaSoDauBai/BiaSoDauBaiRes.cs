@@ -17,5 +17,11 @@
     public string ClassName { get; set; } = string.Empty;
 
     public string NienKhoaName { get; set; } = string.Empty;
+
+    public string? TenGiaoVienChuNhiem { get; set; } = string.Empty;
+
+    public string DateCreated { get; set; } = string.Empty;
+
+    public string DateUpdated { get; set; } = string.Empty;
   }
 }

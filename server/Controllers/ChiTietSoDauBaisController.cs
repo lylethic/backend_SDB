@@ -19,9 +19,9 @@ namespace server.Controllers
 
     // GET: api/<ChiTietSoDauBaisController>
     [HttpGet]
-    public async Task<IActionResult> GetAllRecords(int pageNumber = 1, int pageSize = 50)
+    public async Task<IActionResult> GetAllRecords([FromQuery] QueryObject? query)
     {
-      var result = await _detail.GetChiTietSoDauBais(pageNumber, pageSize);
+      var result = await _detail.GetChiTietSoDauBais(query);
       if (result.StatusCode == 200)
       {
         return Ok(new
@@ -39,9 +39,40 @@ namespace server.Controllers
     }
 
     [HttpGet, Route("chi-tiet")]
-    public async Task<IActionResult> GetChiTietSoDauBaisByWeek(int pageNumber, int pageSize, int weekId)
+    /// <summary>: Show chi tiet noi dung Chi tiet sdb theo tuan
+    /*
     {
-      var result = await _detail.GetChiTietSoDauBaisByWeek(pageNumber, pageSize, weekId);
+      "message": "Thành công",
+      "data": [
+        {
+          "tenLop": "Lớp 10A1",
+          "hocKy": "Học kỳ 1",
+          "tenTuanHoc": "Tuần 1",
+          "monHoc": "Ngữ văn - Lớp 12",
+          "xepLoai": "A",
+          "chiTietSoDauBaiId": 1,
+          "biaSoDauBaiId": 1,
+          "semesterId": 1,
+          "weekId": 1,
+          "subjectId": 38,
+          "classificationId": 1,
+          "daysOfTheWeek": "Thứ 2",
+          "thoiGian": "2024-09-30T00:00:00",
+          "buoiHoc": "Sáng",
+          "tietHoc": 2,
+          "lessonContent": "NGười lái đò Sông Đà",
+          "attend": 40,
+          "noteComment": "Tốt",
+          "createdBy": 29,
+          "createdAt": "2024-10-07T14:30:24.95",
+          "updatedAt": "2024-10-08T09:33:23.267"
+        },
+      ]
+    }
+    */
+    public async Task<IActionResult> GetChiTietSoDauBaisByWeek([FromQuery] QueryObject? query, int weekId)
+    {
+      var result = await _detail.GetChiTietSoDauBaisByWeek(query, weekId);
       if (result.StatusCode == 200)
       {
         return Ok(new
@@ -65,7 +96,6 @@ namespace server.Controllers
       });
 
     }
-
 
     // GET api/<ChiTietSoDauBaisController>/5
     [HttpGet("{id}")]
@@ -115,7 +145,7 @@ namespace server.Controllers
       }
     }
    } */
-    [HttpGet("get-chi-tiet-week")]
+    [HttpGet("get-chi-tiet-theo-tuan")]
     public async Task<IActionResult> GetChiTiet_Week(int id)
     {
       var result = await _detail.GetChiTiet_Week_XepLoai(id);
@@ -144,7 +174,7 @@ namespace server.Controllers
     }
 
     /// <summary>
-    /// Connect 4 table: Chitietsodaubai + BiaSodaubai + Class + Teacher
+    /// Connect 4 table: Chitietsodaubai + BiaSodaubai + Class + Teacher. Tiet nay ai day, lop nao
     /// <param name="id">Id cua chiTietSoDauBai</param>
     /// <returns>
     /// {
@@ -192,34 +222,46 @@ namespace server.Controllers
     }
 
     /// <summary>
-    /// Get Chi Tiet by schoolId, weekId, biaId, classId 
+    /// Get Chi Tiet by schoolId, weekId, biaId => required
     /// </summary>
     /// <param name="model"></param>
     /// <returns></returns>
     [HttpGet("get-chi-tiet-by-school")]
-    public async Task<IActionResult> GetChiTietBySchool([FromQuery] int schoolId, [FromQuery] int weekId, [FromQuery] int biaId, [FromQuery] int classId, [FromQuery] int pageNumber, [FromQuery] int pageSize)
+    public async Task<IActionResult> GetChiTietBySchool([FromQuery] int schoolId, [FromQuery] int weekId, [FromQuery] int biaId, [FromQuery] QueryObject? query)
     {
-      var result = await _detail.GetChiTietBySchool(schoolId, weekId, biaId, classId, pageNumber, pageSize);
+      var result = await _detail.GetChiTietBySchool(schoolId, weekId, biaId, query);
 
       if (result.StatusCode == 200)
       {
         return Ok(new
         {
+          status = 200,
           message = result.Message,
           data = result.ListChiTietSDBResData
         });
       }
 
-      if (result.StatusCode == 404)
+      if (result.StatusCode == 400)
       {
         return BadRequest(new
         {
+          status = 400,
+          message = result.Message,
+        });
+      }
+
+      if (result.StatusCode == 404)
+      {
+        return NotFound(new
+        {
+          status = 404,
           message = result.Message,
         });
       }
 
       return StatusCode(500, new
       {
+        status = 500,
         message = result.Message,
       });
     }
@@ -284,6 +326,7 @@ namespace server.Controllers
       {
         return Ok(new
         {
+          status = 200,
           message = result.Message,
         });
       }
@@ -292,12 +335,14 @@ namespace server.Controllers
       {
         return NotFound(new
         {
+          status = 404,
           message = result.Message,
         });
       }
 
       return StatusCode(500, new
       {
+        status = 500,
         message = result.Message,
       });
     }

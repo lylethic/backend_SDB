@@ -223,7 +223,7 @@ namespace server.Repositories
       {
         IsSuccess = true,
         StatusCode = 200,
-        Message = "Login successful",
+        Message = "Đăng nhập thành công",
         Data = new LoginResData
         {
           Token = accessToken,

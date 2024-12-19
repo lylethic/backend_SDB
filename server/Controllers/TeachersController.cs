@@ -19,9 +19,9 @@ namespace server.Controllers
 
     // GET: api/Teachers
     [HttpGet]
-    public async Task<IActionResult> GetTeachers(int pageNumber = 1, int pageSize = 50)
+    public async Task<IActionResult> GetTeachers([FromQuery] QueryObject? queryObject)
     {
-      var teachers = await _teacherRepo.GetTeachers(pageNumber, pageSize);
+      var teachers = await _teacherRepo.GetTeachers(queryObject);
 
       if (teachers.StatusCode == 404)
       {
@@ -38,7 +38,7 @@ namespace server.Controllers
         {
           statusCode = teachers.StatusCode,
           message = teachers.Message,
-          data = teachers.Datas
+          data = teachers.TeacherListDetails
         });
       }
 
@@ -50,9 +50,9 @@ namespace server.Controllers
     }
 
     [HttpGet, Route("get-teachers-by-school")]
-    public async Task<IActionResult> GetTeachersBySchool(int pageNumber, int pageSize, int schoolId)
+    public async Task<IActionResult> GetTeachersBySchool([FromQuery] QueryObject? queryObject, [FromQuery] int schoolId)
     {
-      var teachers = await _teacherRepo.GetTeachersBySchool(pageNumber, pageSize, schoolId);
+      var teachers = await _teacherRepo.GetTeachersBySchool(queryObject, schoolId);
 
       if (teachers.StatusCode == 404)
       {
@@ -69,7 +69,7 @@ namespace server.Controllers
         {
           statusCode = teachers.StatusCode,
           message = teachers.Message,
-          data = teachers.Datas
+          data = teachers.TeacherListDetails
         });
       }
 
@@ -101,7 +101,7 @@ namespace server.Controllers
         {
           statusCode = teacher.StatusCode,
           message = teacher.Message,
-          data = teacher.Datas
+          data = teacher.TeacherDetail
         });
       }
 
@@ -112,8 +112,41 @@ namespace server.Controllers
       });
     }
 
-    [HttpGet, Route("count-amount-of-teachers/{id}")]
-    public async Task<IActionResult> GetCountAmountOfTeachers(int id)
+    [HttpGet("teacher-to-update/{id}")]
+    public async Task<IActionResult> GetTeacherToUpdate(int id)
+    {
+      var teacher = await _teacherRepo.GetTeacherToUpdate(id);
+
+      if (teacher.StatusCode == 404)
+      {
+        return NotFound(new
+        {
+          statusCode = teacher.StatusCode,
+          message = teacher.Message,
+        });
+      }
+
+      if (teacher.StatusCode == 200)
+      {
+        return Ok(new
+        {
+          statusCode = teacher.StatusCode,
+          message = teacher.Message,
+          data = teacher.Data
+        });
+      }
+
+      return StatusCode(500, new
+      {
+        statusCode = teacher.StatusCode,
+        message = teacher.Message,
+      });
+    }
+
+
+    // amount of teacher by schoolId is optional
+    [HttpGet("count-amount-of-teachers")]
+    public async Task<IActionResult> GetCountAmountOfTeachers(int? id = null)
     {
       var result = await _teacherRepo.GetCountTeachersBySchool(id);
       return Ok(result);
@@ -140,7 +173,6 @@ namespace server.Controllers
         {
           statusCode = teacher.StatusCode,
           message = teacher.Message,
-          data = teacher.Datas
         });
       }
 
@@ -173,7 +205,7 @@ namespace server.Controllers
         {
           statusCode = result.StatusCode,
           message = result.Message,
-          data = result.Datas
+          data = result.Data
         });
       }
 
@@ -205,7 +237,6 @@ namespace server.Controllers
         {
           statusCode = result.StatusCode,
           message = result.Message,
-          data = result.Datas
         });
       }
 
@@ -232,22 +263,68 @@ namespace server.Controllers
 
     [Authorize(Policy = "SuperAdminAndAdmin")]
     [HttpPost, Route("upload")]
+    [Consumes("multipart/form-data")]
     public async Task<IActionResult> ImportExcelFile(IFormFile file)
     {
-      try
+      var result = await _teacherRepo.ImportExcelFile(file);
+      if (result.StatusCode == 200)
       {
-        var result = await _teacherRepo.ImportExcelFile(file);
-        if (result.Contains("Successfully"))
+        return Ok(new
         {
-          return Ok(result);
-        }
+          status = 200,
+          message = result.Message
+        });
+      }
 
-        return BadRequest(result);
-      }
-      catch (Exception ex)
+      if (result.StatusCode == 400)
+        return StatusCode(500, new
+        {
+          statusCode = result.StatusCode,
+          message = result.Message,
+        });
+
+      return StatusCode(500, new
       {
-        throw new Exception($"Error: {ex.Message}");
-      }
+        statusCode = result.StatusCode,
+        message = result.Message,
+      });
     }
+
+    [Authorize(Policy = "SuperAdminAndAdmin")]
+    [HttpGet("search")]
+    public async Task<IActionResult> SearchTeacher([FromQuery] QueryObjects? queryObject)
+    {
+
+      queryObject ??= new QueryObjects();
+      if (queryObject.PageNumber < 1 || queryObject.PageSize < 1)
+      {
+        return BadRequest("Page number and page size must be positive integers.");
+      }
+      var results = await _teacherRepo.SearchTeacher(queryObject);
+
+      if (results.StatusCode == 404)
+      {
+        return NotFound(new
+        {
+          statusCode = results.StatusCode,
+          message = results.Message,
+        });
+      }
+      if (results.StatusCode == 200)
+        return Ok(new
+        {
+          statusCode = results.StatusCode,
+          message = results.Message,
+          totalResults = results.TotalCount,
+          data = results.TeacherListDetails
+        });
+
+      return StatusCode(500, new
+      {
+        statusCode = results.StatusCode,
+        message = results.Message,
+      });
+    }
+
   }
 }

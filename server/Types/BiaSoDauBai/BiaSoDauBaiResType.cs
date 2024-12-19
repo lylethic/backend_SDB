@@ -4,15 +4,13 @@ namespace server.Types.BiaSoDauBai
 {
   public class BiaSoDauBaiResType : ModelResType
   {
+    public int? TotalCount { get; set; } = 0;
+
     public List<BiaSoDauBaiDto>? ListBiaSoDauBaiDto { get; set; }
-
     public BiaSoDauBaiDto? BiaSoDauBaiDto { get; set; }
-
     public Models.BiaSoDauBai? BiaSoDauBai { get; set; }
     public List<Models.BiaSoDauBai>? BiaSoDauBaiList { get; set; }
-
     public BiaSoDauBaiRes? BiaSoDauBaiRes { get; set; }
-
     public List<BiaSoDauBaiRes>? ListBiaSoDauBaiRes { get; set; }
 
 
@@ -43,6 +41,14 @@ namespace server.Types.BiaSoDauBai
       StatusCode = statusCode;
       Message = message;
       BiaSoDauBaiRes = biaSoDauBaiRes;
+    }
+
+    public BiaSoDauBaiResType(int statusCode, string message, List<BiaSoDauBaiRes> listBiaSoDauBaiRes, int? totalResults)
+    {
+      StatusCode = statusCode;
+      Message = message;
+      ListBiaSoDauBaiRes = listBiaSoDauBaiRes;
+      this.TotalCount = totalResults;
     }
 
     public BiaSoDauBaiResType(int statusCode, string message, List<BiaSoDauBaiRes> listBiaSoDauBaiRes)

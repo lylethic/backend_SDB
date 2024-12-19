@@ -196,11 +196,12 @@ namespace server.Repositories
       }
     }
 
-    public async Task<ChiTietSoDauBaiResType> GetChiTietSoDauBais(int pageNumber, int pageSize)
+    public async Task<ChiTietSoDauBaiResType> GetChiTietSoDauBais(QueryObject? queryObject)
     {
       try
       {
-        var skip = (pageNumber - 1) * pageSize;
+        queryObject ??= new QueryObject();
+        var skip = (queryObject.PageNumber - 1) * queryObject.PageSize;
 
         var query = @"SELECT * FROM ChiTietSoDauBai
                       ORDER BY ChiTietSoDauBaiId
@@ -210,7 +211,7 @@ namespace server.Repositories
         var chiTietSoDauBai = await _context.ChiTietSoDauBais
           .FromSqlRaw(query,
           new SqlParameter("@skip", skip),
-          new SqlParameter("@pageSize", pageSize)
+          new SqlParameter("@pageSize", queryObject.PageSize)
           ).ToListAsync() ?? throw new Exception("Empty");
 
         var result = chiTietSoDauBai.Select(x => new ChiTietSoDauBaiDto
@@ -241,11 +242,12 @@ namespace server.Repositories
       }
     }
 
-    public async Task<ChiTietSoDauBaiResType> GetChiTietSoDauBaisByWeek(int pageNumber, int pageSize, int weekId)
+    public async Task<ChiTietSoDauBaiResType> GetChiTietSoDauBaisByWeek(QueryObject? queryObject, int weekId)
     {
       try
       {
-        var skip = (pageNumber - 1) * pageSize;
+        queryObject ??= new QueryObject();
+        var skip = (queryObject.PageNumber - 1) * queryObject.PageSize;
 
         var chiTietSoDauBaisByWeekQuery = from chitiet in _context.ChiTietSoDauBais
                                           join week in _context.Weeks on chitiet.WeekId equals week.WeekId into weekGroup
@@ -288,7 +290,7 @@ namespace server.Repositories
           .Where(x => x.WeekId == weekId)
           .OrderBy(x => x.ChiTietSoDauBaiId)
           .Skip(skip)
-          .Take(pageSize)
+          .Take(queryObject.PageSize)
           .ToListAsync();
 
         if (chiTietSoDauBai is null || chiTietSoDauBai.Count == 0)
@@ -462,6 +464,7 @@ namespace server.Repositories
                             b.biaSoDauBaiId,
                             b.classId, 
                             b.schoolId, 
+                            b.academicYearId,
                             c.className, 
                             t.teacherId, 
                             t.fullname
@@ -479,6 +482,7 @@ namespace server.Repositories
           BiaSoDauBaiId = ct.BiaSoDauBaiId,
           SchoolId = ct.BiaSoDauBai.SchoolId,
           ClassId = ct.BiaSoDauBai.ClassId,
+          AcademicyearId = ct.BiaSoDauBai.AcademicyearId,
           ClassName = ct.BiaSoDauBai.Class.ClassName,
           TeacherId = ct.BiaSoDauBai.Class.TeacherId,
           TeacherFullName = ct.BiaSoDauBai.Class.Teacher.Fullname
@@ -496,6 +500,7 @@ namespace server.Repositories
           BiaSoDauBaiId = chitietSoDauBai.BiaSoDauBaiId,
           SchoolId = chitietSoDauBai.SchoolId,
           ClassId = chitietSoDauBai.ClassId,
+          AcademicyearId = chitietSoDauBai.AcademicyearId,
           ClassName = chitietSoDauBai.ClassName,
           TeacherId = chitietSoDauBai.TeacherId,
           TeacherFullName = chitietSoDauBai.TeacherFullName
@@ -514,18 +519,20 @@ namespace server.Repositories
       try
       {
         var find = @"SELECT 
-                            ct.chiTietSoDauBaiId, 
-                            ct.weekId, 
-                            we.weekName, 
-                            we.status, 
-                            ct.classificationId, 
-                            cla.classifyName, 
-                            cla.score
+                      ct.chiTietSoDauBaiId, 
+                      ct.weekId, 
+                      we.weekName, 
+                      we.status, 
+                      ct.classificationId, 
+                      cla.classifyName, 
+                      cla.score,
+                      bia.classId
                     FROM dbo.ChiTietSoDauBai as ct 
+                    LEFT JOIN dbo.BiaSoDauBai as bia on ct.biaSoDauBaiId = bia.biaSoDauBaiId
                     RIGHT JOIN dbo.Classification as cla
-                          ON ct.classificationId = cla.classificationId
+                      ON ct.classificationId = cla.classificationId
                     LEFT JOIN dbo.Week as we
-                          ON ct.weekId = we.weekId
+                      ON ct.weekId = we.weekId
                     WHERE ct.weekId = @id";
 
         var chitietSoDauBai = await _context.ChiTietSoDauBais.FromSqlRaw(find,
@@ -555,24 +562,24 @@ namespace server.Repositories
       }
     }
 
-    public async Task<ChiTietSoDauBaiResType> GetChiTietBySchool(int schoolId, int weekId, int biaId, int classId, int pageNumber, int pageSize)
+    public async Task<ChiTietSoDauBaiResType> GetChiTietBySchool(int schoolId, int weekId, int biaId, QueryObject? queryObject)
     {
       try
       {
+        queryObject ??= new QueryObject();
         // Total count query
-        var countQuery = @"SELECT COUNT(*) 
-                           FROM dbo.ChiTietSoDauBai as ct
-                           LEFT JOIN dbo.BiaSoDauBai as b ON ct.biaSoDauBaiId = b.biaSoDauBaiId 
-                           WHERE b.schoolId = @schoolId and ct.weekId = @weekId and ct.biaSoDauBaiId = @biaId and b.classId = @classId";
+        // var countQuery = @"SELECT COUNT(*) 
+        //                    FROM dbo.ChiTietSoDauBai as ct
+        //                    LEFT JOIN dbo.BiaSoDauBai as b ON ct.biaSoDauBaiId = b.biaSoDauBaiId 
+        //                    WHERE b.schoolId = @schoolId and ct.weekId = @weekId and ct.biaSoDauBaiId = @biaId and b.classId = @classId";
 
-        var totalCount = await _context.Database.ExecuteSqlRawAsync(countQuery,
-            new SqlParameter("@schoolId", schoolId),
-            new SqlParameter("@weekId", weekId),
-            new SqlParameter("@biaId", biaId),
-            new SqlParameter("@classId", classId)
-        );
+        // var totalCount = await _context.Database.ExecuteSqlRawAsync(countQuery,
+        //     new SqlParameter("@schoolId", schoolId),
+        //     new SqlParameter("@weekId", weekId),
+        //     new SqlParameter("@biaId", biaId)
+        // );
 
-        var skip = (pageNumber - 1) * pageSize;
+        var skip = (queryObject.PageNumber - 1) * queryObject.PageSize;
 
         var query = @"SELECT ct.*, 
                             c.className, 
@@ -582,19 +589,17 @@ namespace server.Repositories
                       LEFT JOIN dbo.BiaSoDauBai as b ON ct.biaSoDauBaiId = b.biaSoDauBaiId 
                       LEFT JOIN dbo.Class as c ON b.classId = c.classId 
                       LEFT JOIN dbo.Teacher as t ON c.teacherId = t.teacherId
-                      WHERE b.schoolId = @schoolId and ct.weekId = @weekId and ct.biaSoDauBaiId = @biaId and b.classId = @classId
+                      WHERE b.schoolId = @schoolId and ct.weekId = @weekId and ct.biaSoDauBaiId = @biaId
                       ORDER BY ct.ChiTietSoDauBaiId
                       OFFSET @skip ROWS 
-                      FETCH NEXT @pageSize ROWS ONLY
-                      ";
+                      FETCH NEXT @pageSize ROWS ONLY";
 
         var chitietSoDauBai = await _context.ChiTietSoDauBais.FromSqlRaw(query,
         new SqlParameter("@schoolId", schoolId),
         new SqlParameter("@weekId", weekId),
         new SqlParameter("@biaId", biaId),
-        new SqlParameter("@classId", classId),
         new SqlParameter("@skip", skip),
-        new SqlParameter("@pageSize", pageSize)
+        new SqlParameter("@pageSize", queryObject.PageSize)
         )
         .Select(ct => new ChiTietSDBResData
         {
@@ -620,10 +625,17 @@ namespace server.Repositories
         })
         .ToListAsync();
 
-        if (chitietSoDauBai is null || chitietSoDauBai.Count == 0)
+        if (chitietSoDauBai.Count == 0)
         {
-          return new ChiTietSoDauBaiResType(404, "No results");
+          return new ChiTietSoDauBaiResType(404, "Không tìm thấy kết quả");
         }
+
+        if (chitietSoDauBai is null)
+        {
+          return new ChiTietSoDauBaiResType(400, "Không có kết quả");
+        }
+
+
 
         return new ChiTietSoDauBaiResType(200, "Thành công", chitietSoDauBai);
 

@@ -19,6 +19,32 @@ namespace server.Repositories
       this._context = context;
     }
 
+    public async Task<int> CountBiaSoDauBaiAsync()
+    {
+      try
+      {
+        var countBiaSoDauBai = await _context.BiaSoDauBais.CountAsync();
+        return countBiaSoDauBai;
+      }
+      catch (Exception ex)
+      {
+        throw new Exception($"Server error: {ex.Message}");
+      }
+    }
+
+    public async Task<int> CountBiaSoDauBaiActiveAsync()
+    {
+      try
+      {
+        var countBiaSoDauBai = await _context.BiaSoDauBais.Where(x => x.Status == true).CountAsync();
+        return countBiaSoDauBai;
+      }
+      catch (Exception ex)
+      {
+        throw new Exception($"Server error: {ex.Message}");
+      }
+    }
+
     public async Task<BiaSoDauBaiResType> CreateBiaSoDauBai(BiaSoDauBaiDto model)
     {
       using var transaction = await _context.Database.BeginTransactionAsync();
@@ -161,6 +187,9 @@ namespace server.Repositories
                                  ClassId = biaSo.ClassId,
                                  ClassName = lop.ClassName,
                                  Status = biaSo.Status,
+                                 TenGiaoVienChuNhiem = lop.Teacher.Fullname,
+                                 DateCreated = biaSo.DateCreated.HasValue ? biaSo.DateCreated.Value.ToString("dd/MM/yyyy HH:mm:ss") : string.Empty,
+                                 DateUpdated = biaSo.DateUpdated.HasValue ? biaSo.DateUpdated.Value.ToString("dd/MM/yyyy HH:mm:ss") : string.Empty,
                                };
 
         var biaSoDauBai = await baiSoDauBaiQuery
@@ -188,6 +217,11 @@ namespace server.Repositories
     {
       try
       {
+        if (schoolId is 0)
+        {
+          return new BiaSoDauBaiResType(400, "Vui lòng nhập mã trường học");
+        }
+
         queryObject ??= new QueryObject();
         var skip = (queryObject.PageNumber - 1) * queryObject.PageSize;
 
@@ -208,6 +242,9 @@ namespace server.Repositories
                                  ClassId = biaSo.ClassId,
                                  ClassName = lop.ClassName,
                                  Status = biaSo.Status,
+                                 TenGiaoVienChuNhiem = lop.Teacher.Fullname,
+                                 DateCreated = biaSo.DateCreated.HasValue ? biaSo.DateCreated.Value.ToString("dd/MM/yyyy HH:mm:ss") : string.Empty,
+                                 DateUpdated = biaSo.DateUpdated.HasValue ? biaSo.DateUpdated.Value.ToString("dd/MM/yyyy HH:mm:ss") : string.Empty,
                                };
 
 
@@ -256,6 +293,9 @@ namespace server.Repositories
                                  ClassId = biaSo.ClassId,
                                  ClassName = lop.ClassName,
                                  Status = biaSo.Status,
+                                 TenGiaoVienChuNhiem = lop.Teacher.Fullname,
+                                 DateCreated = biaSo.DateCreated.HasValue ? biaSo.DateCreated.Value.ToString("dd/MM/yyyy HH:mm:ss") : string.Empty,
+                                 DateUpdated = biaSo.DateUpdated.HasValue ? biaSo.DateUpdated.Value.ToString("dd/MM/yyyy HH:mm:ss") : string.Empty,
                                };
 
         var biaSoDauBai = await baiSoDauBaiQuery
@@ -302,6 +342,8 @@ namespace server.Repositories
                                  ClassId = biaSo.ClassId,
                                  ClassName = lop.ClassName,
                                  Status = biaSo.Status,
+                                 DateCreated = biaSo.DateCreated.HasValue ? biaSo.DateCreated.Value.ToString("dd/MM/yyyy HH:mm:ss") : string.Empty,
+                                 DateUpdated = biaSo.DateUpdated.HasValue ? biaSo.DateUpdated.Value.ToString("dd/MM/yyyy HH:mm:ss") : string.Empty,
                                };
 
 

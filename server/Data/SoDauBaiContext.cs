@@ -562,6 +562,8 @@ public partial class SoDauBaiContext : DbContext
 
             entity.ToTable("Teacher");
 
+            entity.HasIndex(e => e.Fullname, "IX_Teacher_Fullname");
+
             entity.Property(e => e.TeacherId).HasColumnName("teacherId");
             entity.Property(e => e.AccountId).HasColumnName("accountId");
             entity.Property(e => e.Address)
@@ -578,6 +580,7 @@ public partial class SoDauBaiContext : DbContext
                 .HasColumnName("dateUpdate");
             entity.Property(e => e.Fullname)
                 .HasMaxLength(100)
+                .UseCollation("Vietnamese_CI_AI")
                 .HasColumnName("fullname");
             entity.Property(e => e.Gender)
                 .HasDefaultValue(true)

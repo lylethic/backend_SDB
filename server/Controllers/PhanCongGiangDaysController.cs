@@ -3,8 +3,6 @@ using Microsoft.AspNetCore.Mvc;
 using server.Dtos;
 using server.IService;
 
-// For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
-
 namespace server.Controllers
 {
   [Route("api/[controller]")]
@@ -12,39 +10,49 @@ namespace server.Controllers
   [Authorize]
   public class PhanCongGiangDaysController : ControllerBase
   {
-    private readonly IPC_GiangDay_BiaSDB _func;
+    private readonly IPC_GiangDay_BiaSDB _pc;
 
-    public PhanCongGiangDaysController(IPC_GiangDay_BiaSDB func)
+    public PhanCongGiangDaysController(IPC_GiangDay_BiaSDB pc)
     {
-      this._func = func;
+      this._pc = pc;
     }
 
     // GET: api/<PhanCongGiangDaysController>
     [HttpGet]
-    public async Task<IActionResult> GetAll(int pageNumber = 1, int pageSize = 50)
+    public async Task<IActionResult> GetAll([FromQuery] QueryObject queryObject)
     {
-      try
+      var result = await _pc.GetPC_GiangDay_BiaSDBs(queryObject);
+      if (result.StatusCode == 400)
       {
-        var result = await _func.GetPC_GiangDay_BiaSDBs(pageNumber, pageSize);
-        if (result == null)
+        return BadRequest(new
         {
-          return NotFound();
-        }
-
-        return Ok(result);
+          status = 400,
+          message = result.Message
+        });
       }
-      catch (Exception ex)
+
+      if (result.StatusCode == 200)
       {
-
-        throw new Exception($"Server error: {ex.Message}");
+        return Ok(new
+        {
+          status = 200,
+          message = result.Message,
+          data = result.ListMapData
+        });
       }
+
+      return StatusCode(500, new
+      {
+        status = 500,
+        message = result.Message
+      });
     }
 
     // GET api/<PhanCongGiangDaysController>/5
     [HttpGet("{id}")]
     public async Task<IActionResult> GetById(int id)
     {
-      var result = await _func.GetPC_GiangDay_BiaSDB(id);
+      var result = await _pc.GetPC_GiangDay_BiaSDB(id);
 
       if (result.StatusCode != 200)
       {
@@ -59,7 +67,7 @@ namespace server.Controllers
     [HttpPost]
     public async Task<IActionResult> Create(PC_GiangDay_BiaSDBDto model)
     {
-      var result = await _func.CreatePC_GiangDay_BiaSDB(model);
+      var result = await _pc.CreatePC_GiangDay_BiaSDB(model);
 
       if (result.StatusCode != 200)
       {
@@ -74,7 +82,7 @@ namespace server.Controllers
     [HttpPut("{id}")]
     public async Task<IActionResult> Update(int id, PC_GiangDay_BiaSDBDto model)
     {
-      var result = await _func.UpdatePC_GiangDay_BiaSDB(id, model);
+      var result = await _pc.UpdatePC_GiangDay_BiaSDB(id, model);
 
       if (result.StatusCode != 200)
       {
@@ -89,7 +97,7 @@ namespace server.Controllers
     [HttpDelete("{id}")]
     public async Task<IActionResult> Delete(int id)
     {
-      var result = await _func.DeletePC_GiangDay_BiaSDB(id);
+      var result = await _pc.DeletePC_GiangDay_BiaSDB(id);
 
       if (result.StatusCode != 200)
       {
@@ -103,7 +111,7 @@ namespace server.Controllers
     [HttpDelete("BulkDelete")]
     public async Task<IActionResult> BulkDelete(List<int> ids)
     {
-      var result = await _func.BulkDelete(ids);
+      var result = await _pc.BulkDelete(ids);
 
       if (result.StatusCode != 200)
       {
@@ -119,9 +127,9 @@ namespace server.Controllers
     {
       try
       {
-        var result = await _func.ImportExcelFile(file);
+        var result = await _pc.ImportExcelFile(file);
 
-        if (result.Contains("Successfully"))
+        if (result.StatusCode == 200)
         {
           return Ok(result);
         }
