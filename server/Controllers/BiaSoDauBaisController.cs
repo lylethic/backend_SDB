@@ -106,7 +106,7 @@ namespace server.Controllers
         return Ok(new
         {
           message = result.Message,
-          data = result.BiaSoDauBaiDto
+          data = result.BiaSoDauBaiRes
         });
       }
 
@@ -357,7 +357,7 @@ namespace server.Controllers
     //GET /api/BiaSoDauBais/Search? schoolName = ABC & schoolId = 1 & classId = 2
     /* Search keywords: Schoolname, SchoolId, classId */
     [HttpGet("search")]
-    public async Task<IActionResult> SearchBiaSoDauBais(SearchBiaSoDauBaiObject? searchObject)
+    public async Task<IActionResult> SearchBiaSoDauBais([FromQuery] SearchBiaSoDauBaiObject? searchObject)
     {
       searchObject ??= new SearchBiaSoDauBaiObject();
       var result = await _biaSodaubai.SearchBiaSoDauBais(searchObject);

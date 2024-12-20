@@ -5,6 +5,7 @@
     public int StatusCode { get; set; }
     public string Message { get; set; } = string.Empty;
 
+    public int Total { get; set; } = 0;
     public T? Data { get; set; }
 
     public ResponseData()
@@ -28,6 +29,14 @@
       this.StatusCode = statusCode;
       this.Message = message;
       this.Data = data;
+    }
+
+    public ResponseData(int statusCode, string message, T data, int total)
+    {
+      this.StatusCode = statusCode;
+      this.Message = message;
+      this.Data = data;
+      this.Total = total;
     }
   }
 }

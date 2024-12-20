@@ -102,9 +102,8 @@ namespace server.Repositories
 
         if (academicYear is null)
         {
-          return new ResponseData<AcademicYearDto>(404, "AcademicYear not found");
+          return new ResponseData<AcademicYearDto>(404, "Không tìm thấy năm học");
         }
-
 
         var result = new AcademicYearDto
         {
@@ -115,7 +114,7 @@ namespace server.Repositories
           Description = academicYear.Description,
         };
 
-        return new ResponseData<AcademicYearDto>(200, result);
+        return new ResponseData<AcademicYearDto>(200, "Thành công", result);
       }
       catch (Exception ex)
       {
@@ -123,12 +122,15 @@ namespace server.Repositories
       }
     }
 
-    public async Task<List<AcademicYearDto>> GetAcademicYears(QueryObject? queryObject)
+    public async Task<ResponseData<List<AcademicYearDto>>> GetAcademicYears(QueryObject? queryObject)
     {
       try
       {
         queryObject ??= new QueryObject();
         var skip = (queryObject.PageNumber - 1) * queryObject.PageSize;
+
+        var countAllAcademicYear = _context.AcademicYears.AsNoTracking().AsQueryable();
+        int totalResults = await countAllAcademicYear.CountAsync();
 
         var query = @"SELECT * FROM AcademicYear 
                       ORDER BY ACADEMICYEARID
@@ -150,7 +152,7 @@ namespace server.Repositories
           Description = x.Description,
         }).ToList();
 
-        return result;
+        return new ResponseData<List<AcademicYearDto>>(200, "Thành công", result, totalResults);
       }
       catch (Exception ex)
       {
@@ -171,7 +173,7 @@ namespace server.Repositories
 
         if (existingAca == null)
         {
-          return new ResponseData<AcademicYearDto>(404, "AcademicYear not found");
+          return new ResponseData<AcademicYearDto>(404, "Không tìm thấy năm học");
         }
 
         // Build update query dynamically based on non-null fields
@@ -206,9 +208,9 @@ namespace server.Repositories
 
         // Execute the update query
         var updateQuery = queryBuilder.ToString();
-        await _context.Database.ExecuteSqlRawAsync(updateQuery, parameters.ToArray());
+        await _context.Database.ExecuteSqlRawAsync(updateQuery, [.. parameters]);
 
-        return new ResponseData<AcademicYearDto>(200, "AcademicYear updated successfully");
+        return new ResponseData<AcademicYearDto>(200, "Cập nhật thành công");
       }
       catch (Exception ex)
       {
@@ -216,7 +218,7 @@ namespace server.Repositories
       }
     }
 
-    public async Task<string> ImportExcel(IFormFile file)
+    public async Task<ResponseData<string>> ImportExcel(IFormFile file)
     {
       try
       {
@@ -277,9 +279,9 @@ namespace server.Repositories
             }
           }
 
-          return "Successfully inserted";
+          return new ResponseData<string>(200, "Successfully inserted");
         }
-        return "No file uploaded";
+        return new ResponseData<string>(204, "No file uploaded");
 
       }
       catch (Exception ex)
@@ -296,7 +298,7 @@ namespace server.Repositories
       {
         if (ids is null || ids.Count == 0)
         {
-          return new ResponseData<string>(400, "No IDs provided.");
+          return new ResponseData<string>(400, "Không có id nào được nhập");
         }
 
         var idList = string.Join(",", ids);
@@ -307,12 +309,12 @@ namespace server.Repositories
 
         if (delete == 0)
         {
-          return new ResponseData<string>(404, "No AcademicYearId found to delete");
+          return new ResponseData<string>(404, "Không tìm thấy năm học");
         }
 
         await transaction.CommitAsync();
 
-        return new ResponseData<string>(200, "Deleted succesfully");
+        return new ResponseData<string>(200, "Đã xóa");
       }
       catch (Exception ex)
       {

@@ -1,4 +1,5 @@
-﻿using ExcelDataReader;
+﻿using DocumentFormat.OpenXml.Math;
+using ExcelDataReader;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using server.Data;
@@ -58,7 +59,7 @@ namespace server.Repositories
 
         if (sodaubai is not null)
         {
-          return new BiaSoDauBaiResType(409, "Sodaubai already exists");
+          return new BiaSoDauBaiResType(409, "Sổ đầu bài đã tồn tại");
         }
 
         // Check if schoolId exists
@@ -67,7 +68,7 @@ namespace server.Repositories
 
         if (!schoolExists)
         {
-          return new BiaSoDauBaiResType(404, "SchoolId not found");
+          return new BiaSoDauBaiResType(404, "Trường học không tồn tại");
         }
 
         // Check if academicYearId exists
@@ -76,7 +77,7 @@ namespace server.Repositories
 
         if (!academicYearExists)
         {
-          return new BiaSoDauBaiResType(404, "academicYearId not found");
+          return new BiaSoDauBaiResType(404, "Năm học không tồn tại");
         }
 
         // Check if classId exists
@@ -85,7 +86,7 @@ namespace server.Repositories
 
         if (!classExists)
         {
-          return new BiaSoDauBaiResType(404, "ClassId not found");
+          return new BiaSoDauBaiResType(404, "Lớp học không tồn tại");
         }
 
         model.DateCreated = DateTime.UtcNow;
@@ -118,7 +119,7 @@ namespace server.Repositories
           DateUpdated = model.DateUpdated,
         };
 
-        return new BiaSoDauBaiResType(200, "Thành công", result);
+        return new BiaSoDauBaiResType(200, "Tạo mới sổ đầu bài thành công", result);
       }
       catch (Exception ex)
       {
@@ -127,15 +128,52 @@ namespace server.Repositories
       }
     }
 
+    // This method use for fetch and Update
     public async Task<BiaSoDauBaiResType> GetBiaSoDauBai(int id)
     {
       try
       {
-        var query = @"SELECT * from BiaSoDauBai WHERE BiaSoDauBaiId = @id";
+        var query = @"SELECT 
+                  b.BiaSoDauBaiId,
+                  b.SchoolId,
+                  ISNULL(s.NameSchcool, '') AS SchoolName,
+                  b.AcademicyearId,
+                  ISNULL(ay.displayAcademicYear_Name, '') AS NienKhoaName,
+                  b.ClassId,
+                  ISNULL(c.ClassName, '') AS ClassName,
+                  b.Status,
+                  ISNULL(t.Fullname, '') AS TenGiaoVienChuNhiem,
+                  b.DateCreated,
+                  b.DateUpdated
+              FROM 
+                  BiaSoDauBai b
+              LEFT JOIN 
+                  Class c ON b.ClassId = c.ClassId
+              LEFT JOIN 
+                  Teacher t ON c.TeacherId = t.TeacherId
+              LEFT JOIN 
+                  School s ON b.SchoolId = s.SchoolId
+              LEFT JOIN 
+                  AcademicYear ay ON b.AcademicyearId = ay.AcademicYearId
+              WHERE b.BiaSoDauBaiId = @id";
 
         // Fetch 
         var sodaubai = await _context.BiaSoDauBais
             .FromSqlRaw(query, new SqlParameter("@id", id))
+            .Select(static x => new BiaSoDauBaiRes
+            {
+              BiaSoDauBaiId = x.BiaSoDauBaiId,
+              SchoolId = x.SchoolId,
+              SchoolName = x.School.NameSchcool,
+              AcademicyearId = x.AcademicyearId,
+              NienKhoaName = x.Academicyear.DisplayAcademicYearName,
+              ClassId = x.ClassId,
+              ClassName = x.Class.ClassName,
+              Status = x.Status,
+              TenGiaoVienChuNhiem = x.Class.Teacher.Fullname,
+              DateCreated = x.DateCreated.HasValue ? x.DateCreated.Value.ToString("dd/MM/yyyy HH:mm:ss") : string.Empty,
+              DateUpdated = x.DateUpdated.HasValue ? x.DateUpdated.Value.ToString("dd/MM/yyyy HH:mm:ss") : string.Empty,
+            })
             .FirstOrDefaultAsync();
 
         if (sodaubai is null)
@@ -143,17 +181,22 @@ namespace server.Repositories
           return new BiaSoDauBaiResType(404, "Not found");
         }
 
-        // Map the result to the StudentDto
-        var result = new BiaSoDauBaiDto
+        // Map the result
+        var result = new BiaSoDauBaiRes
         {
           BiaSoDauBaiId = id,
           SchoolId = sodaubai.SchoolId,
+          SchoolName = sodaubai.SchoolName ?? string.Empty,
           AcademicyearId = sodaubai.AcademicyearId,
+          NienKhoaName = sodaubai.NienKhoaName ?? string.Empty,
           ClassId = sodaubai.ClassId,
+          ClassName = sodaubai.ClassName ?? string.Empty,
           Status = sodaubai.Status,
+          TenGiaoVienChuNhiem = sodaubai.TenGiaoVienChuNhiem ?? string.Empty,
           DateCreated = sodaubai.DateCreated,
           DateUpdated = sodaubai.DateUpdated,
         };
+
 
         return new BiaSoDauBaiResType(200, "Thành công", result);
       }
@@ -332,34 +375,49 @@ namespace server.Repositories
                                from truong in schoolGroup.DefaultIfEmpty()
                                join nienKhoa in _context.AcademicYears on biaSo.AcademicyearId equals nienKhoa.AcademicYearId into nienkhoaGroup
                                from nienKhoa in nienkhoaGroup.DefaultIfEmpty()
-                               select new BiaSoDauBaiRes()
+                               select new
                                {
-                                 BiaSoDauBaiId = biaSo.BiaSoDauBaiId,
-                                 SchoolId = biaSo.SchoolId,
-                                 SchoolName = truong.NameSchcool,
-                                 AcademicyearId = biaSo.AcademicyearId,
-                                 NienKhoaName = nienKhoa.DisplayAcademicYearName,
-                                 ClassId = biaSo.ClassId,
-                                 ClassName = lop.ClassName,
-                                 Status = biaSo.Status,
-                                 DateCreated = biaSo.DateCreated.HasValue ? biaSo.DateCreated.Value.ToString("dd/MM/yyyy HH:mm:ss") : string.Empty,
-                                 DateUpdated = biaSo.DateUpdated.HasValue ? biaSo.DateUpdated.Value.ToString("dd/MM/yyyy HH:mm:ss") : string.Empty,
+                                 biaSo.BiaSoDauBaiId,
+                                 biaSo.SchoolId,
+                                 truong.NameSchcool,
+                                 biaSo.AcademicyearId,
+                                 nienKhoa.DisplayAcademicYearName,
+                                 biaSo.ClassId,
+                                 lop.ClassName,
+                                 biaSo.Status,
+                                 biaSo.DateCreated,
+                                 biaSo.DateUpdated,
+                                 TenGiaoVienChuNhiem = lop.Teacher.Fullname
                                };
 
-
-        var biaSoDauBai = await baiSoDauBaiQuery
+        var rawResults = await baiSoDauBaiQuery
             .Where(x => x.SchoolId.Equals(schoolId))
             .AsNoTracking()
             .Skip(skip)     // Skip the first (pageNumber - 1) * pageSize records
             .Take(queryObject.PageSize) // Take pageSize records
             .ToListAsync();
 
-        if (biaSoDauBai is null || biaSoDauBai.Count == 0)
+        var result = rawResults.Select(x => new BiaSoDauBaiRes
+        {
+          BiaSoDauBaiId = x.BiaSoDauBaiId,
+          SchoolId = x.SchoolId,
+          SchoolName = x.NameSchcool ?? string.Empty,
+          AcademicyearId = x.AcademicyearId,
+          NienKhoaName = x.DisplayAcademicYearName ?? string.Empty,
+          ClassId = x.ClassId,
+          ClassName = x.ClassName ?? string.Empty,
+          Status = x.Status,
+          DateCreated = x.DateCreated.HasValue ? x.DateCreated.Value.ToString("dd/MM/yyyy HH:mm:ss") : string.Empty,
+          DateUpdated = x.DateUpdated.HasValue ? x.DateUpdated.Value.ToString("dd/MM/yyyy HH:mm:ss") : string.Empty,
+          TenGiaoVienChuNhiem = x.TenGiaoVienChuNhiem
+        }).ToList();
+
+        if (result is null || result.Count == 0)
         {
           return new BiaSoDauBaiResType(404, "Không có kết quả");
         }
 
-        return new BiaSoDauBaiResType(200, "Thành công", biaSoDauBai);
+        return new BiaSoDauBaiResType(200, "Thành công", result);
       }
       catch (Exception ex)
       {
@@ -442,7 +500,6 @@ namespace server.Repositories
 
           // Commit the transaction
           await transaction.CommitAsync();
-
           return new BiaSoDauBaiResType(200, "Updated successfully");
         }
         else
@@ -454,7 +511,6 @@ namespace server.Repositories
       {
         // Rollback the transaction in case of an error
         await transaction.RollbackAsync();
-
         return new BiaSoDauBaiResType(500, $"Server Error: {ex.Message}");
       }
     }
@@ -605,7 +661,6 @@ namespace server.Repositories
           .AsNoTracking()
           .Include(x => x.Class)
           .Include(b => b.School)
-          .Include(b => b.Academicyear)
           .AsQueryable();
 
       if (searchObject.SchoolId.HasValue)
@@ -619,28 +674,41 @@ namespace server.Repositories
       }
 
       // Execute the query and map the results to DTO
-      var biaSoDauBai = await query
-          .OrderBy(x => x.DateCreated)
-          .ToListAsync();
+      // var biaSoDauBai = await query
+      //     .OrderBy(x => x.DateCreated)
+      //     .ToListAsync();
 
       // Check if any data was not found
-      if (!biaSoDauBai.Any())
-      {
-        return new BiaSoDauBaiResType(400, "Không tìm thấy kết quả");
-      }
+      // if (!biaSoDauBai.Any())
+      // {
+      //   return new BiaSoDauBaiResType(400, "Không tìm thấy kết quả");
+      // }
 
-      var result = biaSoDauBai.Select(x => new BiaSoDauBai
+      var rawResults = await query.Select(x => new
+      {
+        x.BiaSoDauBaiId,
+        x.ClassId,
+        x.SchoolId,
+        x.AcademicyearId,
+        x.DateCreated,
+        x.DateUpdated
+      }).ToListAsync();
+
+      var results = rawResults.Select(x => new BiaSoDauBaiDto
       {
         BiaSoDauBaiId = x.BiaSoDauBaiId,
-        Academicyear = x.Academicyear,
-        Class = x.Class,
-        Status = x.Status,
-        School = x.School,
+        AcademicyearId = x.AcademicyearId,
+        SchoolId = x.SchoolId,
+        ClassId = x.ClassId,
         DateCreated = x.DateCreated,
-        DateUpdated = x.DateUpdated,
+        DateUpdated = x.DateUpdated
       }).ToList();
 
-      return new BiaSoDauBaiResType(200, "Có kết quả", result);
+      if (results.Count == 0)
+      {
+        return new BiaSoDauBaiResType(404, "Không tìm thấy kết quả");
+      }
+      return new BiaSoDauBaiResType(200, "Có kết quả", results);
     }
   }
 }

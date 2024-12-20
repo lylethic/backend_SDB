@@ -14,11 +14,11 @@ public partial class TeacherDetail
 
   public string DateOfBirth { get; set; } = string.Empty;
 
-  public bool Gender { get; set; }
+  public string Gender { get; set; } = "Nam";
 
   public string Address { get; set; } = null!;
 
-  public bool Status { get; set; }
+  public string Status { get; set; } = "Nam";
 
   public string DateCreate { get; set; } = string.Empty;
 

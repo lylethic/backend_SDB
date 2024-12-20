@@ -43,14 +43,18 @@ namespace server.Controllers
     [HttpGet("{id}")]
     public async Task<IActionResult> GetAcademicYear(int id)
     {
-      var academicYears = await _acaYearRepo.GetAcademicYear(id);
+      var result = await _acaYearRepo.GetAcademicYear(id);
 
-      if (academicYears.StatusCode != 200)
+      if (result.StatusCode != 200)
       {
-        return BadRequest(academicYears);
+        return BadRequest(result);
       }
 
-      return Ok(academicYears);
+      return Ok(new
+      {
+        message = result.Message,
+        data = result.Data
+      });
     }
 
     // PUT: api/AcademicYears/5
@@ -120,7 +124,7 @@ namespace server.Controllers
       {
         var result = await _acaYearRepo.ImportExcel(file);
 
-        if (result.Contains("Successfully"))
+        if (result.StatusCode == 200)
         {
           return Ok(result);
         }
@@ -129,7 +133,6 @@ namespace server.Controllers
       }
       catch (Exception ex)
       {
-
         throw new Exception($"Failed: {ex.Message}");
       }
     }

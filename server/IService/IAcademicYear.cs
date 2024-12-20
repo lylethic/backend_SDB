@@ -8,7 +8,7 @@ namespace server.IService
 
     Task<ResponseData<AcademicYearDto>> GetAcademicYear(int id);
 
-    Task<List<AcademicYearDto>> GetAcademicYears(QueryObject? query);
+    Task<ResponseData<List<AcademicYearDto>>> GetAcademicYears(QueryObject? query);
 
     Task<ResponseData<AcademicYearDto>> DeleteAcademicYear(int id);
 
@@ -16,6 +16,6 @@ namespace server.IService
 
     Task<ResponseData<string>> BulkDelete(List<int> ids);
 
-    Task<string> ImportExcel(IFormFile file);
+    Task<ResponseData<string>> ImportExcel(IFormFile file);
   }
 }
