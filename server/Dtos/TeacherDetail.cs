@@ -18,7 +18,7 @@ public partial class TeacherDetail
 
   public string Address { get; set; } = null!;
 
-  public string Status { get; set; } = "Nam";
+  public string Status { get; set; } = "true";
 
   public string DateCreate { get; set; } = string.Empty;
 

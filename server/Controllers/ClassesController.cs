@@ -19,11 +19,11 @@ namespace server.Controllers
 
     // GET: api/<ClassesController>
     [HttpGet]
-    public async Task<IActionResult> GetAllClasses([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 50)
+    public async Task<IActionResult> GetAllClasses([FromQuery] QueryObject? queryObject)
     {
       try
       {
-        var result = await _func.GetClasses(pageNumber, pageSize);
+        var result = await _func.GetClasses(queryObject);
         if (result is null)
         {
           return NotFound();
@@ -38,24 +38,44 @@ namespace server.Controllers
       }
     }
 
-    [HttpGet, Route("GetClassesBySchool")]
-    public async Task<IActionResult> GetClassesBySchool([FromQuery] int pageNumber, [FromQuery] int pageSize, int schoolId)
+    [HttpGet, Route("get-class-by-school")]
+    public async Task<IActionResult> GetClassesBySchool([FromQuery] QueryObject? queryObject, int schoolId)
     {
-      try
+      var result = await _func.GetClassesBySchool(queryObject, schoolId);
+      if (result.StatusCode == 200)
       {
-        var result = await _func.GetClassesBySchool(pageNumber, pageSize, schoolId);
-        if (result is null)
+        return Ok(new
         {
-          return NotFound();
-        }
+          status = result.StatusCode,
+          message = result.Message,
+          data = result.Data
+        });
+      }
 
-        return Ok(result);
-      }
-      catch (Exception ex)
+      if (result.StatusCode == 204)
       {
-        Console.WriteLine(ex.Message);
-        return StatusCode(500, "Server error"); // 500
+        return Ok(new
+        {
+          status = result.StatusCode,
+          message = result.Message
+        });
       }
+
+      if (result.StatusCode == 400)
+      {
+        return BadRequest(new
+        {
+          status = result.StatusCode,
+          message = result.Message
+        });
+      }
+
+
+      return StatusCode(500, new
+      {
+        status = result.StatusCode,
+        message = result.Message
+      });
     }
 
     // GET api/<ClassesController>/5
@@ -121,21 +141,19 @@ namespace server.Controllers
     [HttpPost("upload")]
     public async Task<IActionResult> UploadExcelFile(IFormFile file)
     {
-      try
+      var result = await _func.ImportExcel(file);
+
+      if (result.StatusCode == 200)
       {
-        var result = await _func.ImportExcel(file);
-
-        if (result.Contains("Successfully"))
-        {
-          return Ok(result);
-        }
-
+        return Ok(result);
+      }
+      if (result.StatusCode == 400)
+      {
         return BadRequest(result);
       }
-      catch (Exception ex)
-      {
-        return StatusCode(500, $"Server Error: {ex.Message}");
-      }
+
+      return StatusCode(500, new { message = result.Message });
+
     }
 
     [Authorize(Policy = "SuperAdminAndAdmin")]

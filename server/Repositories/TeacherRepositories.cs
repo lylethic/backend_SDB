@@ -119,7 +119,7 @@ namespace server.Repositories
 
         if (teacher is null)
         {
-          return new TeacherResType(404, "Teacher not found");
+          return new TeacherResType(404, "Không tìm thấy giáo viên");
         }
 
 
@@ -186,7 +186,7 @@ namespace server.Repositories
 
         if (teacher is null)
         {
-          return new TeacherResType(404, "Teacher not found");
+          return new TeacherResType(404, "Không tìm thấy giáo viên");
         }
 
 
@@ -333,7 +333,7 @@ namespace server.Repositories
 
         if (existingTeacher is null)
         {
-          return new TeacherResType(404, "Teacher not found");
+          return new TeacherResType(404, "Không tìm thấ y giáo viên");
         }
 
         bool hasChanges = false;
@@ -417,11 +417,11 @@ namespace server.Repositories
 
           // Commit the transaction
           await transaction.CommitAsync();
-          return new TeacherResType(200, "Teacher updated successfully");
+          return new TeacherResType(200, "Cập nhật thành công");
         }
         else
         {
-          return new TeacherResType(200, "No changes detected");
+          return new TeacherResType(200, "Không phát hiện thay đổi");
         }
       }
       catch (Exception ex)
@@ -518,7 +518,7 @@ namespace server.Repositories
 
         if (teacher is null)
         {
-          return new TeacherResType(404, "Teacher not found");
+          return new TeacherResType(404, "Không tìm thấy giáo viên");
         }
 
         var deleteQuery = "DELETE FROM Teacher WHERE TeacherId = @id";
@@ -539,7 +539,7 @@ namespace server.Repositories
       {
         if (ids is null || ids.Count == 0)
         {
-          return new ResponseData<string>(400, "No IDs provided.");
+          return new ResponseData<string>(400, "Vui lòng cung cấp id");
         }
 
         var idList = string.Join(",", ids);
@@ -550,12 +550,12 @@ namespace server.Repositories
 
         if (delete == 0)
         {
-          return new ResponseData<string>(404, "No TeacherId found to delete");
+          return new ResponseData<string>(404, "Không tìm thấy giáo viên");
         }
 
         await transaction.CommitAsync();
 
-        return new ResponseData<string>(200, "Deleted");
+        return new ResponseData<string>(200, "Đã xóa");
       }
       catch (Exception ex)
       {
