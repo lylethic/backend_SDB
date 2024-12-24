@@ -15,6 +15,8 @@ namespace server.IService
 
     Task<BiaSoDauBaiResType> GetBiaSoDauBai(int id);
 
+    Task<BiaSoDauBaiResType> GetBiaSoDauBaiToUpdate(int id);
+
     Task<BiaSoDauBaiResType> GetBiaSoDauBais_Active(QueryObject? queryObject);
 
     Task<BiaSoDauBaiResType> GetBiaSoDauBaisBySchool_Active(QueryObject? queryObject, int schoolId);
@@ -32,6 +34,6 @@ namespace server.IService
 
     Task<BiaSoDauBaiResType> BulkDelete(List<int> ids);
 
-    Task<BiaSoDauBaiResType> SearchBiaSoDauBais(SearchBiaSoDauBaiObject? searchObject);
+    Task<BiaSoDauBaiResType> SearchBiaSoDauBais(BiaSoDauBaiSearchObject? searchObject);
   }
 }

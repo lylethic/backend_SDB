@@ -54,11 +54,7 @@ namespace server.Controllers
 
       if (result.StatusCode == 204)
       {
-        return Ok(new
-        {
-          status = result.StatusCode,
-          message = result.Message
-        });
+        return Ok(result);
       }
 
       if (result.StatusCode == 400)

@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using server.Dtos;
 using server.IService;
+using server.Types.BiaSoDauBai;
 
 // For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 
@@ -107,6 +108,34 @@ namespace server.Controllers
         {
           message = result.Message,
           data = result.BiaSoDauBaiRes
+        });
+      }
+
+      if (result.StatusCode == 404)
+      {
+        return Ok(new
+        {
+          message = result.Message,
+        });
+      }
+
+      return StatusCode(500, new
+      {
+        message = result.Message,
+      });
+    }
+
+    [HttpGet("get-to-update/{id}")]
+    public async Task<IActionResult> GetToUpdate(int id)
+    {
+      var result = await _biaSodaubai.GetBiaSoDauBaiToUpdate(id);
+
+      if (result.StatusCode == 200)
+      {
+        return Ok(new
+        {
+          message = result.Message,
+          data = result.BiaSoDauBaiDto
         });
       }
 
@@ -357,9 +386,8 @@ namespace server.Controllers
     //GET /api/BiaSoDauBais/Search? schoolName = ABC & schoolId = 1 & classId = 2
     /* Search keywords: Schoolname, SchoolId, classId */
     [HttpGet("search")]
-    public async Task<IActionResult> SearchBiaSoDauBais([FromQuery] SearchBiaSoDauBaiObject? searchObject)
+    public async Task<IActionResult> SearchBiaSoDauBais([FromQuery] BiaSoDauBaiSearchObject? searchObject)
     {
-      searchObject ??= new SearchBiaSoDauBaiObject();
       var result = await _biaSodaubai.SearchBiaSoDauBais(searchObject);
 
       if (result.StatusCode == 200)
@@ -367,13 +395,22 @@ namespace server.Controllers
         return Ok(new
         {
           message = result.Message,
-          data = result.ListBiaSoDauBaiDto
+          totalResults = result.TotalCount,
+          data = result.ListBiaSoDauBaiRes,
         });
       }
 
       if (result.StatusCode == 400)
       {
-        return Ok(new
+        return BadRequest(new
+        {
+          message = result.Message,
+        });
+      }
+
+      if (result.StatusCode == 404)
+      {
+        return NotFound(new
         {
           message = result.Message,
         });

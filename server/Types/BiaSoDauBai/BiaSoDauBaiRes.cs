@@ -1,4 +1,6 @@
-﻿namespace server.Types.BiaSoDauBai
+﻿using server.Dtos;
+
+namespace server.Types.BiaSoDauBai
 {
   public class BiaSoDauBaiRes
   {
@@ -23,5 +25,11 @@
     public string DateCreated { get; set; } = string.Empty;
 
     public string DateUpdated { get; set; } = string.Empty;
+  }
+
+  public class BiaSoDauBaiSearchObject : QueryObject
+  {
+    public int? SchoolId { get; set; }
+    public int? ClassId { get; set; }
   }
 }

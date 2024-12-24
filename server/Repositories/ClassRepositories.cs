@@ -262,10 +262,10 @@ namespace server.Repositories
                     DateCreated = c.DateCreated.HasValue ? c.DateCreated.Value.ToString("dd/MM/yyyy") : string.Empty,
                     DateUpdated = c.DateUpdated.HasValue ? c.DateUpdated.Value.ToString("dd/MM/yyyy") : string.Empty,
                   })
-                   .ToListAsync();
+                  .ToListAsync();
 
 
-        if (query.Count == 0)
+        if (query.Count == 0 || query is null)
         {
           return new ResponseData<List<ClassDetails>>(204, "Trường học này chưa có lớp học hoặc mã trường học không tồn tại");
         }
