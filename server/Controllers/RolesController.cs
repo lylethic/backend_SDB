@@ -210,7 +210,7 @@ namespace server.Controllers
       {
         var result = await _roleRepo.ImportExcel(file);
 
-        if (result.Contains("Successfully"))
+        if (result.Contains("Thành côngy"))
         {
           return Ok(result);
         }

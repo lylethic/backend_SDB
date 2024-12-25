@@ -9,7 +9,7 @@ using System.Text;
 
 namespace server.Repositories
 {
-    public class SubjectAssgmRepositories : ISubject_Assgm
+  public class SubjectAssgmRepositories : ISubject_Assgm
   {
     readonly SoDauBaiContext _context;
 
@@ -301,7 +301,7 @@ namespace server.Repositories
             } while (reader.NextResult());
           }
 
-          return "Successfully inserted";
+          return "Tải lên thành công";
         }
         return "No file uploaded";
       }

@@ -254,7 +254,7 @@ namespace server.Repositories
           var updateQuery = queryBuilder.ToString();
           await _context.Database.ExecuteSqlRawAsync(updateQuery, parameters.ToArray());
 
-          return new ResponseData<SemesterDto>(200, "Semester updated successfully");
+          return new ResponseData<SemesterDto>(200, "Semester updated Thành côngy");
         }
         else
         {
@@ -328,7 +328,7 @@ namespace server.Repositories
             } while (reader.NextResult());
           }
 
-          return "Successfully.";
+          return "Thành côngy.";
         }
         return "No file uploaded";
       }

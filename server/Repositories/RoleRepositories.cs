@@ -51,7 +51,7 @@ namespace server.Repositories
           Description = role.Description,
         };
 
-        return new RoleResType(200, "Successful", result);
+        return new RoleResType(200, "Thành công", result);
       }
       catch (Exception ex)
       {
@@ -157,7 +157,7 @@ namespace server.Repositories
           Description = model.Description,
         };
 
-        return new RoleResType(200, "Successful", result);
+        return new RoleResType(200, "Thành công", result);
       }
       catch (Exception ex)
       {
@@ -357,7 +357,7 @@ namespace server.Repositories
             }
           }
 
-          return "Successfully inserted";
+          return "Tải lên thành công";
         }
         return "No file uploaded";
 
@@ -413,7 +413,7 @@ namespace server.Repositories
           workbook.SaveAs(filePath);
         }
 
-        return new RoleResType(200, "Successfull");
+        return new RoleResType(200, "Thành công");
       }
       catch (Exception ex)
       {

@@ -598,7 +598,7 @@ namespace server.Repositories
       {
         if (ids is null || ids.Count == 0)
         {
-          return new BiaSoDauBaiResType(400, "No IDs provided.");
+          return new BiaSoDauBaiResType(400, "Không có mã số nào được cung cấp.");
         }
 
         var idList = string.Join(",", ids);
@@ -688,9 +688,9 @@ namespace server.Repositories
             }
           }
 
-          return new BiaSoDauBaiResType(200, "Successfully inserted");
+          return new BiaSoDauBaiResType(200, "Tải lên thành công");
         }
-        return new BiaSoDauBaiResType(400, "No file uploaded");
+        return new BiaSoDauBaiResType(400, "Không có file nào được chọn để tải lên");
 
       }
       catch (Exception ex)

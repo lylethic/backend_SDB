@@ -279,7 +279,7 @@ namespace server.Repositories
             }
           }
 
-          return new ResponseData<string>(200, "Successfully inserted");
+          return new ResponseData<string>(200, "Tải lên thành công");
         }
         return new ResponseData<string>(204, "No file uploaded");
 

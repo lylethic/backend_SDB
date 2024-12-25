@@ -118,7 +118,7 @@ namespace server.Controllers
       try
       {
         var result = await _grade.ImportExcelFile(file);
-        if (result.Contains("Successfully"))
+        if (result.Contains("Thành côngy"))
         {
           return Ok(result);
         }

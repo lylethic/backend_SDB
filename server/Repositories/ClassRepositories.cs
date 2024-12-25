@@ -366,7 +366,7 @@ namespace server.Repositories
           var updateQuery = queryBuilder.ToString();
           await _context.Database.ExecuteSqlRawAsync(updateQuery, [.. parameters]);
 
-          return new ResponseData<ClassDto>(200, "Class updated successfully");
+          return new ResponseData<ClassDto>(200, "Class updated Thành côngy");
         }
         else
         {
@@ -482,7 +482,7 @@ namespace server.Repositories
 
         await transaction.CommitAsync();
 
-        return new ResponseData<string>(200, "Deleted successfully");
+        return new ResponseData<string>(200, "Deleted Thành côngy");
       }
       catch (Exception ex)
       {

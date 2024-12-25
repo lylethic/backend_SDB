@@ -422,7 +422,7 @@ namespace server.Repositories
             } while (reader.NextResult());
           }
 
-          return "Successfully.";
+          return "Thành côngy.";
         }
         return "No file uploaded";
       }
@@ -520,7 +520,7 @@ namespace server.Repositories
           workbook.SaveAs(filePath);
         }
 
-        return new ResponseData<string>(200, "Successfull");
+        return new ResponseData<string>(200, "Thành công");
       }
       catch (Exception ex)
       {

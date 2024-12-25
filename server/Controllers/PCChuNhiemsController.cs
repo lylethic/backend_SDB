@@ -159,7 +159,7 @@ namespace server.Controllers
       {
         var result = await _pc.ImportExcelFile(file);
 
-        if (result.Contains("Successfully"))
+        if (result.Contains("Thành côngy"))
         {
           return Ok(result);
         }

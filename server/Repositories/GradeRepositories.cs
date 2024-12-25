@@ -292,7 +292,7 @@ namespace server.Repositories
 
         await transaction.CommitAsync();
 
-        return new ResponseData<string>(200, "Deleted successfully");
+        return new ResponseData<string>(200, "Deleted Thành côngy");
       }
       catch (Exception ex)
       {
@@ -362,7 +362,7 @@ namespace server.Repositories
             } while (reader.NextResult());
           }
 
-          return "Successfully inserted.";
+          return "Tải lên thành công.";
         }
 
         return "No file uploaded";

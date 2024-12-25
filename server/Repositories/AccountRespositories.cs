@@ -107,7 +107,7 @@ namespace server.Repositories
           DateUpdated = acc.DateUpdated,
         };
 
-        return new AccountsResType(200, "Successful", accountAddResType);
+        return new AccountsResType(200, "Thành công", accountAddResType);
       }
       catch (Exception ex)
       {

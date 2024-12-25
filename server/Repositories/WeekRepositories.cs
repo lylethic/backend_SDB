@@ -341,7 +341,7 @@ namespace server.Repositories
             } while (reader.NextResult());
           }
 
-          return "Successfully inserted";
+          return "Tải lên thành công";
         }
         return "No file uploaded";
       }

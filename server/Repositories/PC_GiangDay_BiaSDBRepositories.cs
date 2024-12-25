@@ -114,7 +114,7 @@ namespace server.Repositories
 
         await transaction.CommitAsync();
 
-        return new PhanCongGiangDayBiaResType(200, "Deleted successfully");
+        return new PhanCongGiangDayBiaResType(200, "Deleted Thành côngy");
       }
       catch (Exception ex)
       {
@@ -295,7 +295,7 @@ namespace server.Repositories
             }
           }
 
-          return new PhanCongGiangDayBiaResType(200, "Successfully inserted.");
+          return new PhanCongGiangDayBiaResType(200, "Tải lên thành công.");
         }
 
         return new PhanCongGiangDayBiaResType(400, "No file uploaded");

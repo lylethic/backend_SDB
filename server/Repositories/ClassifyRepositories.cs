@@ -301,7 +301,7 @@ namespace server.Repositories
             }
           }
 
-          return "Successfully inserted";
+          return "Tải lên thành công";
         }
         return "No file uploaded";
 

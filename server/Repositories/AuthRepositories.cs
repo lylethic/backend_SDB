@@ -265,7 +265,7 @@ namespace server.Repositories
         _tokenService.ClearJWTTokenCookie();
         _tokenService.ClearRefreshTokenCookie();
 
-        return new LogoutResType(200, true, "Logout successfully");
+        return new LogoutResType(200, true, "Logout Thành côngy");
       }
       catch (Exception ex)
       {
