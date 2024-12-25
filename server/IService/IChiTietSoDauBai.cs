@@ -63,7 +63,7 @@ namespace server.IService
     ///  t.teacherId, 
     ///  t.fullname
     ///  </returns>
-    Task<ChiTietSoDauBaiResType> GetChiTietBySchool(int schoolId, int weekId, int biaId, QueryObject? query);
+    Task<ChiTietSoDauBaiResType> GetChiTietBySchool(ChiTietSoDauBaiQuery queryChiTiet);
 
     Task<ChiTietSoDauBaiResType> ExportChiTietSoDauBaiToExcel(int weekId, int classId, string filePath);
   }

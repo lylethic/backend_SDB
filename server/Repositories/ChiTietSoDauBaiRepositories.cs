@@ -562,11 +562,10 @@ namespace server.Repositories
       }
     }
 
-    public async Task<ChiTietSoDauBaiResType> GetChiTietBySchool(int schoolId, int weekId, int biaId, QueryObject? queryObject)
+    public async Task<ChiTietSoDauBaiResType> GetChiTietBySchool(ChiTietSoDauBaiQuery queryChiTiet)
     {
       try
       {
-        queryObject ??= new QueryObject();
         // Total count query
         // var countQuery = @"SELECT COUNT(*) 
         //                    FROM dbo.ChiTietSoDauBai as ct
@@ -579,49 +578,47 @@ namespace server.Repositories
         //     new SqlParameter("@biaId", biaId)
         // );
 
-        var skip = (queryObject.PageNumber - 1) * queryObject.PageSize;
-
         var query = @"SELECT ct.*, 
-                            c.className, 
-                            t.teacherId, 
-                            t.fullname
+	                      c.className, 
+	                      t.teacherId, 
+	                      t.fullname
                       FROM dbo.ChiTietSoDauBai as ct
                       LEFT JOIN dbo.BiaSoDauBai as b ON ct.biaSoDauBaiId = b.biaSoDauBaiId 
                       LEFT JOIN dbo.Class as c ON b.classId = c.classId 
                       LEFT JOIN dbo.Teacher as t ON c.teacherId = t.teacherId
-                      WHERE b.schoolId = @schoolId and ct.weekId = @weekId and ct.biaSoDauBaiId = @biaId
-                      ORDER BY ct.ChiTietSoDauBaiId
-                      OFFSET @skip ROWS 
-                      FETCH NEXT @pageSize ROWS ONLY";
+                      WHERE b.academicyearId = @academicYearId and ct.semesterId = @semesterId and b.schoolId = @schoolId and ct.weekId = @weekId and b.classId = @classId
+                      ";
 
         var chitietSoDauBai = await _context.ChiTietSoDauBais.FromSqlRaw(query,
-        new SqlParameter("@schoolId", schoolId),
-        new SqlParameter("@weekId", weekId),
-        new SqlParameter("@biaId", biaId),
-        new SqlParameter("@skip", skip),
-        new SqlParameter("@pageSize", queryObject.PageSize)
+        new SqlParameter("@academicYearId", queryChiTiet.AcademicYearId),
+        new SqlParameter("@semesterId", queryChiTiet.SemesterId),
+        new SqlParameter("@schoolId", queryChiTiet.SchoolId),
+        new SqlParameter("@weekId", queryChiTiet.WeekId),
+        new SqlParameter("@classId", queryChiTiet.ClassId)
         )
         .Select(ct => new ChiTietSDBResData
         {
           ChiTietSoDauBaiId = ct.ChiTietSoDauBaiId,
           BiaSoDauBaiId = ct.BiaSoDauBaiId,
+          ClassName = ct.BiaSoDauBai.Class.ClassName,
           SemesterId = ct.SemesterId,
+          SemesterName = ct.Semester.SemesterName,
           WeekId = ct.WeekId,
+          WeekName = ct.Week.WeekName,
           SubjectId = ct.SubjectId,
+          SubjectName = ct.Subject.SubjectName,
           ClassificationId = ct.ClassificationId,
+          ClassifyName = ct.Classification.ClassifyName,
           DaysOfTheWeek = ct.DaysOfTheWeek,
-          ThoiGian = ct.ThoiGian,
+          ThoiGian = ct.ThoiGian.ToString("dd/MM/yyyy"),
           BuoiHoc = ct.BuoiHoc,
           TietHoc = ct.TietHoc,
           LessonContent = ct.LessonContent,
           Attend = ct.Attend,
           NoteComment = ct.NoteComment,
-          CreatedBy = ct.CreatedBy,
-          CreatedAt = ct.CreatedAt,
-          UpdatedAt = ct.UpdatedAt,
-          ClassName = ct.BiaSoDauBai.Class.ClassName,
-          TeacherId = ct.BiaSoDauBai.Class.TeacherId,
-          TeacherName = ct.BiaSoDauBai.Class.Teacher.Fullname
+          CreatedBy = ct.BiaSoDauBai.Class.ClassName,
+          CreatedAt = ct.CreatedAt.HasValue ? ct.CreatedAt.Value.ToString("dd/MM/yyyy") : string.Empty,
+          UpdatedAt = ct.UpdatedAt.HasValue ? ct.UpdatedAt.Value.ToString("dd/MM/yyyy") : string.Empty,
         })
         .ToListAsync();
 
@@ -634,8 +631,6 @@ namespace server.Repositories
         {
           return new ChiTietSoDauBaiResType(400, "Không có kết quả");
         }
-
-
 
         return new ChiTietSoDauBaiResType(200, "Thành công", chitietSoDauBai);
 
@@ -756,19 +751,19 @@ namespace server.Repositories
 
                 var myDetails = new Models.ChiTietSoDauBai
                 {
-                  BiaSoDauBaiId = Convert.ToInt16(reader.GetValue(1)),
-                  SemesterId = Convert.ToInt16(reader.GetValue(2)),
-                  WeekId = Convert.ToInt16(reader.GetValue(3)),
-                  SubjectId = Convert.ToInt16(reader.GetValue(4)),
-                  ClassificationId = Convert.ToInt16(reader.GetValue(5)),
-                  DaysOfTheWeek = reader.GetValue(6).ToString() ?? $"Thứ",
-                  ThoiGian = Convert.ToDateTime(reader.GetValue(7)),
-                  BuoiHoc = reader.GetValue(8).ToString() ?? "Buổi ",
-                  TietHoc = Convert.ToInt16((int)reader.GetValue(9)),
-                  LessonContent = reader.GetValue(10).ToString() ?? "Nội dung bài học",
-                  Attend = Convert.ToInt16((int)reader.GetValue(11)),
-                  NoteComment = reader.GetValue(12).ToString() ?? "Ghi chú",
-                  CreatedBy = Convert.ToInt16(reader.GetValue(13)),
+                  BiaSoDauBaiId = Convert.ToInt32(reader.GetValue(1) ?? 0),
+                  SemesterId = Convert.ToInt32(reader.GetValue(2) ?? 0),
+                  WeekId = Convert.ToInt32(reader.GetValue(3) ?? 0),
+                  SubjectId = Convert.ToInt32(reader.GetValue(4) ?? 0),
+                  ClassificationId = Convert.ToInt32(reader.GetValue(5) ?? 0),
+                  DaysOfTheWeek = reader.GetValue(6)?.ToString() ?? "Thứ",
+                  ThoiGian = Convert.ToDateTime(reader.GetValue(7) ?? DateTime.MinValue),
+                  BuoiHoc = reader.GetValue(8)?.ToString() ?? "Buổi ",
+                  TietHoc = Convert.ToInt32(reader.GetValue(9) ?? 0),
+                  LessonContent = reader.GetValue(10)?.ToString() ?? "Nội dung bài học",
+                  Attend = Convert.ToInt32(reader.GetValue(11) ?? 0),
+                  NoteComment = reader.GetValue(12)?.ToString() ?? "Ghi chú",
+                  CreatedBy = Convert.ToInt32(reader.GetValue(13) ?? 0),
                   CreatedAt = DateTime.UtcNow,
                   UpdatedAt = null
                 };

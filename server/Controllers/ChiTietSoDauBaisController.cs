@@ -227,9 +227,9 @@ namespace server.Controllers
     /// <param name="model"></param>
     /// <returns></returns>
     [HttpGet("get-chi-tiet-by-school")]
-    public async Task<IActionResult> GetChiTietBySchool([FromQuery] int schoolId, [FromQuery] int weekId, [FromQuery] int biaId, [FromQuery] QueryObject? query)
+    public async Task<IActionResult> GetChiTietBySchool([FromQuery] ChiTietSoDauBaiQuery queryChiTiet)
     {
-      var result = await _detail.GetChiTietBySchool(schoolId, weekId, biaId, query);
+      var result = await _detail.GetChiTietBySchool(queryChiTiet);
 
       if (result.StatusCode == 200)
       {

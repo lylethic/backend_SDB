@@ -680,7 +680,6 @@ namespace server.Repositories
                     DateUpdated = null
                   };
 
-
                   await _context.BiaSoDauBais.AddAsync(myBiaSoDauBai);
                   await _context.SaveChangesAsync();
                 }
