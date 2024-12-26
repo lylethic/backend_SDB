@@ -21,21 +21,18 @@ namespace server.Controllers
     [HttpGet]
     public async Task<IActionResult> GetAllWeek(int pageNumber = 1, int pageSize = 50)
     {
-      try
+      var result = await _week.GetWeeks(pageNumber, pageSize);
+      if (result.StatusCode == 200)
       {
-        var result = await _week.GetWeeks(pageNumber, pageSize);
-        if (result is null)
+        return Ok(new
         {
-          return NotFound();
-        }
+          totalResults = result.Total,
+          message = result.Message,
+          data = result.Data,
+        });
+      }
 
-        return Ok(result);
-      }
-      catch (Exception ex)
-      {
-        Console.WriteLine(ex.Message);
-        return StatusCode(500, "Server error"); // 500
-      }
+      return StatusCode(500, result);
     }
 
     // GET api/<WeeksController>/5
@@ -58,7 +55,11 @@ namespace server.Controllers
       try
       {
         var result = await _week.Get7DaysInWeek(selectedWeekId);
-        return Ok(result);
+        return Ok(new
+        {
+          message = result.Message,
+          data = result.Data
+        });
       }
       catch (Exception ex)
       {

@@ -21,20 +21,16 @@ namespace server.Controllers
     [HttpGet]
     public async Task<IActionResult> GetSemesters(int pageNumber = 1, int pageSize = 50)
     {
-      try
+      var academicYears = await _semester.GetSemesters(pageNumber, pageSize);
+      if (academicYears.StatusCode == 200)
       {
-        var academicYears = await _semester.GetSemesters(pageNumber, pageSize);
-        if (academicYears == null)
+        return Ok(new
         {
-          return NotFound(); // 404
-        }
-        return Ok(academicYears); // 200
+          data = academicYears.Data
+        });
       }
-      catch (Exception ex)
-      {
-        Console.WriteLine(ex.Message);
-        return StatusCode(500, "Server error"); // 500
-      }
+      return StatusCode(500, academicYears); // 200
+
     }
 
     // GET: api/AcademicYears1/5
@@ -114,20 +110,13 @@ namespace server.Controllers
     [HttpPost("upload")]
     public async Task<IActionResult> ImportExcelFile(IFormFile file)
     {
-      try
+      var result = await _semester.ImportExcelFile(file);
+      if (result.StatusCode == 200)
       {
-        var result = await _semester.ImportExcelFile(file);
-        if (result.Contains("Thành côngy"))
-        {
-          return Ok(result);
-        }
+        return Ok(result);
+      }
 
-        return BadRequest(result);
-      }
-      catch (Exception ex)
-      {
-        throw new Exception($"Error: {ex.Message}");
-      }
+      return StatusCode(500, result);
     }
   }
 }

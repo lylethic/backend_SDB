@@ -210,8 +210,11 @@ namespace server.Repositories
             {
               ClassId = c.ClassId,
               GradeId = c.GradeId,
+              GradeName = c.Grade.GradeName,
               TeacherId = c.Teacher.TeacherId,
               AcademicYearId = c.AcademicYearId,
+              TeacherName = c.Teacher.Fullname,
+              NienKhoa = c.AcademicYear.DisplayAcademicYearName,
               SchoolId = c.SchoolId,
               ClassName = c.ClassName,
               Status = c.Status,
@@ -232,14 +235,51 @@ namespace server.Repositories
       }
     }
 
-    public async Task<ResponseData<List<ClassDetails>>> GetClassesBySchool(QueryObject? queryObject, int schoolId)
+    public async Task<ResponseData<List<ClassList>>> ClassList(QueryObject? queryObject)
+    {
+      try
+      {
+        queryObject ??= new QueryObject();
+        var skip = (queryObject.PageNumber - 1) * queryObject.PageSize;
+
+        var classes = await _context.Classes
+            .OrderBy(c => c.ClassId)
+            .Skip(skip)
+            .Take(queryObject.PageSize)
+            .Select(c => new ClassList
+            {
+              ClassId = c.ClassId,
+              GradeId = c.GradeId,
+              TeacherId = c.Teacher.TeacherId,
+              AcademicYearId = c.AcademicYearId,
+              SchoolId = c.SchoolId,
+              ClassName = c.ClassName,
+              Status = c.Status,
+              Description = c.Description,
+              DateCreated = c.DateCreated.HasValue ? c.DateCreated.Value.ToString("dd/MM/yyyy") : string.Empty,
+              DateUpdated = c.DateUpdated.HasValue ? c.DateUpdated.Value.ToString("dd/MM/yyyy") : string.Empty,
+            })
+            .ToListAsync();
+
+        if (!classes.Any())
+          return new ResponseData<List<ClassList>>(404, "Không tìm thấy");
+
+        return new ResponseData<List<ClassList>>(200, "Thành công", classes);
+      }
+      catch (Exception ex)
+      {
+        return new ResponseData<List<ClassList>>(500, $"Server error: {ex.Message}");
+      }
+    }
+
+    public async Task<ResponseData<List<ClassList>>> GetClassesBySchool(QueryObject? queryObject, int schoolId)
     {
       try
       {
         queryObject ??= new QueryObject();
         if (schoolId == 0)
         {
-          return new ResponseData<List<ClassDetails>>(400, "Vui lòng nhập mã trường học");
+          return new ResponseData<List<ClassList>>(400, "Vui lòng nhập mã trường học");
         }
 
         var skip = (queryObject.PageNumber - 1) * queryObject.PageSize;
@@ -249,7 +289,7 @@ namespace server.Repositories
                   .OrderBy(c => c.ClassId)
                   .Skip(skip)
                   .Take(queryObject.PageSize)
-                  .Select(c => new ClassDetails
+                  .Select(c => new ClassList
                   {
                     ClassId = c.ClassId,
                     GradeId = c.GradeId,
@@ -267,14 +307,14 @@ namespace server.Repositories
 
         if (query.Count == 0 || query is null)
         {
-          return new ResponseData<List<ClassDetails>>(204, "Trường học này chưa có lớp học hoặc mã trường học không tồn tại");
+          return new ResponseData<List<ClassList>>(204, "Trường học này chưa có lớp học hoặc mã trường học không tồn tại");
         }
 
-        return new ResponseData<List<ClassDetails>>(200, "Thành công", query);
+        return new ResponseData<List<ClassList>>(200, "Thành công", query);
       }
       catch (Exception ex)
       {
-        return new ResponseData<List<ClassDetails>>(500, $"Server error: {ex.Message}");
+        return new ResponseData<List<ClassList>>(500, $"Server error: {ex.Message}");
       }
     }
 

@@ -30,7 +30,7 @@ namespace server.Repositories
       {
         if (ids is null || ids.Count == 0)
         {
-          return new ResponseData<string>(400, "No IDs provided.");
+          return new ResponseData<string>(400, "Không có mã tuần nào được cung cấp");
         }
 
         var idList = string.Join(",", ids);
@@ -41,12 +41,12 @@ namespace server.Repositories
 
         if (delete == 0)
         {
-          return new ResponseData<string>(404, "No WeekId found to delete");
+          return new ResponseData<string>(404, "Tuần không tồn tại");
         }
 
         await transaction.CommitAsync();
 
-        return new ResponseData<string>(200, "Deleted");
+        return new ResponseData<string>(200, "Đã xóa");
       }
       catch (Exception ex)
       {
@@ -201,14 +201,14 @@ namespace server.Repositories
       }
     }
 
-    public async Task<List<WeekDto>> GetWeeks(int pageNumber, int pageSize)
+    public async Task<ResponseData<List<WeekDto>>> GetWeeks(int pageNumber, int pageSize)
     {
       try
       {
         var skip = (pageNumber - 1) * pageSize;
 
         var query = @"SELECT * FROM Week
-                      ORDER BY WeekId
+                      ORDER BY CASE WHEN Status = 1 THEN 1 ELSE 0 END desc, weekId
                       OFFSET @skip ROWS
                       FETCH NEXT @pageSize ROWS ONLY";
 
@@ -228,12 +228,11 @@ namespace server.Repositories
           Status = x.Status
         }).ToList();
 
-        return result;
+        return new ResponseData<List<WeekDto>>(200, result);
       }
       catch (Exception ex)
       {
-        Console.WriteLine(ex.Message);
-        throw new Exception($"Server error: {ex.Message}");
+        return new ResponseData<List<WeekDto>>(200, $"Server error: {ex.Message}");
       }
     }
 

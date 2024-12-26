@@ -53,4 +53,18 @@
 
     public string DateUpdated { get; set; } = string.Empty;
   }
+
+  public partial class ClassList : ClassDto
+  {
+    public new string? DateCreated
+    {
+      get; set;
+    }
+
+    public new string? DateUpdated
+    {
+      get;
+      set;
+    }
+  }
 }

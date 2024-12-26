@@ -21,21 +21,25 @@ namespace server.Controllers
     [HttpGet]
     public async Task<IActionResult> GetAllClasses([FromQuery] QueryObject? queryObject)
     {
-      try
+      var result = await _func.GetClasses(queryObject);
+      if (result.StatusCode == 200)
       {
-        var result = await _func.GetClasses(queryObject);
-        if (result is null)
-        {
-          return NotFound();
-        }
-
         return Ok(result);
       }
-      catch (Exception ex)
+      return StatusCode(500, result);
+
+    }
+
+    [HttpGet("class-list")]
+    public async Task<IActionResult> GetClasses([FromQuery] QueryObject? queryObject)
+    {
+      var result = await _func.ClassList(queryObject);
+      if (result.StatusCode == 200)
       {
-        Console.WriteLine(ex.Message);
-        return StatusCode(500, "Server error"); // 500
+        return Ok(result);
       }
+
+      return StatusCode(500, result);
     }
 
     [HttpGet, Route("get-class-by-school")]

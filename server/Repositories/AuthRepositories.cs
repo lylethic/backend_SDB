@@ -227,7 +227,7 @@ namespace server.Repositories
         Data = new LoginResData
         {
           Token = accessToken,
-          ExpiresAt = DateTime.UtcNow.AddHours(Convert.ToInt16(_config["JwtSettings:AccessTokenExpirationHours"])).ToString(),
+          ExpiresAt = DateTime.UtcNow.AddHours(Convert.ToInt16(_config["JwtSettings:AccessTokenExpirationHours"])),
         }
       };
     }
@@ -350,7 +350,7 @@ namespace server.Repositories
         Data = new LoginResData
         {
           Token = accessToken,
-          ExpiresAt = DateTime.UtcNow.AddHours(Convert.ToInt16(_config["JwtSettings:AccessTokenExpirationHours"])).ToString(),
+          ExpiresAt = DateTime.UtcNow.AddHours(Convert.ToInt16(_config["JwtSettings:AccessTokenExpirationHours"])),
         }
       };
     }

@@ -9,7 +9,7 @@ namespace server.IService
 
     Task<ResponseData<WeekData>> GetWeek(int id);
 
-    Task<List<WeekDto>> GetWeeks(int pageNumber, int pageSize);
+    Task<ResponseData<List<WeekDto>>> GetWeeks(int pageNumber, int pageSize);
 
     Task<List<WeekDto>> GetWeeksBySemester(int pageNumber, int pageSize, int semesterId);
 

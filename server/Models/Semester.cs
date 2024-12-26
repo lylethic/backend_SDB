@@ -17,6 +17,8 @@ public partial class Semester
 
     public string? Description { get; set; }
 
+    public bool Status { get; set; }
+
     public virtual AcademicYear AcademicYear { get; set; } = null!;
 
     public virtual ICollection<ChiTietSoDauBai> ChiTietSoDauBais { get; set; } = new List<ChiTietSoDauBai>();

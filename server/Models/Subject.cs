@@ -11,6 +11,8 @@ public partial class Subject
 
     public string SubjectName { get; set; } = null!;
 
+    public bool Status { get; set; }
+
     public virtual AcademicYear AcademicYear { get; set; } = null!;
 
     public virtual ICollection<ChiTietSoDauBai> ChiTietSoDauBais { get; set; } = new List<ChiTietSoDauBai>();

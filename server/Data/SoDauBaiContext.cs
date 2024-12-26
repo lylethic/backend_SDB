@@ -70,6 +70,9 @@ public partial class SoDauBaiContext : DbContext
             entity.Property(e => e.DisplayAcademicYearName)
                 .HasMaxLength(100)
                 .HasColumnName("displayAcademicYear_Name");
+            entity.Property(e => e.Status)
+                .HasDefaultValue(true)
+                .HasColumnName("status");
             entity.Property(e => e.YearEnd).HasColumnName("yearEnd");
             entity.Property(e => e.YearStart).HasColumnName("yearStart");
         });
@@ -435,6 +438,9 @@ public partial class SoDauBaiContext : DbContext
             entity.Property(e => e.SemesterName)
                 .HasMaxLength(100)
                 .HasColumnName("semesterName");
+            entity.Property(e => e.Status)
+                .HasDefaultValue(true)
+                .HasColumnName("status");
 
             entity.HasOne(d => d.AcademicYear).WithMany(p => p.Semesters)
                 .HasForeignKey(d => d.AcademicYearId)
@@ -516,6 +522,9 @@ public partial class SoDauBaiContext : DbContext
 
             entity.Property(e => e.SubjectId).HasColumnName("subjectId");
             entity.Property(e => e.AcademicYearId).HasColumnName("academicYearId");
+            entity.Property(e => e.Status)
+                .HasDefaultValue(true)
+                .HasColumnName("status");
             entity.Property(e => e.SubjectName)
                 .HasMaxLength(100)
                 .HasColumnName("subjectName");

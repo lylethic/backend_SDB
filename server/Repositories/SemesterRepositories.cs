@@ -32,8 +32,8 @@ namespace server.Repositories
           return new ResponseData<SemesterDto>(409, "Semester already exists");
         }
 
-        var sqlInsert = @"INSERT INTO Semester (academicYearId, semesterName, dateStart, dateEnd, description) 
-                          VALUES (@academicYearId, @semesterName, @dateStart, @dateEnd, @description);
+        var sqlInsert = @"INSERT INTO Semester (academicYearId, semesterName, dateStart, dateEnd, description, status) 
+                          VALUES (@academicYearId, @semesterName, @dateStart, @dateEnd, @description, @status);
                           SELECT CAST(SCOPE_IDENTITY() as int);"
         ;
 
@@ -46,7 +46,8 @@ namespace server.Repositories
           new SqlParameter("@semesterName", model.SemesterName),
           new SqlParameter("@dateStart", dateStart),
           new SqlParameter("@dateEnd", dateEnd),
-          new SqlParameter("@description", model.Description)
+          new SqlParameter("@description", model.Description),
+          new SqlParameter("@status", model.Status)
         );
 
         var result = new SemesterDto
@@ -56,7 +57,8 @@ namespace server.Repositories
           SemesterName = model.SemesterName,
           DateStart = model.DateStart,
           DateEnd = model.DateEnd,
-          Description = model.Description
+          Description = model.Description,
+          Status = model.Status,
         };
 
         return new ResponseData<SemesterDto>(200, result);
@@ -100,9 +102,11 @@ namespace server.Repositories
 				                    s.semesterName, 
 				                    s.dateStart, 
 				                    s.dateEnd,
-				                    a.academicYearId, a.displayAcademicYear_Name, 
+				                    a.academicYearId, 
+                            a.displayAcademicYear_Name, 
 				                    a.yearStart, 
-				                    a.yearEnd
+				                    a.yearEnd,
+                            s.status
                     FROM Semester s INNER JOIN
                     AcademicYear A ON S.academicYearId = A.academicYearId
                     WHERE s.SemesterId = @id";
@@ -115,6 +119,7 @@ namespace server.Repositories
             SemesterName = x.SemesterName,
             DateStart = x.DateStart,
             DateEnd = x.DateEnd,
+            Status = x.Status,
             AcademicYearId = x.AcademicYearId,
             AcademicYear = new AcademicYear
             {
@@ -136,6 +141,7 @@ namespace server.Repositories
           SemesterName = semester.SemesterName,
           DateStart = semester.DateStart,
           DateEnd = semester.DateEnd,
+          Status = semester.Status,
           AcademicYearId = semester.AcademicYearId,
           DisplayAcademicYearName = semester.AcademicYear.DisplayAcademicYearName,
           YearStart = semester.AcademicYear.YearStart,
@@ -150,7 +156,7 @@ namespace server.Repositories
       }
     }
 
-    public async Task<List<SemesterDto>> GetSemesters(int pageNumber, int pageSize)
+    public async Task<ResponseData<List<SemesterDto>>> GetSemesters(int pageNumber, int pageSize)
     {
       try
       {
@@ -173,20 +179,21 @@ namespace server.Repositories
           AcademicYearId = x.AcademicYearId,
           DateStart = x.DateStart,
           DateEnd = x.DateEnd,
-          Description = x.Description
+          Description = x.Description,
+          Status = x.Status,
         }).ToList();
 
-        return result;
+        return new ResponseData<List<SemesterDto>>(200, result);
       }
       catch (Exception ex)
       {
-        Console.WriteLine(ex.Message);
-        throw new Exception($"Error: {ex.Message}");
+        return new ResponseData<List<SemesterDto>>(500, $"Server error: {ex.Message}");
       }
     }
 
     public async Task<ResponseData<SemesterDto>> UpdateSemester(int id, SemesterDto model)
     {
+      using var transaction = await _context.Database.BeginTransactionAsync();
       try
       {
         // Check if the teacher exists in the database
@@ -242,7 +249,7 @@ namespace server.Repositories
 
         if (hasChanges)
         {
-          if (queryBuilder[queryBuilder.Length - 2] == ',')
+          if (queryBuilder[^2] == ',')
           {
             queryBuilder.Length -= 2;
           }
@@ -253,21 +260,22 @@ namespace server.Repositories
           // Execute the update query
           var updateQuery = queryBuilder.ToString();
           await _context.Database.ExecuteSqlRawAsync(updateQuery, parameters.ToArray());
-
-          return new ResponseData<SemesterDto>(200, "Semester updated Thành côngy");
+          await transaction.CommitAsync();
+          return new ResponseData<SemesterDto>(200, "Cập nhật Thành công");
         }
         else
         {
-          return new ResponseData<SemesterDto>(200, "No changes detected");
+          return new ResponseData<SemesterDto>(200, "Không phát hiện sự thay đổi");
         }
       }
       catch (Exception ex)
       {
+        await transaction.RollbackAsync();
         return new ResponseData<SemesterDto>(500, $"Server Error: {ex.Message}");
       }
     }
 
-    public async Task<string> ImportExcelFile(IFormFile file)
+    public async Task<ResponseData<string>> ImportExcelFile(IFormFile file)
     {
       try
       {
@@ -305,7 +313,9 @@ namespace server.Repositories
                 }
 
                 // Check if there are no more rows or empty rows
-                if (reader.GetValue(1) == null && reader.GetValue(2) == null && reader.GetValue(3) == null && reader.GetValue(4) == null && reader.GetValue(5) == null)
+                if (reader.GetValue(1) == null && reader.GetValue(2) == null
+                && reader.GetValue(3) == null && reader.GetValue(4) == null
+                && reader.GetValue(5) == null && reader.GetValue(6) == null)
                 {
                   // Stop processing when an empty row is encountered
                   break;
@@ -319,7 +329,8 @@ namespace server.Repositories
                   ?? DateOnly.FromDateTime(DateTime.UtcNow),
                   DateEnd = ExcelHelper.ConvertExcelDateToDateOnly(reader.GetValue(4))
                   ?? DateOnly.FromDateTime(DateTime.UtcNow),
-                  Description = reader.GetValue(5).ToString()
+                  Description = reader.GetValue(5).ToString(),
+                  Status = Convert.ToBoolean(reader.GetValue(6))
                 };
 
                 await _context.Semesters.AddAsync(mySemester);
@@ -328,13 +339,13 @@ namespace server.Repositories
             } while (reader.NextResult());
           }
 
-          return "Thành côngy.";
+          return new ResponseData<string>(200, "Thành công");
         }
-        return "No file uploaded";
+        return new ResponseData<string>(200, "Không có tệp nào được tải lên");
       }
       catch (Exception ex)
       {
-        throw new Exception($"Error while uploading file: {ex.Message}");
+        return new ResponseData<string>(200, $"Server error: {ex.Message}");
       }
     }
 
@@ -346,7 +357,7 @@ namespace server.Repositories
       {
         if (ids is null || ids.Count == 0)
         {
-          return new ResponseData<string>(400, "No IDs provided.");
+          return new ResponseData<string>(400, "Không có mã số nào được cung cấp");
         }
 
         var idList = string.Join(",", ids);
@@ -357,12 +368,12 @@ namespace server.Repositories
 
         if (delete == 0)
         {
-          return new ResponseData<string>(404, "No Semester found to delete");
+          return new ResponseData<string>(404, "Mã số không tồn tại");
         }
 
         await transaction.CommitAsync();
 
-        return new ResponseData<string>(200, "Deleted");
+        return new ResponseData<string>(200, "Đã xóa");
       }
       catch (Exception ex)
       {

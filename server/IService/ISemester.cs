@@ -9,7 +9,7 @@ namespace server.IService
 
     Task<ResponseData<SemesterResData>> GetSemester(int id);
 
-    Task<List<SemesterDto>> GetSemesters(int pageNumber, int pageSize);
+    Task<ResponseData<List<SemesterDto>>> GetSemesters(int pageNumber, int pageSize);
 
     Task<ResponseData<SemesterDto>> DeleteSemester(int id);
 
@@ -17,6 +17,6 @@ namespace server.IService
 
     Task<ResponseData<string>> BulkDelete(List<int> ids);
 
-    Task<string> ImportExcelFile(IFormFile file);
+    Task<ResponseData<string>> ImportExcelFile(IFormFile file);
   }
 }

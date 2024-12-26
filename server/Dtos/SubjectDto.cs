@@ -14,5 +14,6 @@
 
     public DateOnly? YearEnd { get; set; }
 
+    public bool Status { get; set; }
   }
 }

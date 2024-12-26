@@ -15,6 +15,8 @@ public partial class AcademicYear
 
     public string? Description { get; set; }
 
+    public bool Status { get; set; }
+
     public virtual ICollection<BiaSoDauBai> BiaSoDauBais { get; set; } = new List<BiaSoDauBai>();
 
     public virtual ICollection<Class> Classes { get; set; } = new List<Class>();

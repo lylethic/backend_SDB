@@ -33,8 +33,8 @@ namespace server.Repositories
           return new ResponseData<AcademicYearDto>(409, "AcademicYear already exists");
         }
 
-        var sqlInsert = @"INSERT INTO AcademicYear (displayAcademicYear_Name, YearStart, YearEnd, Description) 
-                          VALUES (@displayAcademicYear_Name, @YearStart ,@YearEnd, @Description);
+        var sqlInsert = @"INSERT INTO AcademicYear (displayAcademicYear_Name, YearStart, YearEnd, Description, Status) 
+                          VALUES (@displayAcademicYear_Name, @YearStart ,@YearEnd, @Description, @Status);
                           SELECT CAST(SCOPE_IDENTITY() as int);"
         ;
 
@@ -47,7 +47,8 @@ namespace server.Repositories
           new SqlParameter("@displayAcademicYear_Name", model.DisplayAcademicYearName),
           new SqlParameter("@YearStart", yearStart),
           new SqlParameter("@YearEnd", yearEnd),
-          new SqlParameter("@Description", model.Description)
+          new SqlParameter("@Description", model.Description),
+          new SqlParameter("@Status", model.Status)
         );
 
         var result = new AcademicYearDto
@@ -57,6 +58,7 @@ namespace server.Repositories
           YearStart = model.YearStart,
           YearEnd = model.YearEnd,
           Description = model.Description,
+          Status = model.Status,
         };
 
         return new ResponseData<AcademicYearDto>(200, result);
@@ -112,6 +114,7 @@ namespace server.Repositories
           YearStart = academicYear.YearStart,
           YearEnd = academicYear.YearEnd,
           Description = academicYear.Description,
+          Status = academicYear.Status,
         };
 
         return new ResponseData<AcademicYearDto>(200, "Thành công", result);
@@ -132,8 +135,9 @@ namespace server.Repositories
         var countAllAcademicYear = _context.AcademicYears.AsNoTracking().AsQueryable();
         int totalResults = await countAllAcademicYear.CountAsync();
 
-        var query = @"SELECT * FROM AcademicYear 
-                      ORDER BY ACADEMICYEARID
+        var query = @"SELECT * 
+                      FROM AcademicYear
+                      ORDER BY CASE WHEN Status = 1 THEN 1 ELSE 0 END desc
                       OFFSET @skip ROWS
                       FETCH NEXT @pageSize ROWS ONLY";
 
@@ -150,6 +154,7 @@ namespace server.Repositories
           YearStart = x.YearStart,
           YearEnd = x.YearEnd,
           Description = x.Description,
+          Status = x.Status,
         }).ToList();
 
         return new ResponseData<List<AcademicYearDto>>(200, "Thành công", result, totalResults);
@@ -163,6 +168,8 @@ namespace server.Repositories
 
     public async Task<ResponseData<AcademicYearDto>> UpdateAcademicYear(int id, AcademicYearDto model)
     {
+      using var transaction = await _context.Database.BeginTransactionAsync();
+
       try
       {
         // Check if exists in the database
@@ -176,44 +183,73 @@ namespace server.Repositories
           return new ResponseData<AcademicYearDto>(404, "Không tìm thấy năm học");
         }
 
+        bool hasChanges = false;
+
         // Build update query dynamically based on non-null fields
         var queryBuilder = new StringBuilder("UPDATE AcademicYear SET ");
         var parameters = new List<SqlParameter>();
 
-        if (!string.IsNullOrEmpty(model.DisplayAcademicYearName))
+        if (!string.IsNullOrEmpty(model.DisplayAcademicYearName) && model.DisplayAcademicYearName != existingAca.DisplayAcademicYearName)
         {
           queryBuilder.Append("DisplayAcademicYear_Name = @DisplayAcademicYear_Name, ");
           parameters.Add(new SqlParameter("@DisplayAcademicYear_Name", model.DisplayAcademicYearName));
+          hasChanges = true;
         }
 
-        queryBuilder.Append("YearStart = @YearStart, ");
-        parameters.Add(new SqlParameter("@YearStart", model.YearStart));
+        if (model.YearStart != existingAca.YearStart)
+        {
+          queryBuilder.Append("YearStart = @YearStart, ");
+          parameters.Add(new SqlParameter("@YearStart", model.YearStart));
+          hasChanges = true;
+        }
 
-        queryBuilder.Append("YearEnd = @YearEnd, ");
-        parameters.Add(new SqlParameter("@YearEnd", model.YearEnd));
+        if (model.YearEnd != existingAca.YearEnd)
+        {
+          queryBuilder.Append("YearEnd = @YearEnd, ");
+          parameters.Add(new SqlParameter("@YearEnd", model.YearEnd));
+          hasChanges = true;
+        }
 
-        if (!string.IsNullOrEmpty(model.Description))
+        if (!string.IsNullOrEmpty(model.Description) && model.Description != existingAca.Description)
         {
           queryBuilder.Append("Description = @Description, ");
           parameters.Add(new SqlParameter("@Description", model.Description));
+          hasChanges = true;
         }
-        // Remove trailing comma from the query if necessary
-        if (queryBuilder[queryBuilder.Length - 2] == ',')
+
+        if (model.Status != existingAca.Status)
         {
-          queryBuilder.Length -= 2;
+          queryBuilder.Append("Status = @Status, ");
+          parameters.Add(new SqlParameter("@Status", model.Status));
+          hasChanges = true;
         }
 
-        queryBuilder.Append(" WHERE academicYearId = @id");
-        parameters.Add(new SqlParameter("@id", id));
+        if (hasChanges)
+        {
 
-        // Execute the update query
-        var updateQuery = queryBuilder.ToString();
-        await _context.Database.ExecuteSqlRawAsync(updateQuery, [.. parameters]);
+          // Remove trailing comma from the query if necessary
+          if (queryBuilder[^2] == ',')
+          {
+            queryBuilder.Length -= 2;
+          }
 
-        return new ResponseData<AcademicYearDto>(200, "Cập nhật thành công");
+          queryBuilder.Append(" WHERE academicYearId = @id");
+          parameters.Add(new SqlParameter("@id", id));
+
+          // Execute the update query
+          var updateQuery = queryBuilder.ToString();
+          await _context.Database.ExecuteSqlRawAsync(updateQuery, [.. parameters]);
+          await transaction.CommitAsync();
+          return new ResponseData<AcademicYearDto>(200, "Cập nhật thành công");
+        }
+        else
+        {
+          return new ResponseData<AcademicYearDto>(200, "Không phát hiện sự thay đổi");
+        }
       }
       catch (Exception ex)
       {
+        await transaction.RollbackAsync();
         return new ResponseData<AcademicYearDto>(500, $"Server Error: {ex.Message}");
       }
     }
@@ -256,7 +292,8 @@ namespace server.Repositories
                   }
 
                   // Check if there are no more rows or empty rows
-                  if (reader.GetValue(1) == null && reader.GetValue(2) == null && reader.GetValue(3) == null && reader.GetValue(4) == null)
+                  if (reader.GetValue(1) == null && reader.GetValue(2) == null && reader.GetValue(3) == null
+                  && reader.GetValue(4) == null && reader.GetValue(5) == null)
                   {
                     // Stop processing when an empty row is encountered
                     break;
@@ -269,7 +306,8 @@ namespace server.Repositories
                     ?? DateOnly.FromDateTime(DateTime.UtcNow),
                     YearEnd = ExcelHelper.ConvertExcelDateToDateOnly(reader.GetValue(3))
                     ?? DateOnly.FromDateTime(DateTime.UtcNow),
-                    Description = reader.GetValue(4).ToString() ?? "null"
+                    Description = reader.GetValue(4).ToString() ?? "null",
+                    Status = Convert.ToBoolean(reader.GetValue(5))
                   };
 
                   await _context.AcademicYears.AddAsync(myAcademicYear);

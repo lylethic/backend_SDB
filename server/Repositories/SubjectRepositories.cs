@@ -33,13 +33,14 @@ namespace server.Repositories
           return new ResponseData<SubjectDto>(409, "Subject already exists");
         }
 
-        var sqlInsert = @"INSERT INTO SUBJECT (academicYearId, subjectName)
-                     VALUES (@academicYearId, @subjectName);
+        var sqlInsert = @"INSERT INTO SUBJECT (academicYearId, subjectName, status)
+                     VALUES (@academicYearId, @subjectName, @status);
                      SELECT CAST(SCOPE_IDENTITY() as int);";
 
         var insert = await _context.Database.ExecuteSqlRawAsync(sqlInsert,
           new SqlParameter("@academicYearId", model.AcademicYearId),
-          new SqlParameter("@subjectName", model.SubjectName)
+          new SqlParameter("@subjectName", model.SubjectName),
+          new SqlParameter("@status", model.Status)
           );
 
         var result = new SubjectDto
@@ -47,6 +48,7 @@ namespace server.Repositories
           SubjectId = insert,
           AcademicYearId = model.AcademicYearId,
           SubjectName = model.SubjectName,
+          Status = model.Status,
         };
 
         return new ResponseData<SubjectDto>(200, result);
@@ -92,15 +94,12 @@ namespace server.Repositories
 			                     a.academicYearId, 
 			                     a.displayAcademicYear_Name, 
 			                     FORMAT(a.yearStart, 'dd/MM/yyyy') AS formatDateStart, 
-			                     FORMAT(a.yearEnd, 'dd/MM/yyyy') AS formatDateEnd
-                    FROM 
-			                     dbo.SUBJECT s 
-                    RIGHT JOIN 
-			                     dbo.AcademicYear a 
-                    ON 
-			                     S.academicYearId = A.academicYearId
-                    WHERE  
-			                     S.subjectId = @id";
+			                     FORMAT(a.yearEnd, 'dd/MM/yyyy') AS formatDateEnd,
+                           s.status
+                    FROM dbo.SUBJECT s 
+                    RIGHT JOIN dbo.AcademicYear a 
+                    ON S.academicYearId = A.academicYearId
+                    WHERE S.subjectId = @id";
 
         var subject = await _context.Subjects
           .FromSqlRaw(find, new SqlParameter("@id", id))
@@ -108,6 +107,7 @@ namespace server.Repositories
           {
             SubjectId = x.SubjectId,
             SubjectName = x.SubjectName,
+            Status = x.Status,
             AcademicYear = new AcademicYear
             {
               AcademicYearId = x.AcademicYearId,
@@ -120,7 +120,7 @@ namespace server.Repositories
 
         if (subject is null)
         {
-          return new ResponseData<SubjectDto>(404, "Subject not found");
+          return new ResponseData<SubjectDto>(404, "Môn học không tồn tại");
         }
 
         var result = new SubjectDto
@@ -128,9 +128,10 @@ namespace server.Repositories
           SubjectId = id,
           AcademicYearId = subject.AcademicYearId,
           SubjectName = subject.SubjectName,
+          Status = subject.Status,
           DisplayAcademicYear_Name = subject.AcademicYear.DisplayAcademicYearName,
           YearStart = subject.AcademicYear.YearStart,
-          YearEnd = subject.AcademicYear.YearEnd
+          YearEnd = subject.AcademicYear.YearEnd,
         };
 
         return new ResponseData<SubjectDto>(200, result);
@@ -141,16 +142,16 @@ namespace server.Repositories
       }
     }
 
-    public async Task<List<SubjectDto>> GetSubjects(int pageNumber, int pageSize)
+    public async Task<ResponseData<List<SubjectDto>>> GetSubjects(int pageNumber, int pageSize)
     {
       try
       {
         var skip = (pageNumber - 1) * pageSize;
 
         var find = @"SELECT * 
-            FROM Subject ORDER BY SUBJECTNAME 
-            OFFSET @skip ROWS 
-            FETCH NEXT @pageSize ROWS ONLY;";
+                    FROM Subject ORDER BY SUBJECTNAME 
+                    OFFSET @skip ROWS 
+                    FETCH NEXT @pageSize ROWS ONLY;";
 
         var subject = await _context.Subjects.FromSqlRaw(find,
           new SqlParameter("@skip", skip),
@@ -162,19 +163,20 @@ namespace server.Repositories
           SubjectId = subject.SubjectId,
           AcademicYearId = subject.AcademicYearId,
           SubjectName = subject.SubjectName,
+          Status = subject.Status
         }).ToList();
 
-        return result;
+        return new ResponseData<List<SubjectDto>>(200, result);
       }
       catch (Exception ex)
       {
-        Console.WriteLine(ex.Message);
-        throw;
+        return new ResponseData<List<SubjectDto>>(500, $"{ex.Message}");
       }
     }
 
     public async Task<ResponseData<SubjectDto>> UpdateSubject(int id, SubjectDto model)
     {
+      using var transaction = await _context.Database.BeginTransactionAsync();
       try
       {
         var find = "SELECT * FROM Subject WHERE subjectId = @id";
@@ -185,33 +187,52 @@ namespace server.Repositories
 
         if (subject is null)
         {
-          return new ResponseData<SubjectDto>(404, "Subject not found");
+          return new ResponseData<SubjectDto>(404, "Không tìm thấy môn học");
         }
+        bool hasChanges = false;
 
         var queryBuilder = new StringBuilder("UPDATE Subject SET ");
         var parameters = new List<SqlParameter>();
 
-        if (model.AcademicYearId != 0 || !string.IsNullOrEmpty(model.SubjectName))
+        if (model.AcademicYearId != 0 && model.AcademicYearId != subject.AcademicYearId)
         {
           queryBuilder.Append("AcademicYearId = @AcademicYearId, ");
           parameters.Add(new SqlParameter("@AcademicYearId", model.AcademicYearId));
-
+          hasChanges = true;
+        }
+        if (!string.IsNullOrEmpty(model.SubjectName) && model.SubjectName != subject.SubjectName)
+        {
           queryBuilder.Append("SubjectName = @SubjectName, ");
           parameters.Add(new SqlParameter("@SubjectName", model.SubjectName));
+          hasChanges = true;
         }
 
-        if (queryBuilder[queryBuilder.Length - 2] == ',')
+        if (model.Status != subject.Status)
         {
-          queryBuilder.Length -= 2;
+          queryBuilder.Append("Status = @Status, ");
+          parameters.Add(new SqlParameter("@Status", model.Status));
+          hasChanges = true;
         }
 
-        queryBuilder.Append(" WHERE subjectId = @id");
-        parameters.Add(new SqlParameter("@id", id));
+        if (hasChanges)
+        {
+          if (queryBuilder[queryBuilder.Length - 2] == ',')
+          {
+            queryBuilder.Length -= 2;
+          }
 
-        var updateQuery = queryBuilder.ToString();
-        await _context.Database.ExecuteSqlRawAsync(updateQuery, parameters.ToArray());
+          queryBuilder.Append(" WHERE subjectId = @id");
+          parameters.Add(new SqlParameter("@id", id));
 
-        return new ResponseData<SubjectDto>(200, "Updated");
+          var updateQuery = queryBuilder.ToString();
+          await _context.Database.ExecuteSqlRawAsync(updateQuery, parameters.ToArray());
+          await transaction.CommitAsync();
+          return new ResponseData<SubjectDto>(200, "Đã cập nhật");
+        }
+        else
+        {
+          return new ResponseData<SubjectDto>(200, "Không phát hiện sự thay đổi");
+        }
       }
       catch (Exception ex)
       {
@@ -219,7 +240,7 @@ namespace server.Repositories
       }
     }
 
-    public async Task<string> ImportExcelFile(IFormFile file)
+    public async Task<ResponseData<string>> ImportExcelFile(IFormFile file)
     {
       try
       {
@@ -257,7 +278,7 @@ namespace server.Repositories
                 }
 
                 // Check if there are no more rows or empty rows
-                if (reader.GetValue(1) == null && reader.GetValue(2) == null)
+                if (reader.GetValue(1) == null && reader.GetValue(2) == null && reader.GetValue(3) == null)
                 {
                   // Stop processing when an empty row is encountered
                   break;
@@ -266,7 +287,8 @@ namespace server.Repositories
                 var mySubjects = new Models.Subject
                 {
                   AcademicYearId = Convert.ToInt16(reader.GetValue(1)),
-                  SubjectName = reader.GetValue(2).ToString() ?? "null"
+                  SubjectName = reader.GetValue(2).ToString() ?? "null",
+                  Status = Convert.ToBoolean(reader.GetValue(3))
                 };
 
                 await _context.Subjects.AddAsync(mySubjects);
@@ -275,13 +297,13 @@ namespace server.Repositories
             } while (reader.NextResult());
           }
 
-          return "Tải lên thành công";
+          return new ResponseData<string>(200, "Tải lên thành công");
         }
-        return "No file uploaded";
+        return new ResponseData<string>(200, "Không có tệp nào được tải lên");
       }
       catch (Exception ex)
       {
-        throw new Exception($"Error while uploading file: {ex.Message}");
+        return new ResponseData<string>(500, $"Server error: {ex.Message}");
       }
     }
 
@@ -293,7 +315,7 @@ namespace server.Repositories
       {
         if (ids is null || ids.Count == 0)
         {
-          return new ResponseData<string>(400, "No IDs provided.");
+          return new ResponseData<string>(400, "Không có mã môn học nào được cung cấp");
         }
 
         var idList = string.Join(",", ids);
@@ -304,12 +326,12 @@ namespace server.Repositories
 
         if (delete == 0)
         {
-          return new ResponseData<string>(404, "No SubjectId found to delete");
+          return new ResponseData<string>(404, "Môn học không tồn tại");
         }
 
         await transaction.CommitAsync();
 
-        return new ResponseData<string>(200, "Deleted");
+        return new ResponseData<string>(200, "Đã xóa");
       }
       catch (Exception ex)
       {

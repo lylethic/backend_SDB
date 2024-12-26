@@ -184,7 +184,7 @@ namespace server.Repositories
           Data = new LoginResData
           {
             Token = newAccessToken,
-            ExpiresAt = DateTime.UtcNow.AddHours(Convert.ToInt16(_config["JwtSettings:AccessTokenExpirationHours"])).ToString(),
+            ExpiresAt = DateTime.UtcNow.AddHours(Convert.ToInt16(_config["JwtSettings:AccessTokenExpirationHours"])),
           }
         };
       }

@@ -566,61 +566,93 @@ namespace server.Repositories
     {
       try
       {
-        // Total count query
-        // var countQuery = @"SELECT COUNT(*) 
-        //                    FROM dbo.ChiTietSoDauBai as ct
-        //                    LEFT JOIN dbo.BiaSoDauBai as b ON ct.biaSoDauBaiId = b.biaSoDauBaiId 
-        //                    WHERE b.schoolId = @schoolId and ct.weekId = @weekId and ct.biaSoDauBaiId = @biaId and b.classId = @classId";
+        var result = from ct in _context.ChiTietSoDauBais
+                     join b in _context.BiaSoDauBais on ct.BiaSoDauBaiId equals b.BiaSoDauBaiId into bGroup
+                     from b in bGroup.DefaultIfEmpty()
+                     join c in _context.Classes on b.ClassId equals c.ClassId into cGroup
+                     from c in cGroup.DefaultIfEmpty()
+                     join t in _context.Teachers on c.TeacherId equals t.TeacherId into tGroup
+                     from t in tGroup.DefaultIfEmpty()
+                     where b.AcademicyearId == queryChiTiet.AcademicYearId &&
+                           ct.SemesterId == queryChiTiet.SemesterId &&
+                           b.SchoolId == queryChiTiet.SchoolId &&
+                           ct.WeekId == queryChiTiet.WeekId &&
+                           b.BiaSoDauBaiId == queryChiTiet.BiaSoDauBaiId
+                     select new ChiTietSDBResData
+                     {
+                       ChiTietSoDauBaiId = ct.ChiTietSoDauBaiId,
+                       BiaSoDauBaiId = ct.BiaSoDauBaiId,
+                       ClassName = c.ClassName,
+                       SemesterId = ct.SemesterId,
+                       SemesterName = ct.Semester.SemesterName,
+                       WeekId = ct.WeekId,
+                       WeekName = ct.Week.WeekName,
+                       SubjectId = ct.SubjectId,
+                       SubjectName = ct.Subject.SubjectName,
+                       ClassificationId = ct.ClassificationId,
+                       ClassifyName = ct.Classification.ClassifyName,
+                       DaysOfTheWeek = ct.DaysOfTheWeek,
+                       ThoiGian = ct.ThoiGian.ToString("dd/MM/yyyy"),
+                       BuoiHoc = ct.BuoiHoc,
+                       TietHoc = ct.TietHoc,
+                       LessonContent = ct.LessonContent,
+                       Attend = ct.Attend,
+                       NoteComment = ct.NoteComment,
+                       CreatedBy = _context.Teachers
+                                        .Where(teacher => teacher.TeacherId == ct.CreatedBy)
+                                        .Select(teacher => teacher.Fullname)
+                                        .FirstOrDefault(),
+                       CreatedAt = ct.CreatedAt.ToString(),
+                       UpdatedAt = ct.UpdatedAt.ToString(),
+                     };
 
-        // var totalCount = await _context.Database.ExecuteSqlRawAsync(countQuery,
-        //     new SqlParameter("@schoolId", schoolId),
-        //     new SqlParameter("@weekId", weekId),
-        //     new SqlParameter("@biaId", biaId)
-        // );
+        var chitietSoDauBai = await result.ToListAsync();
 
         var query = @"SELECT ct.*, 
-	                      c.className, 
-	                      t.teacherId, 
-	                      t.fullname
+                            c.className,
+                            (SELECT fullname FROM Teacher WHERE teacherId = ct.CreatedBy) AS CreatedByFullname
                       FROM dbo.ChiTietSoDauBai as ct
                       LEFT JOIN dbo.BiaSoDauBai as b ON ct.biaSoDauBaiId = b.biaSoDauBaiId 
                       LEFT JOIN dbo.Class as c ON b.classId = c.classId 
-                      LEFT JOIN dbo.Teacher as t ON c.teacherId = t.teacherId
-                      WHERE b.academicyearId = @academicYearId and ct.semesterId = @semesterId and b.schoolId = @schoolId and ct.weekId = @weekId and b.classId = @classId
-                      ";
+                      LEFT JOIN dbo.Teacher as t ON c.teacherId = t.teacherId 
+                      WHERE b.academicyearId = @academicYearId 
+                      AND ct.semesterId = @semesterId 
+                      AND b.schoolId = @schoolId 
+                      AND ct.weekId = @weekId 
+                      AND b.biaSoDauBaiId = @biaSoDauBaiId";
 
-        var chitietSoDauBai = await _context.ChiTietSoDauBais.FromSqlRaw(query,
-        new SqlParameter("@academicYearId", queryChiTiet.AcademicYearId),
-        new SqlParameter("@semesterId", queryChiTiet.SemesterId),
-        new SqlParameter("@schoolId", queryChiTiet.SchoolId),
-        new SqlParameter("@weekId", queryChiTiet.WeekId),
-        new SqlParameter("@classId", queryChiTiet.ClassId)
-        )
-        .Select(ct => new ChiTietSDBResData
-        {
-          ChiTietSoDauBaiId = ct.ChiTietSoDauBaiId,
-          BiaSoDauBaiId = ct.BiaSoDauBaiId,
-          ClassName = ct.BiaSoDauBai.Class.ClassName,
-          SemesterId = ct.SemesterId,
-          SemesterName = ct.Semester.SemesterName,
-          WeekId = ct.WeekId,
-          WeekName = ct.Week.WeekName,
-          SubjectId = ct.SubjectId,
-          SubjectName = ct.Subject.SubjectName,
-          ClassificationId = ct.ClassificationId,
-          ClassifyName = ct.Classification.ClassifyName,
-          DaysOfTheWeek = ct.DaysOfTheWeek,
-          ThoiGian = ct.ThoiGian.ToString("dd/MM/yyyy"),
-          BuoiHoc = ct.BuoiHoc,
-          TietHoc = ct.TietHoc,
-          LessonContent = ct.LessonContent,
-          Attend = ct.Attend,
-          NoteComment = ct.NoteComment,
-          CreatedBy = ct.BiaSoDauBai.Class.ClassName,
-          CreatedAt = ct.CreatedAt.HasValue ? ct.CreatedAt.Value.ToString("dd/MM/yyyy") : string.Empty,
-          UpdatedAt = ct.UpdatedAt.HasValue ? ct.UpdatedAt.Value.ToString("dd/MM/yyyy") : string.Empty,
-        })
-        .ToListAsync();
+        // var chitietSoDauBai = await _context.ChiTietSoDauBais.FromSqlRaw(query,
+        // new SqlParameter("@academicYearId", queryChiTiet.AcademicYearId),
+        // new SqlParameter("@semesterId", queryChiTiet.SemesterId),
+        // new SqlParameter("@schoolId", queryChiTiet.SchoolId),
+        // new SqlParameter("@weekId", queryChiTiet.WeekId),
+        // new SqlParameter("@biaSoDauBaiId", queryChiTiet.BiaSoDauBaiId)
+        // )
+        // .Select(ct => new ChiTietSDBResData
+        // {
+        //   ChiTietSoDauBaiId = ct.ChiTietSoDauBaiId,
+        //   BiaSoDauBaiId = ct.BiaSoDauBaiId,
+        //   ClassName = ct.BiaSoDauBai.Class.ClassName,
+        //   SemesterId = ct.SemesterId,
+        //   SemesterName = ct.Semester.SemesterName,
+        //   WeekId = ct.WeekId,
+        //   WeekName = ct.Week.WeekName,
+        //   SubjectId = ct.SubjectId,
+        //   SubjectName = ct.Subject.SubjectName,
+        //   ClassificationId = ct.ClassificationId,
+        //   ClassifyName = ct.Classification.ClassifyName,
+        //   DaysOfTheWeek = ct.DaysOfTheWeek,
+        //   ThoiGian = ct.ThoiGian.ToString("dd/MM/yyyy"),
+        //   BuoiHoc = ct.BuoiHoc,
+        //   TietHoc = ct.TietHoc,
+        //   LessonContent = ct.LessonContent,
+        //   Attend = ct.Attend,
+        //   NoteComment = ct.NoteComment,
+        //   CreatedBy = ct.,
+        //   CreatedAt = ct.CreatedAt.HasValue ? ct.CreatedAt.Value.ToString("dd/MM/yyyy") : string.Empty,
+        //   UpdatedAt = ct.UpdatedAt.HasValue ? ct.UpdatedAt.Value.ToString("dd/MM/yyyy") : string.Empty,
+        // })
+        // .ToListAsync();
 
         if (chitietSoDauBai.Count == 0)
         {

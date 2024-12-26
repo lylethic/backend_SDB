@@ -11,6 +11,7 @@
     public DateOnly DateStart { get; set; }
 
     public DateOnly DateEnd { get; set; }
+    public bool Status { get; set; }
 
     public string? Description { get; set; }
 
