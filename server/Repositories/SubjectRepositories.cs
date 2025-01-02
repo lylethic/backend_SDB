@@ -4,7 +4,6 @@ using Microsoft.EntityFrameworkCore;
 using server.Data;
 using server.Dtos;
 using server.IService;
-using server.Models;
 using System.Text;
 
 
@@ -13,6 +12,7 @@ namespace server.Repositories
   public class SubjectRepositories : ISubject
   {
     readonly SoDauBaiContext _context;
+
     public SubjectRepositories(SoDauBaiContext context)
     {
       this._context = context;
@@ -33,12 +33,12 @@ namespace server.Repositories
           return new ResponseData<SubjectDto>(409, "Subject already exists");
         }
 
-        var sqlInsert = @"INSERT INTO SUBJECT (academicYearId, subjectName, status)
+        var sqlInsert = @"INSERT INTO SUBJECT (gradeId, subjectName, status)
                      VALUES (@academicYearId, @subjectName, @status);
                      SELECT CAST(SCOPE_IDENTITY() as int);";
 
         var insert = await _context.Database.ExecuteSqlRawAsync(sqlInsert,
-          new SqlParameter("@academicYearId", model.AcademicYearId),
+          new SqlParameter("@gradeId", model.GradeId),
           new SqlParameter("@subjectName", model.SubjectName),
           new SqlParameter("@status", model.Status)
           );
@@ -46,7 +46,7 @@ namespace server.Repositories
         var result = new SubjectDto
         {
           SubjectId = insert,
-          AcademicYearId = model.AcademicYearId,
+          GradeId = model.GradeId,
           SubjectName = model.SubjectName,
           Status = model.Status,
         };
@@ -85,92 +85,77 @@ namespace server.Repositories
       }
     }
 
-    public async Task<ResponseData<SubjectDto>> GetSubject(int id)
+    public async Task<ResponseData<SubjectRes>> GetSubject(int id)
     {
       try
       {
-        var find = @"SELECT s.subjectId, 
-			                     s.subjectName, 
-			                     a.academicYearId, 
-			                     a.displayAcademicYear_Name, 
-			                     FORMAT(a.yearStart, 'dd/MM/yyyy') AS formatDateStart, 
-			                     FORMAT(a.yearEnd, 'dd/MM/yyyy') AS formatDateEnd,
-                           s.status
-                    FROM dbo.SUBJECT s 
-                    RIGHT JOIN dbo.AcademicYear a 
-                    ON S.academicYearId = A.academicYearId
-                    WHERE S.subjectId = @id";
+        var querySubject = from sub in _context.Subjects
+                           join grade in _context.Grades on sub.GradeId equals grade.GradeId into gradeGroup
+                           from grade in gradeGroup.DefaultIfEmpty()
+                           join acad in _context.AcademicYears on grade.AcademicYearId equals acad.AcademicYearId into acadGroup
+                           from acad in acadGroup.DefaultIfEmpty()
+                           select new SubjectRes
+                           {
+                             SubjectId = id,
+                             SubjectName = sub.SubjectName,
+                             GradeId = grade.GradeId,
+                             GradeName = grade.GradeName,
+                             DisplayAcademicYear_Name = acad.DisplayAcademicYearName,
+                             YearStart = acad.YearStart.ToString("dd/MM/yyyy"),
+                             YearEnd = acad.YearEnd.ToString("dd/MM/yyyy")
+                           };
 
-        var subject = await _context.Subjects
-          .FromSqlRaw(find, new SqlParameter("@id", id))
-          .Select(static x => new Subject
-          {
-            SubjectId = x.SubjectId,
-            SubjectName = x.SubjectName,
-            Status = x.Status,
-            AcademicYear = new AcademicYear
-            {
-              AcademicYearId = x.AcademicYearId,
-              DisplayAcademicYearName = x.AcademicYear.DisplayAcademicYearName,
-              YearStart = x.AcademicYear.YearStart,
-              YearEnd = x.AcademicYear.YearEnd,
-            }
-          })
-          .FirstOrDefaultAsync();
+        var result = await querySubject.FirstOrDefaultAsync();
 
-        if (subject is null)
+        if (result is null)
         {
-          return new ResponseData<SubjectDto>(404, "Môn học không tồn tại");
+          return new ResponseData<SubjectRes>(404, "Môn học không tồn tại");
         }
 
-        var result = new SubjectDto
-        {
-          SubjectId = id,
-          AcademicYearId = subject.AcademicYearId,
-          SubjectName = subject.SubjectName,
-          Status = subject.Status,
-          DisplayAcademicYear_Name = subject.AcademicYear.DisplayAcademicYearName,
-          YearStart = subject.AcademicYear.YearStart,
-          YearEnd = subject.AcademicYear.YearEnd,
-        };
-
-        return new ResponseData<SubjectDto>(200, result);
+        return new ResponseData<SubjectRes>(200, result);
       }
       catch (Exception ex)
       {
-        return new ResponseData<SubjectDto>(500, $"Server error: {ex.Message}");
+        return new ResponseData<SubjectRes>(500, $"Server error: {ex.Message}");
       }
     }
 
-    public async Task<ResponseData<List<SubjectDto>>> GetSubjects(int pageNumber, int pageSize)
+    public async Task<ResponseData<List<SubjectRes>>> GetSubjects(QueryObject? query)
     {
       try
       {
-        var skip = (pageNumber - 1) * pageSize;
+        query ??= new QueryObject();
+        var skip = (query.PageNumber - 1) * query.PageSize;
 
-        var find = @"SELECT * 
-                    FROM Subject ORDER BY SUBJECTNAME 
-                    OFFSET @skip ROWS 
-                    FETCH NEXT @pageSize ROWS ONLY;";
+        var querySubject = from sub in _context.Subjects
+                           join grade in _context.Grades on sub.GradeId equals grade.GradeId into gradeGroup
+                           from grade in gradeGroup.DefaultIfEmpty()
+                           join acad in _context.AcademicYears on grade.AcademicYearId equals acad.AcademicYearId into acadGroup
+                           from acad in acadGroup.DefaultIfEmpty()
+                           select new SubjectRes
+                           {
+                             SubjectId = sub.SubjectId,
+                             SubjectName = sub.SubjectName,
+                             GradeId = grade.GradeId,
+                             GradeName = grade.GradeName,
+                             DisplayAcademicYear_Name = acad.DisplayAcademicYearName,
+                             YearStart = acad.YearStart.ToString("dd/MM/yyyy"),
+                             YearEnd = acad.YearEnd.ToString("dd/MM/yyyy")
+                           };
 
-        var subject = await _context.Subjects.FromSqlRaw(find,
-          new SqlParameter("@skip", skip),
-          new SqlParameter("@pageSize", pageSize)
-          ).ToListAsync() ?? throw new Exception("Empty");
+        var result = await querySubject
+           .AsNoTracking()
+            .OrderBy(x => x.GradeId)
+            .ThenBy(x => x.GradeName)
+            .Skip(skip)
+            .Take(query.PageSize)
+          .ToListAsync();
 
-        var result = subject.Select(subject => new SubjectDto
-        {
-          SubjectId = subject.SubjectId,
-          AcademicYearId = subject.AcademicYearId,
-          SubjectName = subject.SubjectName,
-          Status = subject.Status
-        }).ToList();
-
-        return new ResponseData<List<SubjectDto>>(200, result);
+        return new ResponseData<List<SubjectRes>>(200, result);
       }
       catch (Exception ex)
       {
-        return new ResponseData<List<SubjectDto>>(500, $"{ex.Message}");
+        return new ResponseData<List<SubjectRes>>(500, $"{ex.Message}");
       }
     }
 
@@ -194,10 +179,10 @@ namespace server.Repositories
         var queryBuilder = new StringBuilder("UPDATE Subject SET ");
         var parameters = new List<SqlParameter>();
 
-        if (model.AcademicYearId != 0 && model.AcademicYearId != subject.AcademicYearId)
+        if (model.GradeId != 0 && model.GradeId != subject.GradeId)
         {
-          queryBuilder.Append("AcademicYearId = @AcademicYearId, ");
-          parameters.Add(new SqlParameter("@AcademicYearId", model.AcademicYearId));
+          queryBuilder.Append("GradeId = @GradeId, ");
+          parameters.Add(new SqlParameter("@GradeId", model.GradeId));
           hasChanges = true;
         }
         if (!string.IsNullOrEmpty(model.SubjectName) && model.SubjectName != subject.SubjectName)
@@ -286,7 +271,7 @@ namespace server.Repositories
 
                 var mySubjects = new Models.Subject
                 {
-                  AcademicYearId = Convert.ToInt16(reader.GetValue(1)),
+                  GradeId = Convert.ToInt16(reader.GetValue(1)),
                   SubjectName = reader.GetValue(2).ToString() ?? "null",
                   Status = Convert.ToBoolean(reader.GetValue(3))
                 };

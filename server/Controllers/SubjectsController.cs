@@ -21,12 +21,16 @@ namespace server.Controllers
 
     // GET: api/<SubjectsController>
     [HttpGet]
-    public async Task<IActionResult> GetAllSubject(int pageNumber = 1, int pageSize = 50)
+    public async Task<IActionResult> GetAllSubject([FromQuery] QueryObject? query)
     {
-      var result = await _subjectRepo.GetSubjects(pageNumber, pageSize);
+      var result = await _subjectRepo.GetSubjects(query);
       if (result.StatusCode == 200)
       {
-        return Ok(result);
+        return Ok(new
+        {
+          status = result.StatusCode,
+          data = result.Data
+        });
       }
 
       return StatusCode(500, result);
@@ -40,7 +44,11 @@ namespace server.Controllers
 
       if (result.StatusCode == 200)
       {
-        return Ok(result);
+        return Ok(new
+        {
+          status = result.StatusCode,
+          data = result.Data
+        });
       }
 
       if (result.StatusCode == 404)

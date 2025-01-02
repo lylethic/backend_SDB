@@ -92,17 +92,17 @@ namespace server.Repositories
       }
     }
 
-    public async Task<List<ClassifyDto>> GetClassifys(int pageNumber, int pageSize)
+    public async Task<ResponseData<List<ClassifyDto>>> GetClassifys(QueryObject? queryObject)
     {
       try
       {
-        // Calculate the number of records to skip based on the page number and size
-        var skip = (pageNumber - 1) * pageSize;
+        queryObject ??= new QueryObject();
+        var skip = (queryObject.PageNumber - 1) * queryObject.PageSize;
 
-        // Modify the query to use Skip and Take for pagination
         var roles = await _context.Classifications
-            .Skip(skip)     // Skip the first (pageNumber - 1) * pageSize records
-            .Take(pageSize) // Take pageSize records
+            .AsNoTracking()
+            .Skip(skip)
+            .Take(queryObject.PageSize)
             .ToListAsync();
 
         var result = roles.Select(x => new ClassifyDto
@@ -112,12 +112,11 @@ namespace server.Repositories
           Score = x.Score,
         }).ToList();
 
-        return result;
+        return new ResponseData<List<ClassifyDto>>(200, result);
       }
       catch (Exception ex)
       {
-        Console.WriteLine(ex.Message);
-        throw;
+        return new ResponseData<List<ClassifyDto>>(500, $"Server error: {ex.Message}");
       }
     }
 
@@ -244,7 +243,7 @@ namespace server.Repositories
       }
     }
 
-    public async Task<string> ImportExcel(IFormFile file)
+    public async Task<ResponseData<string>> ImportExcel(IFormFile file)
     {
       try
       {
@@ -301,14 +300,14 @@ namespace server.Repositories
             }
           }
 
-          return "Tải lên thành công";
+          return new ResponseData<string>(200, "Tải lên thành công");
         }
-        return "No file uploaded";
+        return new ResponseData<string>(400, "Không có tệp nào được tải lên");
 
       }
       catch (Exception ex)
       {
-        throw new Exception($"Error while uploading file: {ex.Message}");
+        return new ResponseData<string>(500, $"Server error: {ex.Message}");
       }
     }
   }

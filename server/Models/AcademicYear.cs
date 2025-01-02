@@ -26,6 +26,4 @@ public partial class AcademicYear
     public virtual ICollection<PhanCongChuNhiem> PhanCongChuNhiems { get; set; } = new List<PhanCongChuNhiem>();
 
     public virtual ICollection<Semester> Semesters { get; set; } = new List<Semester>();
-
-    public virtual ICollection<Subject> Subjects { get; set; } = new List<Subject>();
 }

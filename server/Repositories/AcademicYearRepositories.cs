@@ -226,7 +226,6 @@ namespace server.Repositories
 
         if (hasChanges)
         {
-
           // Remove trailing comma from the query if necessary
           if (queryBuilder[^2] == ',')
           {

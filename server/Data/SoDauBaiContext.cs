@@ -521,7 +521,7 @@ public partial class SoDauBaiContext : DbContext
             entity.ToTable("Subject");
 
             entity.Property(e => e.SubjectId).HasColumnName("subjectId");
-            entity.Property(e => e.AcademicYearId).HasColumnName("academicYearId");
+            entity.Property(e => e.GradeId).HasColumnName("gradeId");
             entity.Property(e => e.Status)
                 .HasDefaultValue(true)
                 .HasColumnName("status");
@@ -529,10 +529,9 @@ public partial class SoDauBaiContext : DbContext
                 .HasMaxLength(100)
                 .HasColumnName("subjectName");
 
-            entity.HasOne(d => d.AcademicYear).WithMany(p => p.Subjects)
-                .HasForeignKey(d => d.AcademicYearId)
-                .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__Subject__academi__5EBF139D");
+            entity.HasOne(d => d.Grade).WithMany(p => p.Subjects)
+                .HasForeignKey(d => d.GradeId)
+                .HasConstraintName("FK_Subject_Grade");
         });
 
         modelBuilder.Entity<SubjectAssignment>(entity =>

@@ -608,52 +608,6 @@ namespace server.Repositories
 
         var chitietSoDauBai = await result.ToListAsync();
 
-        var query = @"SELECT ct.*, 
-                            c.className,
-                            (SELECT fullname FROM Teacher WHERE teacherId = ct.CreatedBy) AS CreatedByFullname
-                      FROM dbo.ChiTietSoDauBai as ct
-                      LEFT JOIN dbo.BiaSoDauBai as b ON ct.biaSoDauBaiId = b.biaSoDauBaiId 
-                      LEFT JOIN dbo.Class as c ON b.classId = c.classId 
-                      LEFT JOIN dbo.Teacher as t ON c.teacherId = t.teacherId 
-                      WHERE b.academicyearId = @academicYearId 
-                      AND ct.semesterId = @semesterId 
-                      AND b.schoolId = @schoolId 
-                      AND ct.weekId = @weekId 
-                      AND b.biaSoDauBaiId = @biaSoDauBaiId";
-
-        // var chitietSoDauBai = await _context.ChiTietSoDauBais.FromSqlRaw(query,
-        // new SqlParameter("@academicYearId", queryChiTiet.AcademicYearId),
-        // new SqlParameter("@semesterId", queryChiTiet.SemesterId),
-        // new SqlParameter("@schoolId", queryChiTiet.SchoolId),
-        // new SqlParameter("@weekId", queryChiTiet.WeekId),
-        // new SqlParameter("@biaSoDauBaiId", queryChiTiet.BiaSoDauBaiId)
-        // )
-        // .Select(ct => new ChiTietSDBResData
-        // {
-        //   ChiTietSoDauBaiId = ct.ChiTietSoDauBaiId,
-        //   BiaSoDauBaiId = ct.BiaSoDauBaiId,
-        //   ClassName = ct.BiaSoDauBai.Class.ClassName,
-        //   SemesterId = ct.SemesterId,
-        //   SemesterName = ct.Semester.SemesterName,
-        //   WeekId = ct.WeekId,
-        //   WeekName = ct.Week.WeekName,
-        //   SubjectId = ct.SubjectId,
-        //   SubjectName = ct.Subject.SubjectName,
-        //   ClassificationId = ct.ClassificationId,
-        //   ClassifyName = ct.Classification.ClassifyName,
-        //   DaysOfTheWeek = ct.DaysOfTheWeek,
-        //   ThoiGian = ct.ThoiGian.ToString("dd/MM/yyyy"),
-        //   BuoiHoc = ct.BuoiHoc,
-        //   TietHoc = ct.TietHoc,
-        //   LessonContent = ct.LessonContent,
-        //   Attend = ct.Attend,
-        //   NoteComment = ct.NoteComment,
-        //   CreatedBy = ct.,
-        //   CreatedAt = ct.CreatedAt.HasValue ? ct.CreatedAt.Value.ToString("dd/MM/yyyy") : string.Empty,
-        //   UpdatedAt = ct.UpdatedAt.HasValue ? ct.UpdatedAt.Value.ToString("dd/MM/yyyy") : string.Empty,
-        // })
-        // .ToListAsync();
-
         if (chitietSoDauBai.Count == 0)
         {
           return new ChiTietSoDauBaiResType(404, "Không tìm thấy kết quả");

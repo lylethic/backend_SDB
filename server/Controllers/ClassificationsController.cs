@@ -19,22 +19,19 @@ namespace server.Controllers
 
     // GET: api/<ClassificationsController>
     [HttpGet]
-    public async Task<IActionResult> GetAll([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 50)
+    public async Task<IActionResult> GetAll([FromQuery] QueryObject? queryObject)
     {
-      try
+      var result = await _classify.GetClassifys(queryObject);
+      if (result.StatusCode == 200)
       {
-        var result = await _classify.GetClassifys(pageNumber, pageSize);
-        if (result is null)
+        return Ok(new
         {
-          return NotFound(); // 404
-        }
+          statusCode = result.StatusCode,
+          data = result.Data
+        });
+      }
 
-        return Ok(result);
-      }
-      catch (Exception ex)
-      {
-        throw new Exception($"Error: {ex.Message}");
-      }
+      return StatusCode(500, result);
     }
 
     // GET api/<ClassificationsController>/5
@@ -114,21 +111,18 @@ namespace server.Controllers
     [HttpPost("upload")]
     public async Task<IActionResult> UploadExcelFile(IFormFile file)
     {
-      try
+      var result = await _classify.ImportExcel(file);
+
+      if (result.StatusCode == 200)
       {
-        var result = await _classify.ImportExcel(file);
-
-        if (result.Contains("Thành côngy"))
-        {
-          return Ok(result);
-        }
-
+        return Ok(result);
+      }
+      if (result.StatusCode == 400)
+      {
         return BadRequest(result);
       }
-      catch (Exception ex)
-      {
-        return StatusCode(500, $"Server Error: {ex.Message}");
-      }
+
+      return StatusCode(500, result);
     }
   }
 }

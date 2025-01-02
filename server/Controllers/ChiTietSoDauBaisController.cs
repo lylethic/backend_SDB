@@ -288,7 +288,7 @@ namespace server.Controllers
     }
      */
 
-    [HttpPost("create")]
+    [HttpPost]
     public async Task<IActionResult> CreateChiTietSoDauBai(ChiTietSoDauBaiDto model)
     {
       var result = await _detail.CreateChiTietSoDauBai(model);

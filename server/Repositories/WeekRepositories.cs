@@ -432,21 +432,26 @@ namespace server.Repositories
       }
 
       var daysInWeek = new List<SevenDaysInWeek>();
+
+      // Align `currentDate` to the nearest Monday
       var currentDate = selectedWeek.WeekStart;
+      var dayOfWeek = (int)currentDate.DayOfWeek;
+      int offsetToMonday = (dayOfWeek == 0 ? -6 : 1) - dayOfWeek; // Adjust Sunday (0) to -6 for Monday alignment
+      currentDate = currentDate.AddDays(offsetToMonday);
 
       for (int i = 0; i < 7; i++)
       {
-        // Tính toán ngày
         daysInWeek.Add(new SevenDaysInWeek
         {
           Day = currentDate.ToString("dddd", new CultureInfo("vi-VN")),
-          Date = currentDate.ToString("dd/MM/yyyy") // Định dạng ngày
+          Date = currentDate.ToString("dd/MM/yyyy")
         });
 
-        currentDate = currentDate.AddDays(1); // Thêm một ngày
+        currentDate = currentDate.AddDays(1); // Add one day
       }
 
       return new WeekResType("Thành công", daysInWeek);
     }
+
   }
 }
