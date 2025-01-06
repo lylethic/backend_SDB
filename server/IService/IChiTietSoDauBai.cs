@@ -65,6 +65,7 @@ namespace server.IService
     ///  </returns>
     Task<ChiTietSoDauBaiResType> GetChiTietBySchool(ChiTietSoDauBaiQuery queryChiTiet);
 
+    Task<ChiTietSoDauBaiResType> GetAllChiTietsByBia(ChiTietSoDauBaiByBiaQuery queryChiTiet);
     Task<ChiTietSoDauBaiResType> ExportChiTietSoDauBaiToExcel(int weekId, int classId, string filePath);
   }
 }

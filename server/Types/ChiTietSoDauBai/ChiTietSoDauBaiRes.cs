@@ -2,7 +2,7 @@
 
 namespace server.Types.ChiTietSoDauBai
 {
-  public class ChiTietSDBResData
+  public class ChiTietSoDauBaiRes
   {
 
     public int ChiTietSoDauBaiId { get; set; }

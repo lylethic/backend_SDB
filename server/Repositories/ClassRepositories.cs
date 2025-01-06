@@ -156,6 +156,9 @@ namespace server.Repositories
           x.ClassId,
           x.ClassName,
           x.SchoolId,
+          x.GradeId,
+          x.TeacherId,
+          x.AcademicYearId,
           SchoolName = x.School.NameSchcool,
           TeacherName = x.Teacher.Fullname,
           GradeName = x.Grade.GradeName,
@@ -178,8 +181,11 @@ namespace server.Repositories
           ClassName = query.ClassName,
           SchoolId = query.SchoolId,
           SchoolName = query.SchoolName,
+          TeacherId = query.TeacherId,
           TeacherName = query.TeacherName,
+          GradeId = query.GradeId,
           GradeName = query.GradeName,
+          AcademicYearId = query.AcademicYearId,
           NienKhoa = query.NienKhoa,
           Description = query.Description,
           Status = query.Status,
@@ -272,23 +278,18 @@ namespace server.Repositories
       }
     }
 
-    public async Task<ResponseData<List<ClassList>>> GetClassesBySchool(QueryObject? queryObject, int schoolId)
+    public async Task<ResponseData<List<ClassList>>> GetClassesBySchool(int schoolId)
     {
       try
       {
-        queryObject ??= new QueryObject();
         if (schoolId == 0)
         {
           return new ResponseData<List<ClassList>>(400, "Vui lòng nhập mã trường học");
         }
 
-        var skip = (queryObject.PageNumber - 1) * queryObject.PageSize;
-
         var query = await _context.Classes
                   .Where(c => c.SchoolId == schoolId)
                   .OrderBy(c => c.ClassId)
-                  .Skip(skip)
-                  .Take(queryObject.PageSize)
                   .Select(c => new ClassList
                   {
                     ClassId = c.ClassId,
@@ -307,7 +308,7 @@ namespace server.Repositories
 
         if (query.Count == 0 || query is null)
         {
-          return new ResponseData<List<ClassList>>(204, "Trường học này chưa có lớp học hoặc mã trường học không tồn tại");
+          return new ResponseData<List<ClassList>>(204, "Trường học này chưa có lớp học hoặc mã trường học không tồn tại", []);
         }
 
         return new ResponseData<List<ClassList>>(200, "Thành công", query);
@@ -406,7 +407,7 @@ namespace server.Repositories
           var updateQuery = queryBuilder.ToString();
           await _context.Database.ExecuteSqlRawAsync(updateQuery, [.. parameters]);
 
-          return new ResponseData<ClassDto>(200, "Class updated Thành côngy");
+          return new ResponseData<ClassDto>(200, "Cập nhật thành công");
         }
         else
         {

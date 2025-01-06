@@ -3,11 +3,13 @@ using server.Types.PhanCongGDBia;
 
 namespace server.IService
 {
-  public interface IPC_GiangDay_BiaSDB
+  public interface IPhanCongGiangDaySoDauBai
   {
     Task<PhanCongGiangDayBiaResType> CreatePC_GiangDay_BiaSDB(PC_GiangDay_BiaSDBDto model);
 
     Task<PhanCongGiangDayBiaResType> GetPC_GiangDay_BiaSDB(int id);
+
+    Task<PhanCongGiangDayBiaResType> GetPhanCongGiangDayByBia(int biaId);
 
     Task<PhanCongGiangDayBiaResType> GetPC_GiangDay_BiaSDBs(QueryObject queryObject);
 

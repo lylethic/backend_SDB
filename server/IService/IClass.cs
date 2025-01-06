@@ -20,6 +20,6 @@ namespace server.IService
 
     Task<ResponseData<string>> BulkDelete(List<int> ids);
 
-    Task<ResponseData<List<ClassList>>> GetClassesBySchool(QueryObject? queryObject, int schoolId);
+    Task<ResponseData<List<ClassList>>> GetClassesBySchool(int schoolId);
   }
 }

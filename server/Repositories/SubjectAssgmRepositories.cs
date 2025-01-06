@@ -15,7 +15,6 @@ namespace server.Repositories
 
     public SubjectAssgmRepositories(SoDauBaiContext context)
     {
-
       this._context = context;
     }
 
@@ -31,7 +30,7 @@ namespace server.Repositories
 
         if (teacherExists is null)
         {
-          return new ResponseData<SubjectAssgmDto>(404, "Teacher or Subject not found");
+          return new ResponseData<SubjectAssgmDto>(404, "Mã giáo viên không tồn tại");
         }
 
         // check subject
@@ -42,7 +41,7 @@ namespace server.Repositories
 
         if (subjectExists is null)
         {
-          return new ResponseData<SubjectAssgmDto>(404, "Teacher or Subject not found");
+          return new ResponseData<SubjectAssgmDto>(404, "Mã môn học không tồn tại");
         }
 
         //check subject assignment
@@ -53,7 +52,7 @@ namespace server.Repositories
 
         if (subjectAssgmt is not null)
         {
-          return new ResponseData<SubjectAssgmDto>(409, "This Subject Assignment already exists");
+          return new ResponseData<SubjectAssgmDto>(409, "Môn học này đã được đăng ký");
         }
 
         var sqlInsert = @"INSERT INTO SubjectAssignment (teacherId, subjectId, description, dateCreated, dateUpdated)
@@ -78,32 +77,7 @@ namespace server.Repositories
           DateUpdated = model.DateUpdated,
         };
 
-        return new ResponseData<SubjectAssgmDto>(200, result);
-      }
-      catch (Exception ex)
-      {
-        return new ResponseData<SubjectAssgmDto>(500, $"Server error: {ex.Message}");
-      }
-    }
-
-    public async Task<ResponseData<SubjectAssgmDto>> DeleteSubjectAssgm(int id)
-    {
-      try
-      {
-        var find = "SELECT * FROM SUBJECTASSIGNMENT WHERE SubjectAssignmentId = @id";
-        var subjectAssgmt = await _context.SubjectAssignments
-          .FromSqlRaw(find, new SqlParameter("@id", id))
-          .FirstOrDefaultAsync();
-
-        if (subjectAssgmt is null)
-        {
-          return new ResponseData<SubjectAssgmDto>(404, "This Subject Assignment not found");
-        }
-
-        var deleteQuery = "DELETE FROM SUBJECTASSIGNMENT WHERE SubjectAssignmentId = @id";
-        await _context.Database.ExecuteSqlRawAsync(deleteQuery, new SqlParameter("@id", id));
-
-        return new ResponseData<SubjectAssgmDto>(200, "Deleted");
+        return new ResponseData<SubjectAssgmDto>(200, "Tạo mới thành công", result);
       }
       catch (Exception ex)
       {
@@ -139,7 +113,7 @@ namespace server.Repositories
 
         if (subjectAssgmt is null)
         {
-          return new ResponseData<SubjectAssgmDto>(404, "This Subject Assignment not found");
+          return new ResponseData<SubjectAssgmDto>(404, "Nội dung phân công môn học không tồn tại");
         }
 
         var result = new SubjectAssgmDto
@@ -150,8 +124,7 @@ namespace server.Repositories
           SubjectName = subjectAssgmt.Subject.SubjectName,
         };
 
-        return new ResponseData<SubjectAssgmDto>(200, result);
-
+        return new ResponseData<SubjectAssgmDto>(200, "Thành công", result);
       }
       catch (Exception ex)
       {
@@ -159,21 +132,26 @@ namespace server.Repositories
       }
     }
 
-    public async Task<List<SubjectAssgmDto>> GetSubjectAssgms(int pageNumber, int pageSize)
+    public async Task<ResponseData<List<SubjectAssgmDto>>> GetSubjectAssgms()
     {
       try
       {
-        var skip = (pageNumber - 1) * pageSize;
-        var find = @"SELECT * FROM SubjectAssignment 
-                      ORDER BY  SubjectAssignmentId 
-                      OFFSET @skip ROWS
-                      FETCH NEXT @pageSize ROWS ONLY;";
+        var find = @"SELECT sa.*, s.subjectName FROM SubjectAssignment as sa
+                    LEFT JOIN SUBJECT as s ON s.subjectId = sa.subjectId";
 
         var subjectAssgmt = await _context.SubjectAssignments
-          .FromSqlRaw(find,
-          new SqlParameter("@skip", skip),
-          new SqlParameter("@pageSize", pageSize)
-          ).ToListAsync() ?? throw new Exception("Empty");
+          .FromSqlRaw(find)
+          .Select(static x => new
+          {
+            x.SubjectAssignmentId,
+            x.SubjectId,
+            x.TeacherId,
+            SubjectName = x.Subject.SubjectName,
+            x.Description,
+            x.DateCreated,
+            x.DateUpdated,
+          })
+          .ToListAsync() ?? throw new Exception("Empty");
 
         var result = subjectAssgmt.Select(x => new SubjectAssgmDto
         {
@@ -181,11 +159,12 @@ namespace server.Repositories
           SubjectId = x.SubjectId,
           TeacherId = x.TeacherId,
           Description = x.Description,
+          SubjectName = x.SubjectName,
           DateCreated = x.DateCreated,
           DateUpdated = x.DateUpdated,
         }).ToList();
 
-        return result;
+        return new ResponseData<List<SubjectAssgmDto>>(200, "Thành công", result);
       }
       catch (Exception ex)
       {
@@ -195,6 +174,7 @@ namespace server.Repositories
 
     public async Task<ResponseData<SubjectAssgmDto>> UpdateSubjectAssgm(int id, SubjectAssgmDto model)
     {
+      using var transaction = await _context.Database.BeginTransactionAsync();
       try
       {
         var find = "SELECT * FROM SUBJECTASSIGNMENT WHERE SubjectAssignmentId = @id";
@@ -205,44 +185,63 @@ namespace server.Repositories
 
         if (subjectAssgmt is null)
         {
-          return new ResponseData<SubjectAssgmDto>(404, "Subject Assigment not found");
+          return new ResponseData<SubjectAssgmDto>(404, "Mã phân công không tồn tại");
         }
 
         var queryBuilder = new StringBuilder("UPDATE SUBJECTASSIGNMENT SET ");
         var parameters = new List<SqlParameter>();
+        bool hasChange = false;
 
-        if (model.SubjectId != 0 || model.TeacherId != 0)
+        if (model.SubjectId != 0 && model.SubjectId != subjectAssgmt.SubjectId)
+        {
+          queryBuilder.Append("SubjectId = @SubjectId, ");
+          parameters.Add(new SqlParameter("@SubjectId", model.SubjectId));
+          hasChange = true;
+        }
+
+        if (model.TeacherId != 0 && model.TeacherId != subjectAssgmt.TeacherId)
         {
           queryBuilder.Append("TeacherId = @TeacherId, ");
           parameters.Add(new SqlParameter("@TeacherId", model.TeacherId));
+          hasChange = true;
+        }
 
-          queryBuilder.Append("SubjectId = @SubjectId, ");
-          parameters.Add(new SqlParameter("@SubjectId", model.SubjectId));
-
+        if (model.Description != null && model.Description != subjectAssgmt.Description)
+        {
           queryBuilder.Append("Description = @Description, ");
           parameters.Add(new SqlParameter("@Description", model.Description));
+          hasChange = true;
         }
 
-        if (queryBuilder[queryBuilder.Length - 2] == ',')
+        if (hasChange)
         {
-          queryBuilder.Length -= 2;
+          if (queryBuilder[^2] == ',')
+          {
+            queryBuilder.Length -= 2;
+          }
+
+          queryBuilder.Append(" WHERE SubjectAssignmentId = @id");
+          parameters.Add(new SqlParameter("@id", id));
+
+          var updateQuery = queryBuilder.ToString();
+          await _context.Database.ExecuteSqlRawAsync(updateQuery, [.. parameters]);
+
+          await transaction.CommitAsync();
+          return new ResponseData<SubjectAssgmDto>(200, "Cập nhật thành công");
         }
-
-        queryBuilder.Append(" WHERE SubjectAssignmentId = @id");
-        parameters.Add(new SqlParameter("@id", id));
-
-        var updateQuery = queryBuilder.ToString();
-        await _context.Database.ExecuteSqlRawAsync(updateQuery, parameters.ToArray());
-
-        return new ResponseData<SubjectAssgmDto>(200, "Updated");
+        else
+        {
+          return new ResponseData<SubjectAssgmDto>(200, "Không phát hiện sự thay đổi");
+        }
       }
       catch (Exception ex)
       {
+        await transaction.RollbackAsync();
         return new ResponseData<SubjectAssgmDto>(500, $"Server error: {ex.Message}");
       }
     }
 
-    public async Task<string> ImportExcel(IFormFile file)
+    public async Task<ResponseData<string>> ImportExcel(IFormFile file)
     {
       try
       {
@@ -301,9 +300,9 @@ namespace server.Repositories
             } while (reader.NextResult());
           }
 
-          return "Tải lên thành công";
+          return new ResponseData<string>(200, "Tải lên thành công");
         }
-        return "No file uploaded";
+        return new ResponseData<string>(400, "Không có tệp nào được tải lên");
       }
       catch (Exception ex)
       {
@@ -311,15 +310,39 @@ namespace server.Repositories
       }
     }
 
+    public async Task<ResponseData<SubjectAssgmDto>> DeleteSubjectAssgm(int id)
+    {
+      try
+      {
+        var find = "SELECT * FROM SUBJECTASSIGNMENT WHERE SubjectAssignmentId = @id";
+        var subjectAssgmt = await _context.SubjectAssignments
+          .FromSqlRaw(find, new SqlParameter("@id", id))
+          .FirstOrDefaultAsync();
+
+        if (subjectAssgmt is null)
+        {
+          return new ResponseData<SubjectAssgmDto>(404, "Nội dung phân công môn học này không tồn tại");
+        }
+
+        var deleteQuery = "DELETE FROM SUBJECTASSIGNMENT WHERE SubjectAssignmentId = @id";
+        await _context.Database.ExecuteSqlRawAsync(deleteQuery, new SqlParameter("@id", id));
+
+        return new ResponseData<SubjectAssgmDto>(200, "Đã xóa");
+      }
+      catch (Exception ex)
+      {
+        return new ResponseData<SubjectAssgmDto>(500, $"Server error: {ex.Message}");
+      }
+    }
+
     public async Task<ResponseData<string>> BulkDelete(List<int> ids)
     {
       await using var transaction = await _context.Database.BeginTransactionAsync();
-
       try
       {
         if (ids is null || ids.Count == 0)
         {
-          return new ResponseData<string>(400, "No IDs provided.");
+          return new ResponseData<string>(400, "Vui lòng chọn các đối tượng muốn xóa");
         }
 
         var idList = string.Join(",", ids);
@@ -330,12 +353,11 @@ namespace server.Repositories
 
         if (delete == 0)
         {
-          return new ResponseData<string>(404, "No subjectAssignmentId found to delete");
+          return new ResponseData<string>(404, "Đối tượng không tồn tại");
         }
 
         await transaction.CommitAsync();
-
-        return new ResponseData<string>(200, "Deleted");
+        return new ResponseData<string>(200, "Đã xóa");
       }
       catch (Exception ex)
       {

@@ -17,9 +17,9 @@ namespace server.Types.ChiTietSoDauBai
 
     public List<ChiTiet_WeekResData>? ListChiTiet_WeekResData { get; set; }
 
-    public ChiTietSDBResData? ChiTietSDBResData { get; set; }
+    public ChiTietSoDauBaiRes? ChiTietSDBResData { get; set; }
 
-    public List<ChiTietSDBResData>? ListChiTietSDBResData { get; set; }
+    public List<ChiTietSoDauBaiRes>? ListChiTietSoDauBaiRes { get; set; }
 
     public ChiTietBody? ChiTietBody { get; set; }
 
@@ -75,18 +75,18 @@ namespace server.Types.ChiTietSoDauBai
       this.ListChiTiet_WeekResData = listChiTiet_WeekResData;
     }
 
-    public ChiTietSoDauBaiResType(int statusCode, string message, ChiTietSDBResData chiTietSDBResData)
+    public ChiTietSoDauBaiResType(int statusCode, string message, ChiTietSoDauBaiRes chiTietSDBResData)
     {
       this.StatusCode = statusCode;
       this.Message = message;
       this.ChiTietSDBResData = chiTietSDBResData;
     }
 
-    public ChiTietSoDauBaiResType(int statusCode, string message, List<ChiTietSDBResData> listChiTietSDBResData)
+    public ChiTietSoDauBaiResType(int statusCode, string message, List<ChiTietSoDauBaiRes> data)
     {
       this.StatusCode = statusCode;
       this.Message = message;
-      this.ListChiTietSDBResData = listChiTietSDBResData;
+      this.ListChiTietSoDauBaiRes = data;
     }
 
     public ChiTietSoDauBaiResType(int statusCode, string message, ChiTietBody chiTietBody)

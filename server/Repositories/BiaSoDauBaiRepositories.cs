@@ -195,7 +195,6 @@ namespace server.Repositories
           DateUpdated = sodaubai.DateUpdated,
         };
 
-
         return new BiaSoDauBaiResType(200, "Thành công", result);
       }
       catch (Exception ex)
@@ -469,6 +468,50 @@ namespace server.Repositories
       }
     }
 
+    public async Task<BiaSoDauBaiResType> GetBiaSoDauBaisBySchoolAndClass(int schoolId, int? classId)
+    {
+      try
+      {
+        var baiSoDauBaiQuery = from biaSo in _context.BiaSoDauBais
+                               join lop in _context.Classes on biaSo.ClassId equals lop.ClassId into lopHocGroup
+                               from lop in lopHocGroup.DefaultIfEmpty()
+                               join truong in _context.Schools on biaSo.SchoolId equals truong.SchoolId into schoolGroup
+                               from truong in schoolGroup.DefaultIfEmpty()
+                               join nienKhoa in _context.AcademicYears on biaSo.AcademicyearId equals nienKhoa.AcademicYearId into nienkhoaGroup
+                               from nienKhoa in nienkhoaGroup.DefaultIfEmpty()
+                               where biaSo.SchoolId == schoolId &&
+                                    (classId == null || biaSo.ClassId == classId)
+                               select new BiaSoDauBaiRes()
+                               {
+                                 BiaSoDauBaiId = biaSo.BiaSoDauBaiId,
+                                 SchoolId = biaSo.SchoolId,
+                                 SchoolName = truong.NameSchcool,
+                                 AcademicyearId = biaSo.AcademicyearId,
+                                 NienKhoaName = nienKhoa.DisplayAcademicYearName,
+                                 ClassId = biaSo.ClassId,
+                                 ClassName = lop.ClassName,
+                                 Status = biaSo.Status,
+                                 TenGiaoVienChuNhiem = lop.Teacher.Fullname,
+                                 DateCreated = biaSo.DateCreated.HasValue ? biaSo.DateCreated.Value.ToString("dd/MM/yyyy HH:mm:ss") : string.Empty,
+                                 DateUpdated = biaSo.DateUpdated.HasValue ? biaSo.DateUpdated.Value.ToString("dd/MM/yyyy HH:mm:ss") : string.Empty,
+                               };
+
+        var biaSoDauBai = await baiSoDauBaiQuery
+            .OrderBy(x => x.ClassName)
+            .ToListAsync();
+
+        if (biaSoDauBai is null || biaSoDauBai.Count == 0)
+        {
+          return new BiaSoDauBaiResType(404, "Không có kết quả");
+        }
+
+        return new BiaSoDauBaiResType(200, "Thành công", biaSoDauBai);
+      }
+      catch (Exception ex)
+      {
+        return new BiaSoDauBaiResType(500, $"Server error: {ex.Message}");
+      }
+    }
     public async Task<BiaSoDauBaiResType> UpdateBiaSoDauBai(int id, BiaSoDauBaiDto model)
     {
       using var transaction = await _context.Database.BeginTransactionAsync();

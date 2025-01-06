@@ -9,11 +9,11 @@ using System.Text;
 
 namespace server.Repositories
 {
-  public class PC_GiangDay_BiaSDBRepositories : IPC_GiangDay_BiaSDB
+  public class PhanCongGiangDaySoDauBaiRepositories : IPhanCongGiangDaySoDauBai
   {
     private readonly SoDauBaiContext _context;
 
-    public PC_GiangDay_BiaSDBRepositories(SoDauBaiContext context)
+    public PhanCongGiangDaySoDauBaiRepositories(SoDauBaiContext context)
     {
       this._context = context;
     }
@@ -61,9 +61,9 @@ namespace server.Repositories
           })
           .ToListAsync() ?? throw new Exception("Empty");
 
-        if (!phancongSBD.Any())
+        if (phancongSBD.Count == 0)
         {
-          return new PhanCongGiangDayBiaResType(400, "No data found");
+          return new PhanCongGiangDayBiaResType(400, "Không có dữ liệu");
         }
 
         var result = phancongSBD.Select(x => new MapData
@@ -77,7 +77,9 @@ namespace server.Repositories
           ClassId = x.classId,
           ClassName = x.className,
           Fullname = x.teacherName
-        }).ToList();
+        })
+          .OrderBy(x => x.DateCreated)
+          .ToList();
 
         return new PhanCongGiangDayBiaResType(200, "Thành công", result);
       }
@@ -87,46 +89,15 @@ namespace server.Repositories
       }
     }
 
-    public async Task<PhanCongGiangDayBiaResType> BulkDelete(List<int> ids)
-    {
-      await using var transaction = await _context.Database.BeginTransactionAsync();
-      try
-      {
-        if (ids == null || ids.Count == 0)
-        {
-          return new PhanCongGiangDayBiaResType(400, "No IDs provided");
-        }
-
-
-        // Create a comma-separated list of IDs for the SQL query
-        var idList = string.Join(",", ids);
-
-        // Prepare the delete query with parameterized input
-        var deleteQuery = $"DELETE FROM PhanCongGiangDay WHERE PhanCongGiangDayId IN ({idList})";
-
-        // Execute
-        var affectedRows = await _context.Database.ExecuteSqlRawAsync(deleteQuery);
-
-        if (affectedRows == 0)
-        {
-          return new PhanCongGiangDayBiaResType(404, "No ids found to delete");
-        }
-
-        await transaction.CommitAsync();
-
-        return new PhanCongGiangDayBiaResType(200, "Deleted Thành côngy");
-      }
-      catch (Exception ex)
-      {
-        await transaction.RollbackAsync();
-        return new PhanCongGiangDayBiaResType(500, $"Server error: {ex.Message}");
-      }
-    }
-
     public async Task<PhanCongGiangDayBiaResType> CreatePC_GiangDay_BiaSDB(PC_GiangDay_BiaSDBDto model)
     {
       try
       {
+        if (model is null)
+        {
+          return new PhanCongGiangDayBiaResType(400, "Vui lòng điền đầy đủ thông tin");
+        }
+
         // check teacher
         var findTeacher = "SELECT * FROM Teacher WHERE teacherId = @id";
         var teacherExists = await _context.Teachers
@@ -150,13 +121,13 @@ namespace server.Repositories
           return new PhanCongGiangDayBiaResType(409, "PC_GiangDay_BiaSDB already exists");
         }
 
-        var sqlInsert = @"INSERT INTO PhanCongGiangDay (TeacherId, biaSoDauBaiId, Status, DateCreated, DateUpdated)
-                          VALUES (@TeacherId, @Status, @DateCreated, @DateUpdated);
+        var sqlInsert = @"INSERT INTO PhanCongGiangDay (TeacherId, BiaSoDauBaiId, Status, DateCreated, DateUpdated)
+                          VALUES (@TeacherId,@BiaSoDauBaiId, @Status, @DateCreated, @DateUpdated);
                           SELECT CAST(SCOPE_IDENTITY() as int);";
 
         var insert = await _context.Database.ExecuteSqlRawAsync(sqlInsert,
           new SqlParameter("@TeacherId", model.TeacherId),
-          new SqlParameter("@biaSoDauBaiId", model.BiaSoDauBaiId),
+          new SqlParameter("@BiaSoDauBaiId", model.BiaSoDauBaiId),
           new SqlParameter("@Status", model.Status),
           new SqlParameter("@DateCreated", DateTime.UtcNow),
           new SqlParameter("@DateUpdated", DBNull.Value)
@@ -168,6 +139,8 @@ namespace server.Repositories
           TeacherId = model.TeacherId,
           BiaSoDauBaiId = model.BiaSoDauBaiId,
           Status = model.Status,
+          DateCreated = DateTime.UtcNow,
+          DateUpdated = null
         };
 
         return new PhanCongGiangDayBiaResType(200, "Thành công", result);
@@ -178,29 +151,68 @@ namespace server.Repositories
       }
     }
 
-    public async Task<PhanCongGiangDayBiaResType> DeletePC_GiangDay_BiaSDB(int id)
+    public async Task<PhanCongGiangDayBiaResType> GetPhanCongGiangDayByBia(int biaId)
     {
       try
       {
-        var find = "SELECT * FROM PhanCongGiangDay WHERE PhanCongGiangDayId = @id";
-        var getClass = await _context.PhanCongGiangDays
-          .FromSqlRaw(find, new SqlParameter("@id", id))
-          .FirstOrDefaultAsync();
-
-        if (getClass is null)
+        if (biaId == 0)
         {
-          return new PhanCongGiangDayBiaResType(404, "Not found");
+          return new PhanCongGiangDayBiaResType(400, "Vui lòng nhập mã bìa sổ đầu bài");
+        };
+        // Show nhung GV nao day lop nao   
+        var query = @"SELECT pc.phanCongGiangDayId, 
+                      pc.biaSoDauBaiId, 
+                      pc.teacherId, 
+                      pc.status, 
+                      pc.dateCreated, 
+                      pc.dateUpdated, 
+                      t.fullname,
+                      c.className,
+                      c.classId
+                      FROM PhanCongGiangDay as pc
+                      LEFT JOIN TEACHER AS T 
+                      ON pc.teacherId = T.teacherId
+                      LEFT JOIN CLASS AS C ON t.teacherId = c.teacherId
+                      WHERE pc.biaSoDauBaiId = @biaId";
+
+        var phancongSBD = await _context.PhanCongGiangDays
+          .FromSqlRaw(query, new SqlParameter("@biaId", biaId))
+          .Select(static x => new
+          {
+            x.BiaSoDauBaiId,
+            x.PhanCongGiangDayId,
+            x.TeacherId,
+            x.Status,
+            x.DateCreated,
+            x.DateUpdated,
+            teacherName = x.Teacher.Fullname,
+            classId = x.Teacher.Classes.First().ClassId,
+            className = x.Teacher.Classes.First().ClassName,
+          }).FirstOrDefaultAsync() ?? throw new Exception("Empty");
+
+        if (phancongSBD is null)
+        {
+          return new PhanCongGiangDayBiaResType(404, "Không có dữ liệu");
         }
 
-        var deleteQuery = "DELETE FROM PhanCongGiangDay WHERE PhanCongGiangDayId = @id";
+        var result = new MapData
+        {
+          PhanCongGiangDayId = phancongSBD.PhanCongGiangDayId,
+          TeacherId = phancongSBD.TeacherId,
+          BiaSoDauBaiId = phancongSBD.BiaSoDauBaiId,
+          Status = phancongSBD.Status,
+          DateCreated = phancongSBD.DateCreated,
+          DateUpdated = phancongSBD.DateUpdated,
+          ClassId = phancongSBD.classId,
+          ClassName = phancongSBD.className,
+          Fullname = phancongSBD.teacherName
+        };
 
-        await _context.Database.ExecuteSqlRawAsync(deleteQuery, new SqlParameter("@id", id));
-
-        return new PhanCongGiangDayBiaResType(200, "Deleted");
+        return new PhanCongGiangDayBiaResType(200, "Thành công", result);
       }
       catch (Exception ex)
       {
-        return new PhanCongGiangDayBiaResType(500, $"Server error: {ex.Message}");
+        return new PhanCongGiangDayBiaResType(500, $"Server Error: {ex.Message}");
       }
     }
 
@@ -224,6 +236,8 @@ namespace server.Repositories
           TeacherId = phancongSDB.TeacherId,
           BiaSoDauBaiId = phancongSDB.BiaSoDauBaiId,
           Status = phancongSDB.Status,
+          DateCreated = phancongSDB.DateCreated,
+          DateUpdated = phancongSDB.DateUpdated
         };
 
         return new PhanCongGiangDayBiaResType(200, "Thành công", result);
@@ -308,6 +322,7 @@ namespace server.Repositories
 
     public async Task<PhanCongGiangDayBiaResType> UpdatePC_GiangDay_BiaSDB(int id, PC_GiangDay_BiaSDBDto model)
     {
+      using var transaction = await _context.Database.BeginTransactionAsync();
       try
       {
         var find = "SELECT * FROM PhanCongGiangDay WHERE PhanCongGiangDayId = @id";
@@ -318,18 +333,18 @@ namespace server.Repositories
 
         if (existingPhanCongGiangDay is null)
         {
-          return new PhanCongGiangDayBiaResType(404, "Not found");
+          return new PhanCongGiangDayBiaResType(404, "Không tìm thấy Id");
         }
 
         bool hasChanges = false;
 
         var parameters = new List<SqlParameter>();
-        var queryBuilder = new StringBuilder("UPDATE Class SET ");
+        var queryBuilder = new StringBuilder("UPDATE PhanCongGiangDay SET ");
 
         if (model.TeacherId != 0 && model.TeacherId != existingPhanCongGiangDay.TeacherId)
         {
-          queryBuilder.Append("TeacherId = @TeacherId, ");
-          parameters.Add(new SqlParameter("@TeacherId", model.TeacherId));
+          queryBuilder.Append("teacherId = @teacherId, ");
+          parameters.Add(new SqlParameter("@teacherId", model.TeacherId));
           hasChanges = true;
         }
 
@@ -342,15 +357,14 @@ namespace server.Repositories
 
         if (model.Status != existingPhanCongGiangDay.Status)
         {
-          queryBuilder.Append("Status = @Status, ");
-          parameters.Add(new SqlParameter("@Status", model.Status));
+          queryBuilder.Append("status = @status, ");
+          parameters.Add(new SqlParameter("@status", model.Status));
           hasChanges = true;
         }
 
         if (hasChanges)
         {
-
-          if (queryBuilder[queryBuilder.Length - 2] == ',')
+          if (queryBuilder[^2] == ',')
           {
             queryBuilder.Length -= 2;
           }
@@ -360,18 +374,84 @@ namespace server.Repositories
 
           var updateQuery = queryBuilder.ToString();
           await _context.Database.ExecuteSqlRawAsync(updateQuery, [.. parameters]);
-
-          return new PhanCongGiangDayBiaResType(200, "Updated");
+          await transaction.CommitAsync();
+          return new PhanCongGiangDayBiaResType(200, "Đã cập nhật");
         }
         else
         {
-          return new PhanCongGiangDayBiaResType(200, "No changes detected");
+          return new PhanCongGiangDayBiaResType(200, "Không phát hiện sự thay đổi");
         }
+      }
+      catch (Exception ex)
+      {
+        await transaction.RollbackAsync();
+        return new PhanCongGiangDayBiaResType(500, $"Server error: {ex.Message}");
+      }
+    }
+
+    public async Task<PhanCongGiangDayBiaResType> DeletePC_GiangDay_BiaSDB(int id)
+    {
+      try
+      {
+        if (id == 0)
+        {
+          return new PhanCongGiangDayBiaResType(400, "Vui lòng nhập id");
+        }
+        var find = "SELECT * FROM PhanCongGiangDay WHERE PhanCongGiangDayId = @id";
+        var getClass = await _context.PhanCongGiangDays
+          .FromSqlRaw(find, new SqlParameter("@id", id))
+          .FirstOrDefaultAsync();
+
+        if (getClass is null)
+        {
+          return new PhanCongGiangDayBiaResType(404, "Not found");
+        }
+
+        var deleteQuery = "DELETE FROM PhanCongGiangDay WHERE PhanCongGiangDayId = @id";
+
+        await _context.Database.ExecuteSqlRawAsync(deleteQuery, new SqlParameter("@id", id));
+
+        return new PhanCongGiangDayBiaResType(200, "Deleted");
       }
       catch (Exception ex)
       {
         return new PhanCongGiangDayBiaResType(500, $"Server error: {ex.Message}");
       }
     }
+
+    public async Task<PhanCongGiangDayBiaResType> BulkDelete(List<int> ids)
+    {
+      await using var transaction = await _context.Database.BeginTransactionAsync();
+      try
+      {
+        if (ids == null || ids.Count == 0)
+        {
+          return new PhanCongGiangDayBiaResType(400, "Vui lòng cung cấp Id");
+        }
+
+        var deleteQuery = "DELETE FROM PhanCongGiangDay WHERE PhanCongGiangDayId IN ({0})";
+        var sqlParameters = ids.Select((id, index) => new SqlParameter($"@p{index}", id)).ToArray();
+        var parameterPlaceholders = string.Join(",", sqlParameters.Select(p => p.ParameterName));
+        deleteQuery = string.Format(deleteQuery, parameterPlaceholders);
+
+        // Execute
+        var affectedRows = await _context.Database.ExecuteSqlRawAsync(deleteQuery, sqlParameters);
+
+        if (affectedRows == 0)
+        {
+          return new PhanCongGiangDayBiaResType(404, "Id không tồn tại");
+        }
+
+        await transaction.CommitAsync();
+
+        return new PhanCongGiangDayBiaResType(200, "Thành công");
+      }
+      catch (Exception ex)
+      {
+        await transaction.RollbackAsync();
+        return new PhanCongGiangDayBiaResType(500, $"Server error: {ex.Message}");
+      }
+    }
+
   }
 }

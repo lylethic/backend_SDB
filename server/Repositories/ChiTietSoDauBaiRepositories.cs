@@ -196,6 +196,71 @@ namespace server.Repositories
       }
     }
 
+    // Get chi tiet so dau bai theo bia, HK, Nam hoc, tuan hoc
+    public async Task<ChiTietSoDauBaiResType> GetAllChiTietsByBia(ChiTietSoDauBaiByBiaQuery queryChiTiet)
+    {
+      try
+      {
+        var result = from ct in _context.ChiTietSoDauBais
+                     join b in _context.BiaSoDauBais on ct.BiaSoDauBaiId equals b.BiaSoDauBaiId into bGroup
+                     from b in bGroup.DefaultIfEmpty()
+                     join c in _context.Classes on b.ClassId equals c.ClassId into cGroup
+                     from c in cGroup.DefaultIfEmpty()
+                     join t in _context.Teachers on c.TeacherId equals t.TeacherId into tGroup
+                     from t in tGroup.DefaultIfEmpty()
+                     where b.AcademicyearId == queryChiTiet.AcademicYearId &&
+                           ct.SemesterId == queryChiTiet.SemesterId &&
+                           ct.WeekId == queryChiTiet.WeekId &&
+                           b.BiaSoDauBaiId == queryChiTiet.BiaSoDauBaiId
+                     select new ChiTietSoDauBaiRes
+                     {
+                       ChiTietSoDauBaiId = ct.ChiTietSoDauBaiId,
+                       BiaSoDauBaiId = ct.BiaSoDauBaiId,
+                       ClassName = c.ClassName,
+                       SemesterId = ct.SemesterId,
+                       SemesterName = ct.Semester.SemesterName,
+                       WeekId = ct.WeekId,
+                       WeekName = ct.Week.WeekName,
+                       SubjectId = ct.SubjectId,
+                       SubjectName = ct.Subject.SubjectName,
+                       ClassificationId = ct.ClassificationId,
+                       ClassifyName = ct.Classification.ClassifyName,
+                       DaysOfTheWeek = ct.DaysOfTheWeek,
+                       ThoiGian = ct.ThoiGian.ToString("dd/MM/yyyy"),
+                       BuoiHoc = ct.BuoiHoc,
+                       TietHoc = ct.TietHoc,
+                       LessonContent = ct.LessonContent,
+                       Attend = ct.Attend,
+                       NoteComment = ct.NoteComment,
+                       CreatedBy = _context.Teachers
+                                        .Where(teacher => teacher.TeacherId == ct.CreatedBy)
+                                        .Select(teacher => teacher.Fullname)
+                                        .FirstOrDefault(),
+                       CreatedAt = ct.CreatedAt.ToString(),
+                       UpdatedAt = ct.UpdatedAt.ToString(),
+                     };
+
+        var chitietSoDauBai = await result.AsNoTracking().ToListAsync();
+
+        if (chitietSoDauBai.Count == 0)
+        {
+          return new ChiTietSoDauBaiResType(404, "Không tìm thấy kết quả");
+        }
+
+        if (chitietSoDauBai is null)
+        {
+          return new ChiTietSoDauBaiResType(400, "Không có kết quả");
+        }
+
+        return new ChiTietSoDauBaiResType(200, "Thành công", chitietSoDauBai);
+
+      }
+      catch (Exception ex)
+      {
+        return new ChiTietSoDauBaiResType(500, $"Server error: {ex.Message}");
+      }
+    }
+
     public async Task<ChiTietSoDauBaiResType> GetChiTietSoDauBais(QueryObject? queryObject)
     {
       try
@@ -578,7 +643,7 @@ namespace server.Repositories
                            b.SchoolId == queryChiTiet.SchoolId &&
                            ct.WeekId == queryChiTiet.WeekId &&
                            b.BiaSoDauBaiId == queryChiTiet.BiaSoDauBaiId
-                     select new ChiTietSDBResData
+                     select new ChiTietSoDauBaiRes
                      {
                        ChiTietSoDauBaiId = ct.ChiTietSoDauBaiId,
                        BiaSoDauBaiId = ct.BiaSoDauBaiId,

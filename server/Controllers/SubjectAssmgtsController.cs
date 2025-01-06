@@ -3,8 +3,6 @@ using Microsoft.AspNetCore.Mvc;
 using server.Dtos;
 using server.IService;
 
-// For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
-
 namespace server.Controllers
 {
   [Route("api/[controller]")]
@@ -21,23 +19,39 @@ namespace server.Controllers
 
     // GET: api/<SubjectAssmgtsController>
     [HttpGet]
-    public async Task<IActionResult> GetAll_SubjectAssignment(int pageNumber = 1, int pageSize = 50)
+    public async Task<IActionResult> GetAll_SubjectAssignment([FromQuery] QueryObject? queryObject)
     {
-      try
-      {
-        var result = await _subject_Assgm.GetSubjectAssgms(pageNumber, pageSize);
-        if (result is null)
-        {
-          return NotFound();
-        }
+      queryObject ??= new QueryObject();
 
-        return Ok(result);
-      }
-      catch (Exception ex)
+      var result = await _subject_Assgm.GetSubjectAssgms();
+
+      if (result.StatusCode == 200)
       {
-        Console.WriteLine(ex.Message);
-        return StatusCode(500, "Server error"); // 500
+        var data = result.Data ?? [];
+        var totalResults = data.Count;
+        var totalPages = (int)Math.Ceiling((double)totalResults / queryObject.PageSize);
+        var paginatedData = data.Skip((queryObject.PageNumber - 1) * queryObject.PageSize).Take(queryObject.PageSize).ToList();
+
+        return Ok(new
+        {
+          status = result.StatusCode,
+          messgae = result.Message,
+          data = paginatedData,
+          pagination = new
+          {
+            queryObject.PageNumber,
+            queryObject.PageSize,
+            totalResults,
+            totalPages,
+          }
+        });
       }
+
+      return StatusCode(result.StatusCode, new
+      {
+        status = result.StatusCode,
+        message = result.Message
+      });
     }
 
     // GET api/<SubjectAssmgtsController>/5
@@ -45,12 +59,37 @@ namespace server.Controllers
     public async Task<IActionResult> GetById_SubjectAssignment(int id)
     {
       var result = await _subject_Assgm.GetSubjectAssgm(id);
-      if (result.StatusCode != 200)
+      if (result.StatusCode == 200)
       {
-        return BadRequest(result);
+        return Ok(new
+        {
+          message = result.Message,
+          data = result.Data
+        });
       }
-      return Ok(result);
+
+      if (result.StatusCode == 400)
+      {
+        return BadRequest(new
+        {
+          message = result.Message
+        });
+      }
+
+      if (result.StatusCode == 404)
+      {
+        return NotFound(new
+        {
+          message = result.Message
+        });
+      }
+
+      return StatusCode(500, new
+      {
+        message = result.Message
+      });
     }
+
 
     // POST api/<SubjectAssmgtsController>
     [Authorize(Policy = "SuperAdminAndAdmin")]
@@ -58,11 +97,23 @@ namespace server.Controllers
     public async Task<IActionResult> CreateSubjectAssignment(SubjectAssgmDto model)
     {
       var result = await _subject_Assgm.CreateSubjectAssgm(model);
-      if (result.StatusCode != 200)
+      if (result.StatusCode == 200)
       {
-        return BadRequest(result);
+        return Ok(new
+        {
+          message = result.Message,
+          data = result.Data
+        });
       }
-      return Ok(result);
+
+      if (result.StatusCode == 404)
+      {
+        return NotFound(new
+        {
+          message = result.Message
+        });
+      }
+      return StatusCode(500, new { message = result.Message });
     }
 
     // PUT api/<SubjectAssmgtsController>/5
@@ -71,11 +122,22 @@ namespace server.Controllers
     public async Task<IActionResult> UpdateSubjectAssignment(int id, SubjectAssgmDto model)
     {
       var result = await _subject_Assgm.UpdateSubjectAssgm(id, model);
-      if (result.StatusCode != 200)
+      if (result.StatusCode == 200)
       {
-        return BadRequest(result);
+        return Ok(new
+        {
+          message = result.Message
+        });
       }
-      return Ok(result);
+
+      if (result.StatusCode == 404)
+      {
+        return NotFound(new
+        {
+          message = result.Message
+        });
+      }
+      return StatusCode(500, new { message = result.Message });
     }
 
     // DELETE api/<SubjectAssmgtsController>/5
@@ -84,12 +146,15 @@ namespace server.Controllers
     public async Task<IActionResult> DeleteSubjectAssignment(int id)
     {
       var result = await _subject_Assgm.DeleteSubjectAssgm(id);
-      if (result.StatusCode != 200)
+      if (result.StatusCode == 200)
       {
-        return BadRequest(result);
+        return Ok(new { message = result.Message });
       }
-
-      return Ok(result);
+      if (result.StatusCode == 404)
+      {
+        return NotFound(new { message = result.Message });
+      }
+      return StatusCode(500, new { message = result.Message });
     }
 
     [Authorize(Policy = "SuperAdminAndAdmin")]
@@ -98,33 +163,43 @@ namespace server.Controllers
     {
       var result = await _subject_Assgm.BulkDelete(ids);
 
-      if (result.StatusCode != 200)
+      if (result.StatusCode == 200)
       {
-        return BadRequest(result);
+        return Ok(new { message = result.Message });
       }
-
-      return Ok(result);
+      if (result.StatusCode == 400)
+      {
+        return BadRequest(new { message = result.Message });
+      }
+      if (result.StatusCode == 404)
+      {
+        return NotFound(new { message = result.Message });
+      }
+      return StatusCode(500, new { message = result.Message });
     }
 
     [Authorize(Policy = "SuperAdminAndAdmin")]
     [HttpPost("upload")]
     public async Task<IActionResult> ImportExcelFile(IFormFile file)
     {
-      try
-      {
-        var result = await _subject_Assgm.ImportExcel(file);
+      var result = await _subject_Assgm.ImportExcel(file);
 
-        if (result.Contains("Thành côngy"))
+      if (result.StatusCode == 200)
+      {
+        return Ok(new
         {
-          return Ok(result);
-        }
-
-        return BadRequest(result);
+          message = result.Message
+        });
       }
-      catch (Exception ex)
+      if (result.StatusCode == 400)
       {
-        throw new Exception($"Error: {ex.Message}");
+        return BadRequest(new
+        {
+          message = result.Message
+        });
       }
+
+      return StatusCode(500, new { message = result.Message });
     }
   }
 }

@@ -4,8 +4,6 @@ using server.Dtos;
 using server.IService;
 using server.Types.BiaSoDauBai;
 
-// For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
-
 namespace server.Controllers
 {
   [Route("api/[controller]")]
@@ -94,6 +92,67 @@ namespace server.Controllers
         status = 500,
         message = result.Message
       });
+    }
+
+    [HttpGet, Route("get-bia-by-school-class")]
+    public async Task<IActionResult> GetAllBiasBySchoolAndClass([FromQuery] QueryObject? queryObject, [FromQuery] int schoolId, [FromQuery] int? classId = null)
+    {
+      queryObject ??= new QueryObject();
+      if (classId.HasValue)
+      {
+        // Fetch without pagination when classId is provided
+        var result = await _biaSodaubai.GetBiaSoDauBaisBySchoolAndClass(schoolId, classId);
+        if (result.StatusCode == 200)
+        {
+          return Ok(new
+          {
+            status = 200,
+            message = result.Message,
+            data = result.ListBiaSoDauBaiRes
+          });
+        }
+        return StatusCode(result.StatusCode, new
+        {
+          status = result.StatusCode,
+          message = result.Message
+        });
+      }
+      else
+      {
+        // Apply pagination when classId is null
+        var result = await _biaSodaubai.GetBiaSoDauBaisBySchoolAndClass(schoolId, null);
+
+        if (result.StatusCode == 200)
+        {
+          // Safely handle null ListBiaSoDauBaiRes
+          var listBiaSoDauBaiRes = result.ListBiaSoDauBaiRes ?? [];
+          var totalResults = listBiaSoDauBaiRes.Count;
+          var totalPages = (int)Math.Ceiling((double)totalResults / queryObject.PageSize);
+          var paginatedData = listBiaSoDauBaiRes
+                                .Skip((queryObject.PageNumber - 1) * queryObject.PageSize)
+                                .Take(queryObject.PageSize)
+                                .ToList();
+
+          return Ok(new
+          {
+            status = result.StatusCode,
+            message = result.Message,
+            data = paginatedData,
+            pagination = new
+            {
+              queryObject.PageNumber,
+              queryObject.PageSize,
+              totalResults,
+              totalPages
+            }
+          });
+        }
+        return StatusCode(result.StatusCode, new
+        {
+          status = result.StatusCode,
+          message = result.Message
+        });
+      }
     }
 
     // GET api/<BiaSoDauBaisController>/5

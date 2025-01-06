@@ -237,7 +237,52 @@ namespace server.Controllers
         {
           status = 200,
           message = result.Message,
-          data = result.ListChiTietSDBResData
+          data = result.ListChiTietSoDauBaiRes
+        });
+      }
+
+      if (result.StatusCode == 400)
+      {
+        return BadRequest(new
+        {
+          status = 400,
+          message = result.Message,
+        });
+      }
+
+      if (result.StatusCode == 404)
+      {
+        return NotFound(new
+        {
+          status = 404,
+          message = result.Message,
+        });
+      }
+
+      return StatusCode(500, new
+      {
+        status = 500,
+        message = result.Message,
+      });
+    }
+
+    //
+    [HttpGet("get-chi-tiet-so-dau-bai-by-bia")]
+    public async Task<IActionResult> GetAllChiTietsByBia([FromQuery] ChiTietSoDauBaiByBiaQuery queryChiTiet)
+    {
+      var result = await _detail.GetAllChiTietsByBia(queryChiTiet);
+
+      if (result.StatusCode == 200)
+      {
+        var listChiTietRes = result.ListChiTietSoDauBaiRes ?? [];
+        var totalResults = listChiTietRes.Count;
+
+        return Ok(new
+        {
+          status = 200,
+          message = result.Message,
+          data = result.ListChiTietSoDauBaiRes,
+          totalResults,
         });
       }
 

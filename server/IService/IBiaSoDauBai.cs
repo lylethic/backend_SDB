@@ -24,6 +24,8 @@ namespace server.IService
     // status true && false
     Task<BiaSoDauBaiResType> GetBiaSoDauBais(QueryObject? queryObject);
 
+    Task<BiaSoDauBaiResType> GetBiaSoDauBaisBySchoolAndClass(int schoolId, int? classId);
+
     Task<BiaSoDauBaiResType> GetBiaSoDauBaisBySchool(QueryObject? queryObject, int schoolId);
 
     Task<BiaSoDauBaiResType> DeleteBiaSoDauBai(int id);

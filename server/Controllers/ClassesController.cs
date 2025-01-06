@@ -43,9 +43,9 @@ namespace server.Controllers
     }
 
     [HttpGet, Route("get-class-by-school")]
-    public async Task<IActionResult> GetClassesBySchool([FromQuery] QueryObject? queryObject, int schoolId)
+    public async Task<IActionResult> GetClassesBySchool([FromQuery] int schoolId)
     {
-      var result = await _func.GetClassesBySchool(queryObject, schoolId);
+      var result = await _func.GetClassesBySchool(schoolId);
       if (result.StatusCode == 200)
       {
         return Ok(new
@@ -58,7 +58,12 @@ namespace server.Controllers
 
       if (result.StatusCode == 204)
       {
-        return Ok(result);
+        return Ok(new
+        {
+          status = result.StatusCode,
+          message = result.Message,
+          data = result.Data
+        });
       }
 
       if (result.StatusCode == 400)

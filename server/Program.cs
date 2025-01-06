@@ -50,7 +50,7 @@ builder.Services.AddScoped<ISubject, SubjectRepositories>();
 builder.Services.AddScoped<ISubject_Assgm, SubjectAssgmRepositories>();
 builder.Services.AddScoped<IGrade, GradeRepositories>();
 builder.Services.AddScoped<IClass, ClassRepositories>();
-builder.Services.AddScoped<IPC_GiangDay_BiaSDB, PC_GiangDay_BiaSDBRepositories>();
+builder.Services.AddScoped<IPhanCongGiangDaySoDauBai, PhanCongGiangDaySoDauBaiRepositories>();
 builder.Services.AddScoped<IClassify, ClassifyRepositories>();
 builder.Services.AddScoped<IBiaSoDauBai, BiaSoDauBaiRepositories>();
 builder.Services.AddScoped<IWeek, WeekRepositories>();

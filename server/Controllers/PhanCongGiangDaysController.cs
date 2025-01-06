@@ -10,9 +10,9 @@ namespace server.Controllers
   [Authorize]
   public class PhanCongGiangDaysController : ControllerBase
   {
-    private readonly IPC_GiangDay_BiaSDB _pc;
+    private readonly IPhanCongGiangDaySoDauBai _pc;
 
-    public PhanCongGiangDaysController(IPC_GiangDay_BiaSDB pc)
+    public PhanCongGiangDaysController(IPhanCongGiangDaySoDauBai pc)
     {
       this._pc = pc;
     }
@@ -54,27 +54,122 @@ namespace server.Controllers
     {
       var result = await _pc.GetPC_GiangDay_BiaSDB(id);
 
-      if (result.StatusCode != 200)
+      if (result.StatusCode == 200)
       {
-        return BadRequest(result.StatusCode);
+        return Ok(new
+        {
+          status = result.StatusCode,
+          message = result.Message,
+          data = result.PhanCongGiangDayBia
+        });
       }
 
-      return Ok(result);
+      if (result.StatusCode == 404)
+      {
+        return NotFound(new
+        {
+          status = result.StatusCode,
+          message = result.Message
+        });
+      }
+
+      return StatusCode(500, new
+      {
+        status = result.StatusCode,
+        message = result.Message
+      });
+    }
+
+    [HttpGet("get-info-by-bia")]
+    public async Task<IActionResult> GetByBiaId(int id)
+    {
+      var result = await _pc.GetPhanCongGiangDayByBia(id);
+
+      if (result.StatusCode == 200)
+      {
+        return Ok(new
+        {
+          status = result.StatusCode,
+          message = result.Message,
+          data = result.MapData
+        });
+      }
+
+      if (result.StatusCode == 400)
+      {
+        return BadRequest(new
+        {
+          status = result.StatusCode,
+          message = result.Message,
+        });
+      }
+
+      if (result.StatusCode == 404)
+      {
+        return NotFound(new
+        {
+          status = result.StatusCode,
+          message = result.Message,
+        });
+      }
+      return StatusCode(500,
+        new
+        {
+          status = result.StatusCode,
+          message = result.Message,
+        });
     }
 
     // POST api/<PhanCongGiangDaysController>
-    [Authorize(Policy = "AdmiSuperAdminAndAdminn")]
+    [Authorize(Policy = "SuperAdminAndAdmin")]
     [HttpPost]
     public async Task<IActionResult> Create(PC_GiangDay_BiaSDBDto model)
     {
       var result = await _pc.CreatePC_GiangDay_BiaSDB(model);
 
-      if (result.StatusCode != 200)
+      if (result.StatusCode == 400)
       {
-        return BadRequest(result.StatusCode);
+        return BadRequest(new
+        {
+          status = result.StatusCode,
+          message = result.Message,
+        });
       }
 
-      return Ok(result);
+      if (result.StatusCode == 404)
+      {
+        return NotFound(new
+        {
+          status = result.StatusCode,
+          message = result.Message,
+        });
+      }
+
+      if (result.StatusCode == 409)
+      {
+        return Conflict(new
+        {
+          status = result.StatusCode,
+          message = result.Message,
+        });
+      }
+
+      if (result.StatusCode == 200)
+      {
+        return Ok(new
+        {
+          status = result.StatusCode,
+          message = result.Message,
+          data = result.PhanCongGiangDayBia
+        });
+      }
+
+      return StatusCode(500,
+       new
+       {
+         status = result.StatusCode,
+         message = result.Message,
+       });
     }
 
     // PUT api/<PhanCongGiangDaysController>/5
@@ -84,12 +179,28 @@ namespace server.Controllers
     {
       var result = await _pc.UpdatePC_GiangDay_BiaSDB(id, model);
 
-      if (result.StatusCode != 200)
+      if (result.StatusCode == 200)
       {
-        return BadRequest(result.StatusCode);
+        return Ok(new
+        {
+          status = result.StatusCode,
+          result.StatusCode
+        });
+      }
+      if (result.StatusCode == 404)
+      {
+        return NotFound(new
+        {
+          status = result.StatusCode,
+          result.StatusCode
+        });
       }
 
-      return Ok(result);
+      return StatusCode(500, new
+      {
+        status = result.StatusCode,
+        result.StatusCode
+      });
     }
 
     // DELETE api/<PhanCongGiangDaysController>/5
@@ -99,47 +210,111 @@ namespace server.Controllers
     {
       var result = await _pc.DeletePC_GiangDay_BiaSDB(id);
 
-      if (result.StatusCode != 200)
+      if (result.StatusCode == 200)
       {
-        return BadRequest(result.StatusCode);
+        return Ok(new
+        {
+          status = result.StatusCode,
+          message = result.Message
+        });
+      }
+      if (result.StatusCode == 400)
+      {
+        return BadRequest(new
+        {
+          status = result.StatusCode,
+          message = result.Message
+        });
+      }
+      if (result.StatusCode == 404)
+      {
+        return NotFound(new
+        {
+          status = result.StatusCode,
+          message = result.Message
+        });
       }
 
-      return Ok(result);
+      return StatusCode(500, new
+      {
+        status = result.StatusCode,
+        message = result.Message,
+      });
     }
 
     [Authorize(Policy = "SuperAdminAndAdmin")]
-    [HttpDelete("BulkDelete")]
+    [HttpDelete("bulk-delete")]
     public async Task<IActionResult> BulkDelete(List<int> ids)
     {
       var result = await _pc.BulkDelete(ids);
 
-      if (result.StatusCode != 200)
+      if (result.StatusCode == 200)
       {
-        return BadRequest(result.StatusCode);
+        return Ok(new
+        {
+          status = result.StatusCode,
+          message = result.Message
+        });
+      }
+      if (result.StatusCode == 400)
+      {
+        return BadRequest(new
+        {
+          status = result.StatusCode,
+          message = result.Message
+        });
+      }
+      if (result.StatusCode == 404)
+      {
+        return NotFound(new
+        {
+          status = result.StatusCode,
+          message = result.Message
+        });
       }
 
-      return Ok(result);
+      return StatusCode(500, new
+      {
+        status = result.StatusCode,
+        message = result.Message,
+      });
     }
 
-    [Authorize(Policy = "AdSuperAdminAndAdminmin")]
+    [Authorize(Policy = "SuperAdminAndAdmin")]
     [HttpPost("upload")]
     public async Task<IActionResult> ImportExcel(IFormFile file)
     {
-      try
-      {
-        var result = await _pc.ImportExcelFile(file);
+      var result = await _pc.ImportExcelFile(file);
 
-        if (result.StatusCode == 200)
+      if (result.StatusCode == 200)
+      {
+        return Ok(new
         {
-          return Ok(result);
-        }
-
-        return BadRequest(result);
+          status = result.StatusCode,
+          message = result.Message
+        });
       }
-      catch (Exception ex)
+      if (result.StatusCode == 400)
       {
-        return StatusCode(500, $"Server Error: {ex.Message}");
+        return Ok(new
+        {
+          status = result.StatusCode,
+          message = result.Message
+        });
       }
+      if (result.StatusCode == 404)
+      {
+        return Ok(new
+        {
+          status = result.StatusCode,
+          message = result.Message
+        });
+      }
+      return StatusCode(500, new
+      {
+        status = result.StatusCode,
+        message = result.Message
+      });
     }
   }
 }
