@@ -85,29 +85,73 @@ namespace server.Repositories
       }
     }
 
-    public async Task<ResponseData<SubjectAssgmDto>> GetSubjectAssgm(int id)
+    public async Task<ResponseData<SubjectAssgmDetail>> GetSubjectAssgm(int id)
     {
       try
       {
-        var find = @"SELECT s.subjectName , sa.subjectId , sa.subjectAssignmentId, sa.teacherId 
-                      FROM 
-                            SUBJECTASSIGNMENT sa 
-                      LEFT JOIN 
-                            Subject s ON sa.subjectId = s.subjectId
-                      WHERE 
-                            SubjectAssignmentId = @id";
+        var find = @"SELECT SA.subjectAssignmentId, SA.teacherId, T.fullname, SA.subjectId, S.subjectName, SA.dateCreated, SA.dateUpdated
+                    FROM SUBJECTASSIGNMENT AS SA 
+                    LEFT JOIN Subject AS S ON SA.subjectId = S.subjectId
+                    LEFT JOIN Teacher AS T ON T.teacherId = SA.teacherId
+                    WHERE SubjectAssignmentId = @id";
 
         var subjectAssgmt = await _context.SubjectAssignments
           .FromSqlRaw(find, new SqlParameter("@id", id))
-          .Select(static x => new SubjectAssignment
+          .AsNoTracking()
+          .Select(static x => new SubjectAssgmDetail
           {
             SubjectAssignmentId = x.SubjectAssignmentId,
             SubjectId = x.SubjectId,
             TeacherId = x.TeacherId,
-            Subject = new Subject
-            {
-              SubjectName = x.Subject.SubjectName,
-            }
+            Fullname = x.Teacher.Fullname,
+            SubjectName = x.Subject.SubjectName,
+            DateCreated = x.DateCreated,
+            DateUpdated = x.DateUpdated
+          })
+          .FirstOrDefaultAsync();
+
+        if (subjectAssgmt is null)
+        {
+          return new ResponseData<SubjectAssgmDetail>(404, "Nội dung phân công môn học không tồn tại");
+        }
+
+        var result = new SubjectAssgmDetail
+        {
+          SubjectAssignmentId = subjectAssgmt.SubjectAssignmentId,
+          SubjectId = subjectAssgmt.SubjectId,
+          TeacherId = subjectAssgmt.TeacherId,
+          Fullname = subjectAssgmt.Fullname,
+          SubjectName = subjectAssgmt.SubjectName,
+          DateCreated = subjectAssgmt.DateCreated,
+          DateUpdated = subjectAssgmt.DateUpdated
+        };
+
+        return new ResponseData<SubjectAssgmDetail>(200, "Thành công", result);
+      }
+      catch (Exception ex)
+      {
+        return new ResponseData<SubjectAssgmDetail>(500, $"Server error: {ex.Message}");
+      }
+    }
+
+    public async Task<ResponseData<SubjectAssgmDto>> GetSubjectAssgmToUpdate(int id)
+    {
+      try
+      {
+        var find = @"SELECT S.*
+                    FROM SUBJECTASSIGNMENT as S
+                    WHERE SubjectAssignmentId = @id";
+
+        var subjectAssgmt = await _context.SubjectAssignments
+          .FromSqlRaw(find, new SqlParameter("@id", id))
+          .AsNoTracking()
+          .Select(static x => new SubjectAssgmDetail
+          {
+            SubjectAssignmentId = x.SubjectAssignmentId,
+            SubjectId = x.SubjectId,
+            TeacherId = x.TeacherId,
+            DateCreated = x.DateCreated,
+            DateUpdated = x.DateUpdated
           })
           .FirstOrDefaultAsync();
 
@@ -121,7 +165,8 @@ namespace server.Repositories
           SubjectAssignmentId = subjectAssgmt.SubjectAssignmentId,
           SubjectId = subjectAssgmt.SubjectId,
           TeacherId = subjectAssgmt.TeacherId,
-          SubjectName = subjectAssgmt.Subject.SubjectName,
+          DateCreated = subjectAssgmt.DateCreated,
+          DateUpdated = subjectAssgmt.DateUpdated
         };
 
         return new ResponseData<SubjectAssgmDto>(200, "Thành công", result);
@@ -130,45 +175,51 @@ namespace server.Repositories
       {
         return new ResponseData<SubjectAssgmDto>(500, $"Server error: {ex.Message}");
       }
+
     }
 
-    public async Task<ResponseData<List<SubjectAssgmDto>>> GetSubjectAssgms()
+    public async Task<ResponseData<List<SubjectAssgmDetail>>> GetSubjectAssgms()
     {
       try
       {
-        var find = @"SELECT sa.*, s.subjectName FROM SubjectAssignment as sa
-                    LEFT JOIN SUBJECT as s ON s.subjectId = sa.subjectId";
+        var find = @"SELECT SA.subjectAssignmentId, SA.teacherId, T.fullname, SA.subjectId, S.subjectName, SA.dateCreated, SA.dateUpdated, SA.description
+                    FROM SUBJECTASSIGNMENT AS SA 
+                    LEFT JOIN Subject AS S ON SA.subjectId = S.subjectId
+                    LEFT JOIN Teacher AS T ON T.teacherId = SA.teacherId";
 
         var subjectAssgmt = await _context.SubjectAssignments
           .FromSqlRaw(find)
+          .AsNoTracking()
           .Select(static x => new
           {
             x.SubjectAssignmentId,
-            x.SubjectId,
             x.TeacherId,
-            SubjectName = x.Subject.SubjectName,
+            x.Teacher.Fullname,
+            x.SubjectId,
+            x.Subject.SubjectName,
             x.Description,
             x.DateCreated,
             x.DateUpdated,
           })
           .ToListAsync() ?? throw new Exception("Empty");
 
-        var result = subjectAssgmt.Select(x => new SubjectAssgmDto
+        var result = subjectAssgmt.Select(x => new SubjectAssgmDetail
         {
           SubjectAssignmentId = x.SubjectAssignmentId,
-          SubjectId = x.SubjectId,
           TeacherId = x.TeacherId,
-          Description = x.Description,
+          Fullname = x.Fullname,
+          SubjectId = x.SubjectId,
           SubjectName = x.SubjectName,
+          Description = x.Description,
           DateCreated = x.DateCreated,
           DateUpdated = x.DateUpdated,
         }).ToList();
 
-        return new ResponseData<List<SubjectAssgmDto>>(200, "Thành công", result);
+        return new ResponseData<List<SubjectAssgmDetail>>(200, "Thành công", result);
       }
       catch (Exception ex)
       {
-        throw new Exception($"Server Error: {ex.Message}");
+        return new ResponseData<List<SubjectAssgmDetail>>(200, $"Server error: {ex.Message}");
       }
     }
 

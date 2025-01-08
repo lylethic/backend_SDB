@@ -276,10 +276,11 @@ namespace server.Repositories
 
     public async Task<TeacherResType> GetTeachersBySchool(QueryObject? queryObject, int schoolId)
     {
+      queryObject ??= new QueryObject();
+      var skip = (queryObject.PageNumber - 1) * queryObject.PageSize;
       try
       {
-        queryObject ??= new QueryObject();
-        var skip = (queryObject.PageNumber - 1) * queryObject.PageSize;
+        if (schoolId == 0) return new TeacherResType(400, "Vui lòng nhập mã trường học");
 
         var query = @"SELECT * FROM Teacher
                       WHERE schoolId = @schoolId
@@ -295,6 +296,52 @@ namespace server.Repositories
           )
           .Include(x => x.School)
           .ToListAsync() ?? throw new Exception("Empty");
+
+        if (teachers.Count == 0)
+          return new TeacherResType(200, $"Trường học này chưa có giáo viên");
+
+        var result = teachers.Select(x => new TeacherDetail
+        {
+          TeacherId = x.TeacherId,
+          AccountId = x.AccountId,
+          SchoolId = x.SchoolId,
+          NameSchool = x.School.NameSchcool,
+          Fullname = x.Fullname,
+          DateOfBirth = x.DateOfBirth.ToString("dd/MM/yyyy") ?? string.Empty,
+          Gender = x.Gender ? "Nam" : "Nữ",
+          Address = x.Address,
+          Status = x.Status ? "Hoạt động" : "Không hoạt động",
+          DateCreate = x.DateCreate?.ToString("dd/MM/yyyy HH:mm:ss") ?? string.Empty,
+          DateUpdate = x.DateUpdate?.ToString("dd/MM/yyyy HH:mm:ss") ?? string.Empty,
+          SchoolType = x.School.SchoolType ? "Công lập" : "Dân lập"
+        }).ToList();
+
+        return new TeacherResType(200, "Thành công", result);
+      }
+      catch (Exception ex)
+      {
+        return new TeacherResType(500, $"Server error: {ex.Message}");
+      }
+    }
+
+    public async Task<TeacherResType> GetTeachersBySchool(int schoolId)
+    {
+      try
+      {
+        if (schoolId == 0) return new TeacherResType(400, "Vui lòng nhập mã trường học");
+
+        var query = @"SELECT * FROM Teacher
+                      WHERE schoolId = @schoolId";
+
+        var teachers = await _context.Teachers
+          .FromSqlRaw(query, new SqlParameter("@schoolId", schoolId))
+          .Include(x => x.School)
+          .ToListAsync() ?? throw new Exception("Empty");
+
+        if (teachers.Count == 0)
+        {
+          return new TeacherResType(200, $"Trường học này chưa có giáo viên");
+        }
 
         var result = teachers.Select(x => new TeacherDetail
         {

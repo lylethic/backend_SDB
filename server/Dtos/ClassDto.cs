@@ -56,15 +56,8 @@
 
   public partial class ClassList : ClassDto
   {
-    public new string? DateCreated
-    {
-      get; set;
-    }
+    public new string? DateCreated { get; set; }
 
-    public new string? DateUpdated
-    {
-      get;
-      set;
-    }
+    public new string? DateUpdated { get; set; }
   }
 }

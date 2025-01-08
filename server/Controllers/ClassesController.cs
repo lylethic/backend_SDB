@@ -21,31 +21,50 @@ namespace server.Controllers
     [HttpGet]
     public async Task<IActionResult> GetAllClasses([FromQuery] QueryObject? queryObject)
     {
-      var result = await _func.GetClasses(queryObject);
+      queryObject ??= new QueryObject();
+      var result = await _func.GetClasses();
       if (result.StatusCode == 200)
       {
-        return Ok(result);
-      }
-      return StatusCode(500, result);
+        var data = result.Data ?? [];
+        var totalResults = data.Count;
+        var totalPages = (int)Math.Ceiling((double)totalResults / queryObject.PageSize);
+        var paginatedData = data.Skip((queryObject.PageNumber - 1) * queryObject.PageSize).Take(queryObject.PageSize).ToList();
 
+        return Ok(new
+        {
+          status = result.StatusCode,
+          message = result.Message,
+          data = paginatedData,
+          pagination = new
+          {
+            queryObject.PageNumber,
+            queryObject.PageSize,
+            totalResults,
+            totalPages,
+          }
+        });
+      }
+
+      if (result.StatusCode == 404)
+      {
+        return NotFound(new
+        {
+          status = result.StatusCode,
+          message = result.Message
+        });
+      }
+
+      return StatusCode(result.StatusCode, new
+      {
+        status = result.StatusCode,
+        message = result.Message
+      });
     }
 
     [HttpGet("class-list")]
     public async Task<IActionResult> GetClasses([FromQuery] QueryObject? queryObject)
     {
       var result = await _func.ClassList(queryObject);
-      if (result.StatusCode == 200)
-      {
-        return Ok(result);
-      }
-
-      return StatusCode(500, result);
-    }
-
-    [HttpGet, Route("get-class-by-school")]
-    public async Task<IActionResult> GetClassesBySchool([FromQuery] int schoolId)
-    {
-      var result = await _func.GetClassesBySchool(schoolId);
       if (result.StatusCode == 200)
       {
         return Ok(new
@@ -55,6 +74,43 @@ namespace server.Controllers
           data = result.Data
         });
       }
+      if (result.StatusCode == 404)
+      {
+        return NotFound(new
+        {
+          status = result.StatusCode,
+          message = result.Message
+        });
+      }
+      return StatusCode(500, result);
+    }
+
+    [HttpGet, Route("get-class-by-school")]
+    public async Task<IActionResult> GetClassesBySchool([FromQuery] int schoolId, [FromQuery] QueryObject? queryObject)
+    {
+      queryObject ??= new QueryObject();
+      var result = await _func.GetClassesBySchool(schoolId);
+      if (result.StatusCode == 200)
+      {
+        var data = result.Data ?? [];
+        var totalResults = data.Count;
+        var totalPages = (int)Math.Ceiling((double)totalResults / queryObject.PageSize);
+        var paginatedData = data.Skip((queryObject.PageNumber - 1) * queryObject.PageSize).Take(queryObject.PageSize).ToList();
+
+        return Ok(new
+        {
+          status = result.StatusCode,
+          message = result.Message,
+          data = paginatedData,
+          pagination = new
+          {
+            queryObject.PageNumber,
+            queryObject.PageSize,
+            totalResults,
+            totalPages,
+          }
+        });
+      }
 
       if (result.StatusCode == 204)
       {
@@ -62,7 +118,6 @@ namespace server.Controllers
         {
           status = result.StatusCode,
           message = result.Message,
-          data = result.Data
         });
       }
 
@@ -74,7 +129,6 @@ namespace server.Controllers
           message = result.Message
         });
       }
-
 
       return StatusCode(500, new
       {
@@ -89,13 +143,62 @@ namespace server.Controllers
     {
       var result = await _func.GetClass(id);
 
-      if (result.StatusCode != 200)
+      if (result.StatusCode == 200)
       {
-        return BadRequest(result);
+        return Ok(new
+        {
+          status = result.StatusCode,
+          message = result.Message,
+          data = result.Data
+        });
       }
 
-      return Ok(result);
+      if (result.StatusCode == 404)
+      {
+        return NotFound(new
+        {
+          status = result.StatusCode,
+          message = result.Message
+        });
+      }
+      return StatusCode(500, new
+      {
+        status = result.StatusCode,
+        message = result.Message
+      });
     }
+
+    // GET api/<ClassesController>/5
+    [HttpGet("get-detail/{id}")]
+    public async Task<IActionResult> GetDetail(int id)
+    {
+      var result = await _func.GetClassDetail(id);
+
+      if (result.StatusCode == 200)
+      {
+        return Ok(new
+        {
+          status = result.StatusCode,
+          message = result.Message,
+          data = result.Data
+        });
+      }
+
+      if (result.StatusCode == 404)
+      {
+        return NotFound(new
+        {
+          status = result.StatusCode,
+          message = result.Message
+        });
+      }
+      return StatusCode(500, new
+      {
+        status = result.StatusCode,
+        message = result.Message
+      });
+    }
+
 
     // POST api/<ClassesController>
     [HttpPost]
@@ -104,12 +207,85 @@ namespace server.Controllers
     {
       var result = await _func.CreateClass(model);
 
-      if (result.StatusCode != 200)
+      if (result.StatusCode == 404)
       {
-        return BadRequest(result);
+        return NotFound(new
+        {
+          status = result.StatusCode,
+          message = result.Message
+        });
+      }
+      if (result.StatusCode == 409)
+      {
+        return StatusCode(409, new
+        {
+          status = result.StatusCode,
+          message = result.Message
+        });
+      }
+      if (result.StatusCode == 200)
+      {
+        return Ok(new
+        {
+          status = result.StatusCode,
+          message = result.Message,
+          data = result.Data
+        });
+      }
+      return StatusCode(500, new
+      {
+        status = result.StatusCode,
+        message = result.Message
+      });
+    }
+
+    [HttpPost("create")]
+    public async Task<IActionResult> CreateClasses(List<ClassDto> models)
+    {
+      if (models == null || models.Count == 0)
+      {
+        return BadRequest(new
+        {
+          status = 400,
+          message = "The request body must contain a non-empty list of ClassDto objects."
+        });
       }
 
-      return Ok(result);
+      var result = await _func.CreateClasses(models);
+
+      if (result.StatusCode == 404)
+      {
+        return NotFound(new
+        {
+          status = result.StatusCode,
+          message = result.Message
+        });
+      }
+
+      if (result.StatusCode == 409)
+      {
+        return Conflict(new
+        {
+          status = result.StatusCode,
+          message = result.Message
+        });
+      }
+
+      if (result.StatusCode == 200)
+      {
+        return Ok(new
+        {
+          status = result.StatusCode,
+          message = "Classes created successfully.",
+          data = result.Data
+        });
+      }
+
+      return StatusCode(500, new
+      {
+        status = result.StatusCode,
+        message = result.Message
+      });
     }
 
     // PUT api/<ClassesController>/5
@@ -119,12 +295,28 @@ namespace server.Controllers
     {
       var result = await _func.UpdateClass(id, model);
 
-      if (result.StatusCode != 200)
+      if (result.StatusCode == 404)
       {
-        return BadRequest(result);
+        return NotFound(new
+        {
+          status = result.StatusCode,
+          message = result.Message
+        });
       }
-
-      return Ok(result);
+      if (result.StatusCode == 200)
+      {
+        return Ok(new
+        {
+          status = result.StatusCode,
+          message = result.Message,
+          data = result.Data
+        });
+      }
+      return StatusCode(500, new
+      {
+        status = result.StatusCode,
+        message = result.Message
+      });
     }
 
     // DELETE api/<ClassesController>/5
@@ -134,12 +326,28 @@ namespace server.Controllers
     {
       var result = await _func.DeleteClass(id);
 
-      if (result.StatusCode != 200)
+      if (result.StatusCode == 404)
       {
-        return BadRequest(result);
+        return NotFound(new
+        {
+          status = result.StatusCode,
+          message = result.Message
+        });
       }
-
-      return Ok(result);
+      if (result.StatusCode == 200)
+      {
+        return Ok(new
+        {
+          status = result.StatusCode,
+          message = result.Message,
+          data = result.Data
+        });
+      }
+      return StatusCode(500, new
+      {
+        status = result.StatusCode,
+        message = result.Message
+      });
     }
 
     [Authorize(Policy = "SuperAdminAndAdmin")]
@@ -167,12 +375,29 @@ namespace server.Controllers
     {
       var result = await _func.BulkDelete(ids);
 
-      if (result.StatusCode != 200)
+      if (result.StatusCode == 404)
       {
-        return BadRequest(result);
+        return NotFound(new
+        {
+          status = result.StatusCode,
+          message = result.Message
+        });
       }
 
-      return Ok(result);
+      if (result.StatusCode == 200)
+      {
+        return Ok(new
+        {
+          status = result.StatusCode,
+          message = result.Message,
+          data = result.Data
+        });
+      }
+      return StatusCode(500, new
+      {
+        status = result.StatusCode,
+        message = result.Message
+      });
     }
   }
 }

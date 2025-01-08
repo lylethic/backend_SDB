@@ -51,8 +51,8 @@ namespace server.Repositories
           new SqlParameter("@academicYearId", model.AcademicYearId),
           new SqlParameter("@gradeName", model.GradeName),
           new SqlParameter("@description", model.Description),
-          new SqlParameter("@dateCreated", model.DateCreated),
-          new SqlParameter("@dateUpdated", model.DateUpdated)
+          new SqlParameter("@dateCreated", DateTime.UtcNow),
+          new SqlParameter("@dateUpdated", DBNull.Value)
           );
 
         var result = new GradeDto
@@ -72,7 +72,7 @@ namespace server.Repositories
       }
     }
 
-    public async Task<ResponseData<GradeDto>> GetGrade(int id)
+    public async Task<ResponseData<GradeDetail>> GetGrade(int id)
     {
       try
       {
@@ -87,7 +87,7 @@ namespace server.Repositories
           {
             x.GradeId,
             x.GradeName,
-            AcademicYearId = x.AcademicYear.AcademicYearId,
+            x.AcademicYearId,
             displayName = x.AcademicYear.DisplayAcademicYearName,
             yearStart = x.AcademicYear.YearStart,
             yearEnd = x.AcademicYear.YearEnd,
@@ -96,61 +96,70 @@ namespace server.Repositories
 
         if (grade is null)
         {
-          return new ResponseData<GradeDto>(404, "Grade not found");
+          return new ResponseData<GradeDetail>(404, "Khối lớp không tồn tại");
         }
 
-        var result = new GradeDto
+        var result = new GradeDetail
         {
           GradeId = id,
           GradeName = grade.GradeName,
-          AcademicYear = new AcademicYearDto
-          {
-            AcademicYearId = grade.AcademicYearId,
-            DisplayAcademicYearName = grade.displayName,
-            YearStart = grade.yearStart,
-            YearEnd = grade.yearEnd,
-          }
+          AcademicYearId = grade.AcademicYearId,
+          DisplayAcademicYearName = grade.displayName,
+          YearStart = grade.yearStart,
+          YearEnd = grade.yearEnd,
         };
 
-        return new ResponseData<GradeDto>(200, result);
+        return new ResponseData<GradeDetail>(200, "Thành công", result);
 
       }
       catch (Exception ex)
       {
-        return new ResponseData<GradeDto>(500, $"Server error: {ex.Message}");
+        return new ResponseData<GradeDetail>(500, $"Server error: {ex.Message}");
       }
     }
 
-    public async Task<List<GradeDto>> GetGrades(int pageNumber, int pageSize)
+    public async Task<ResponseData<List<GradeDetail>>> GetGrades()
     {
       try
       {
-        var skip = (pageNumber - 1) * pageSize;
-
-        var find = @"SELECT * FROM GRADE 
-                      ORDER BY GRADEID
-                      OFFSET @skip ROWS
-                      FETCH  NEXT @pageSize ROWS ONLY;";
+        var find = @"SELECT g.*, a.displayAcademicYear_Name
+                     FROM GRADE as g LEFT JOIN AcademicYear as a on g.academicYearId = a.academicYearId";
 
         var grade = await _context.Grades
-          .FromSqlRaw(find,
-          new SqlParameter("@skip", skip),
-          new SqlParameter("@pageSize", pageSize)
-          ).ToListAsync() ?? throw new Exception("Empty");
+          .FromSqlRaw(find)
+          .Select(static x => new
+          {
+            x.GradeId,
+            x.AcademicYearId,
+            x.AcademicYear.DisplayAcademicYearName,
+            x.AcademicYear.YearStart,
+            x.AcademicYear.YearEnd,
+            x.GradeName,
+            x.Description,
+            x.DateCreated,
+            x.DateUpdated
+          })
+          .AsNoTracking()
+          .ToListAsync() ?? throw new Exception("Empty");
 
-        var result = grade.Select(x => new GradeDto
+        var result = grade.Select(x => new GradeDetail
         {
           GradeId = x.GradeId,
           AcademicYearId = x.AcademicYearId,
+          DisplayAcademicYearName = x.DisplayAcademicYearName,
+          YearStart = x.YearStart,
+          YearEnd = x.YearEnd,
           GradeName = x.GradeName,
           Description = x.Description,
+          DateCreated = x.DateCreated,
+          DateUpdated = x.DateUpdated
         }).ToList();
 
-        return result;
+        return new ResponseData<List<GradeDetail>>(200, "Thành công", result);
       }
       catch (Exception ex)
       {
-        Console.WriteLine(ex.Message);
+        return new ResponseData<List<GradeDetail>>(500, $"Server error: {ex.Message}");
         throw new Exception($"Server Error: {ex.Message}");
       }
     }
@@ -302,7 +311,7 @@ namespace server.Repositories
       }
     }
 
-    public async Task<string> ImportExcelFile(IFormFile file)
+    public async Task<ResponseData<string>> ImportExcelFile(IFormFile file)
     {
       try
       {
@@ -362,13 +371,14 @@ namespace server.Repositories
             } while (reader.NextResult());
           }
 
-          return "Tải lên thành công.";
+          return new ResponseData<string>(200, "Tải lên thành công.");
         }
 
-        return "No file uploaded";
+        return new ResponseData<string>(200, "Không có tệp nào được tải lên");
       }
       catch (Exception ex)
       {
+        return new ResponseData<string>(500, $"Error while uploading file: {ex.Message}");
         throw new Exception($"Error while uploading file: {ex.Message}");
       }
     }

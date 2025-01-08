@@ -21,22 +21,51 @@ namespace server.Controllers
 
     // GET: api/<GradesController>
     [HttpGet]
-    public async Task<IActionResult> GetAll_Grade(int pageNumber = 1, int pageSize = 50)
+    public async Task<IActionResult> GetAll_Grade([FromQuery] QueryObject? queryObject)
     {
-      try
+      queryObject ??= new QueryObject();
+      var result = await _grade.GetGrades();
+      if (result is null)
       {
-        var result = await _grade.GetGrades(pageNumber, pageSize);
-        if (result is null)
-        {
-          return NotFound();
-        }
+        return NotFound();
+      }
+      if (result.StatusCode == 200)
+      {
+        var data = result.Data ?? [];
+        var totalResults = data.Count;
+        var totalPages = (int)Math.Ceiling((double)totalResults / queryObject.PageSize);
+        var paginatedData = data
+        .Skip((queryObject.PageNumber - 1) * queryObject.PageSize)
+        .Take(queryObject.PageSize)
+        .ToList();
 
-        return Ok(result);
+        return Ok(new
+        {
+          status = result.StatusCode,
+          message = result.Message,
+          data = paginatedData,
+          pagination = new
+          {
+            queryObject.PageNumber,
+            queryObject.PageSize,
+            totalResults,
+            totalPages
+          }
+        });
       }
-      catch (Exception ex)
+      if (result.StatusCode == 404)
       {
-        return StatusCode(500, $"Server error: {ex.Message}");
+        return NotFound(new
+        {
+          status = result.StatusCode,
+          message = result.Message
+        });
       }
+      return StatusCode(result.StatusCode, new
+      {
+        status = result.StatusCode,
+        message = result.Message
+      });
     }
 
     // GET api/<GradesController>/5
@@ -45,12 +74,29 @@ namespace server.Controllers
     {
       var result = await _grade.GetGrade(id);
 
-      if (result.StatusCode != 200)
+      if (result.StatusCode == 200)
       {
-        return BadRequest(result);
+        return Ok(new
+        {
+          status = result.StatusCode,
+          message = result.Message,
+          data = result.Data
+        });
       }
 
-      return Ok(result);
+      if (result.StatusCode == 404)
+      {
+        return NotFound(new
+        {
+          status = result.StatusCode,
+          message = result.Message
+        });
+      }
+      return StatusCode(result.StatusCode, new
+      {
+        status = result.StatusCode,
+        message = result.Message
+      });
     }
 
     // POST api/<GradesController>
@@ -60,12 +106,29 @@ namespace server.Controllers
     {
       var result = await _grade.CreateGrade(model);
 
-      if (result.StatusCode != 200)
+      if (result.StatusCode == 200)
       {
-        return BadRequest(result);
+        return Ok(new
+        {
+          status = result.StatusCode,
+          message = result.Message,
+          data = result.Data
+        });
       }
 
-      return Ok(result);
+      if (result.StatusCode == 404)
+      {
+        return NotFound(new
+        {
+          status = result.StatusCode,
+          message = result.Message
+        });
+      }
+      return StatusCode(result.StatusCode, new
+      {
+        status = result.StatusCode,
+        message = result.Message
+      });
     }
 
     // PUT api/<GradesController>/5
@@ -75,12 +138,29 @@ namespace server.Controllers
     {
       var result = await _grade.UpdateGrade(id, model);
 
-      if (result.StatusCode != 200)
+      if (result.StatusCode == 200)
       {
-        return BadRequest(result);
+        return Ok(new
+        {
+          status = result.StatusCode,
+          message = result.Message,
+          data = result.Data
+        });
       }
 
-      return Ok(result);
+      if (result.StatusCode == 404)
+      {
+        return NotFound(new
+        {
+          status = result.StatusCode,
+          message = result.Message
+        });
+      }
+      return StatusCode(result.StatusCode, new
+      {
+        status = result.StatusCode,
+        message = result.Message
+      });
     }
 
     // DELETE api/<GradesController>/5
@@ -90,12 +170,28 @@ namespace server.Controllers
     {
       var result = await _grade.DeleteGrade(id);
 
-      if (result.StatusCode != 200)
+      if (result.StatusCode == 200)
       {
-        return BadRequest(result);
+        return Ok(new
+        {
+          status = result.StatusCode,
+          message = result.Message
+        });
       }
 
-      return Ok(result);
+      if (result.StatusCode == 404)
+      {
+        return NotFound(new
+        {
+          status = result.StatusCode,
+          message = result.Message
+        });
+      }
+      return StatusCode(result.StatusCode, new
+      {
+        status = result.StatusCode,
+        message = result.Message
+      });
     }
 
     [HttpDelete("bulkdelete")]
@@ -103,32 +199,56 @@ namespace server.Controllers
     {
       var result = await _grade.BulkDelete(ids);
 
-      if (result.StatusCode != 200)
+      if (result.StatusCode == 200)
       {
-        return BadRequest(result);
+        return Ok(new
+        {
+          status = result.StatusCode,
+          message = result.Message
+        });
       }
 
-      return Ok(result);
+      if (result.StatusCode == 404)
+      {
+        return NotFound(new
+        {
+          status = result.StatusCode,
+          message = result.Message
+        });
+      }
+      return StatusCode(result.StatusCode, new
+      {
+        status = result.StatusCode,
+        message = result.Message
+      });
     }
 
     [Authorize(Policy = "SuperAdminAndAdmin")]
     [HttpPost("upload")]
     public async Task<IActionResult> ImportExcelFile(IFormFile file)
     {
-      try
+      var result = await _grade.ImportExcelFile(file);
+      if (result.StatusCode == 200)
       {
-        var result = await _grade.ImportExcelFile(file);
-        if (result.Contains("Thành côngy"))
+        return Ok(new
         {
-          return Ok(result);
-        }
-
-        return BadRequest(result);
+          status = result.StatusCode,
+          message = result.Message
+        });
       }
-      catch (Exception ex)
+      if (result.StatusCode == 400)
       {
-        throw new Exception($"Error: {ex.Message}");
+        return BadRequest(new
+        {
+          status = result.StatusCode,
+          message = result.Message
+        });
       }
+      return StatusCode(result.StatusCode, new
+      {
+        status = result.StatusCode,
+        message = result.Message
+      });
     }
   }
 }

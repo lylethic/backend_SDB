@@ -6,9 +6,9 @@ namespace server.IService
   {
     Task<ResponseData<GradeDto>> CreateGrade(GradeDto model);
 
-    Task<ResponseData<GradeDto>> GetGrade(int id);
+    Task<ResponseData<GradeDetail>> GetGrade(int id);
 
-    Task<List<GradeDto>> GetGrades(int pageNumber, int pageSize);
+    Task<ResponseData<List<GradeDetail>>> GetGrades();
 
     Task<ResponseData<GradeDto>> DeleteGrade(int id);
 
@@ -16,6 +16,6 @@ namespace server.IService
 
     Task<ResponseData<string>> BulkDelete(List<int> ids);
 
-    Task<string> ImportExcelFile(IFormFile file);
+    Task<ResponseData<string>> ImportExcelFile(IFormFile file);
   }
 }

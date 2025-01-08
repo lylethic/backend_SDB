@@ -205,7 +205,7 @@ namespace server.Repositories
       };
       try
       {
-        _httpContextAccessor.HttpContext?.Response.Cookies.Append("accessToken", token, cookieOptions);
+        _httpContextAccessor.HttpContext?.Response.Cookies.Append("jwtAccessToken", token, cookieOptions);
       }
       catch (Exception ex)
       {
@@ -243,7 +243,7 @@ namespace server.Repositories
       };
       try
       {
-        _httpContextAccessor.HttpContext?.Response.Cookies.Append("accessToken", "", cookieOptions);
+        _httpContextAccessor.HttpContext?.Response.Cookies.Append("jwtAccessToken", "", cookieOptions);
       }
       catch (Exception ex)
       {

@@ -1,6 +1,7 @@
 ﻿namespace server.Dtos
 {
-  public class SubjectAssgmDto // Phan cong giang day mon hoc
+  // Phan cong giang day mon hoc
+  public class SubjectAssgmDto
   {
     public int SubjectAssignmentId { get; set; }
 
@@ -13,7 +14,11 @@
     public DateTime? DateCreated { get; set; }
 
     public DateTime? DateUpdated { get; set; }
+  }
 
+  public class SubjectAssgmDetail : SubjectAssgmDto
+  {
     public string? SubjectName { get; set; }
+    public string? Fullname { get; set; }
   }
 }

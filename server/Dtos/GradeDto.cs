@@ -13,7 +13,16 @@
     public DateTime? DateCreated { get; set; }
 
     public DateTime? DateUpdated { get; set; }
+  }
 
-    public AcademicYearDto? AcademicYear { get; set; }
+  public class GradeDetail : GradeDto
+  {
+    public string DisplayAcademicYearName { get; set; } = null!;
+
+    public DateOnly YearStart { get; set; }
+
+    public DateOnly YearEnd { get; set; }
+
+    public bool Status { get; set; }
   }
 }

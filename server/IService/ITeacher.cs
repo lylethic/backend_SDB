@@ -17,6 +17,8 @@ namespace server.IService
 
     Task<TeacherResType> GetTeachersBySchool(QueryObject? queryObject, int schoolId);
 
+    Task<TeacherResType> GetTeachersBySchool(int schoolId);
+
     Task<TeacherResType> DeleteTeacher(int id);
 
     Task<TeacherResType> UpdateTeacher(int id, TeacherDto model);

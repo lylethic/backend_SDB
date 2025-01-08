@@ -54,9 +54,58 @@ namespace server.Controllers
     {
       var teachers = await _teacherRepo.GetTeachersBySchool(queryObject, schoolId);
 
+      if (teachers.StatusCode == 400)
+      {
+        return BadRequest(new
+        {
+          statusCode = teachers.StatusCode,
+          message = teachers.Message,
+        });
+      }
+
       if (teachers.StatusCode == 404)
       {
         return NotFound(new
+        {
+          statusCode = teachers.StatusCode,
+          message = teachers.Message,
+        });
+      }
+
+      if (teachers.StatusCode == 200)
+      {
+        return Ok(new
+        {
+          statusCode = teachers.StatusCode,
+          message = teachers.Message,
+          data = teachers.TeacherListDetails
+        });
+      }
+
+      return StatusCode(500, new
+      {
+        statusCode = teachers.StatusCode,
+        message = teachers.Message,
+      });
+    }
+
+    [HttpGet, Route("teachers-by-school")]
+    public async Task<IActionResult> GetTeachersBySchool([FromQuery] int schoolId)
+    {
+      var teachers = await _teacherRepo.GetTeachersBySchool(schoolId);
+
+      if (teachers.StatusCode == 404)
+      {
+        return NotFound(new
+        {
+          statusCode = teachers.StatusCode,
+          message = teachers.Message,
+        });
+      }
+
+      if (teachers.StatusCode == 400)
+      {
+        return BadRequest(new
         {
           statusCode = teachers.StatusCode,
           message = teachers.Message,

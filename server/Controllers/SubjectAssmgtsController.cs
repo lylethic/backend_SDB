@@ -30,12 +30,15 @@ namespace server.Controllers
         var data = result.Data ?? [];
         var totalResults = data.Count;
         var totalPages = (int)Math.Ceiling((double)totalResults / queryObject.PageSize);
-        var paginatedData = data.Skip((queryObject.PageNumber - 1) * queryObject.PageSize).Take(queryObject.PageSize).ToList();
+        var paginatedData = data
+        .Skip((queryObject.PageNumber - 1) * queryObject.PageSize)
+        .Take(queryObject.PageSize)
+        .ToList();
 
         return Ok(new
         {
           status = result.StatusCode,
-          messgae = result.Message,
+          message = result.Message,
           data = paginatedData,
           pagination = new
           {
@@ -46,7 +49,14 @@ namespace server.Controllers
           }
         });
       }
-
+      if (result.StatusCode == 404)
+      {
+        return NotFound(new
+        {
+          status = result.StatusCode,
+          message = result.Message
+        });
+      }
       return StatusCode(result.StatusCode, new
       {
         status = result.StatusCode,
@@ -68,11 +78,30 @@ namespace server.Controllers
         });
       }
 
-      if (result.StatusCode == 400)
+      if (result.StatusCode == 404)
       {
-        return BadRequest(new
+        return NotFound(new
         {
           message = result.Message
+        });
+      }
+
+      return StatusCode(500, new
+      {
+        message = result.Message
+      });
+    }
+
+    [HttpGet("get-to-update/{id}")]
+    public async Task<IActionResult> GetByIdSubjectAssignmentToUpdate(int id)
+    {
+      var result = await _subject_Assgm.GetSubjectAssgmToUpdate(id);
+      if (result.StatusCode == 200)
+      {
+        return Ok(new
+        {
+          message = result.Message,
+          data = result.Data
         });
       }
 
@@ -89,7 +118,6 @@ namespace server.Controllers
         message = result.Message
       });
     }
-
 
     // POST api/<SubjectAssmgtsController>
     [Authorize(Policy = "SuperAdminAndAdmin")]

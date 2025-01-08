@@ -31,7 +31,7 @@ namespace server.Repositories
 
         if (grade is null)
         {
-          return new ResponseData<ClassDto>(404, "Grade Not found");
+          return new ResponseData<ClassDto>(404, "Khối lớp học không tồn tại");
         }
 
         // check teacher
@@ -42,7 +42,7 @@ namespace server.Repositories
 
         if (teacherExists is null)
         {
-          return new ResponseData<ClassDto>(404, "Teacher Not found");
+          return new ResponseData<ClassDto>(404, "Giáo viên không tồn tại");
         }
 
         // check aca
@@ -53,7 +53,7 @@ namespace server.Repositories
 
         if (acaExists is null)
         {
-          return new ResponseData<ClassDto>(404, "AcademicYear Not found");
+          return new ResponseData<ClassDto>(404, "Năm học không tồn tại");
         }
 
         // check school
@@ -64,7 +64,7 @@ namespace server.Repositories
 
         if (schoolExists is null)
         {
-          return new ResponseData<ClassDto>(404, "School Not found");
+          return new ResponseData<ClassDto>(404, "Trường học không tồn tại");
         }
 
         //check class
@@ -76,7 +76,7 @@ namespace server.Repositories
 
         if (getClass is not null)
         {
-          return new ResponseData<ClassDto>(409, "Grade already exists");
+          return new ResponseData<ClassDto>(409, "Lớp học đã tồn tại");
         }
 
         var sqlInsert = @"INSERT INTO Class (gradeId, teacherId, academicYearId, schoolId, className, status, description, dateCreated, dateUpdated)
@@ -93,7 +93,7 @@ namespace server.Repositories
           new SqlParameter("@className", model.ClassName),
           new SqlParameter("@status", model.Status),
           new SqlParameter("@description", model.Description),
-          new SqlParameter("@dateCreated", model.DateCreated),
+          new SqlParameter("@dateCreated", currentDate),
           new SqlParameter("@dateUpdated", DBNull.Value)
           );
 
@@ -111,11 +111,119 @@ namespace server.Repositories
           DateUpdated = model.DateUpdated,
         };
 
-        return new ResponseData<ClassDto>(200, result);
+        return new ResponseData<ClassDto>(200, "Tạo mới thành công", result);
       }
       catch (Exception ex)
       {
         return new ResponseData<ClassDto>(500, $"Server error: {ex.Message}");
+      }
+    }
+
+    public async Task<ResponseData<List<ClassDto>>> CreateClasses(List<ClassDto> models)
+    {
+      var responseList = new List<ClassDto>();
+
+      using var transaction = await _context.Database.BeginTransactionAsync(); // Start transaction
+      try
+      {
+        foreach (var model in models)
+        {
+          // Check grade
+          var findGrade = @"SELECT * FROM Grade WHERE gradeId = @id";
+          var grade = await _context.Grades
+              .FromSqlRaw(findGrade, new SqlParameter("@id", model.GradeId))
+              .FirstOrDefaultAsync();
+
+          if (grade is null)
+          {
+            return new ResponseData<List<ClassDto>>(404, $"Khối lớp học không tồn tại");
+          }
+
+          // Check teacher
+          var findTeacher = "SELECT * FROM Teacher WHERE teacherId = @id";
+          var teacherExists = await _context.Teachers
+              .FromSqlRaw(findTeacher, new SqlParameter("@id", model.TeacherId))
+              .FirstOrDefaultAsync();
+
+          if (teacherExists is null)
+          {
+            return new ResponseData<List<ClassDto>>(404, $"Giáo viên không tồn tại");
+          }
+
+          // Check academic year
+          var findAcademic = "SELECT * FROM AcademicYear WHERE academicYearId = @id";
+          var acaExists = await _context.AcademicYears
+              .FromSqlRaw(findAcademic, new SqlParameter("@id", model.AcademicYearId))
+              .FirstOrDefaultAsync();
+
+          if (acaExists is null)
+          {
+            return new ResponseData<List<ClassDto>>(404, $"Năm học không tồn tại");
+          }
+
+          // Check school
+          var findSchool = "SELECT * FROM School WHERE SchoolId = @id";
+          var schoolExists = await _context.Schools
+              .FromSqlRaw(findSchool, new SqlParameter("@id", model.SchoolId))
+              .FirstOrDefaultAsync();
+
+          if (schoolExists is null)
+          {
+            return new ResponseData<List<ClassDto>>(404, $"Trường học không tồn tại");
+          }
+
+          // Check if class already exists
+          var findClass = "SELECT * FROM Class WHERE classId = @id";
+          var getClass = await _context.Classes
+              .FromSqlRaw(findClass, new SqlParameter("@id", model.ClassId))
+              .FirstOrDefaultAsync();
+
+          if (getClass is not null)
+          {
+            return new ResponseData<List<ClassDto>>(409, $"Lớp học đã tồn tại");
+          }
+
+          // Insert new class
+          var sqlInsert = @"INSERT INTO Class (gradeId, teacherId, academicYearId, schoolId, className, status, description, dateCreated, dateUpdated)
+                              VALUES (@gradeId, @teacherId, @academicYearId, @schoolId, @className, @status, @description, @dateCreated, @dateUpdated);
+                              SELECT CAST(SCOPE_IDENTITY() as int);";
+
+          var currentDate = DateTime.UtcNow;
+
+          var classId = await _context.Database.ExecuteSqlRawAsync(sqlInsert,
+              new SqlParameter("@gradeId", model.GradeId),
+              new SqlParameter("@teacherId", model.TeacherId),
+              new SqlParameter("@academicYearId", model.AcademicYearId),
+              new SqlParameter("@schoolId", model.SchoolId),
+              new SqlParameter("@className", model.ClassName),
+              new SqlParameter("@status", model.Status),
+              new SqlParameter("@description", model.Description),
+              new SqlParameter("@dateCreated", currentDate),
+              new SqlParameter("@dateUpdated", DBNull.Value)
+          );
+
+          responseList.Add(new ClassDto
+          {
+            ClassId = classId,
+            GradeId = model.GradeId,
+            TeacherId = model.TeacherId,
+            AcademicYearId = model.AcademicYearId,
+            SchoolId = model.SchoolId,
+            ClassName = model.ClassName,
+            Status = model.Status,
+            Description = model.Description,
+            DateCreated = currentDate,
+            DateUpdated = null
+          });
+        }
+
+        await transaction.CommitAsync();
+        return new ResponseData<List<ClassDto>>(200, responseList);
+      }
+      catch (Exception ex)
+      {
+        await transaction.RollbackAsync();
+        return new ResponseData<List<ClassDto>>(500, $"Server error: {ex.Message}");
       }
     }
 
@@ -128,13 +236,13 @@ namespace server.Repositories
 
         if (getClass is null)
         {
-          return new ResponseData<ClassDto>(404, "Not found");
+          return new ResponseData<ClassDto>(404, "Lớp học không tồn tại");
         }
 
         var deleteQuery = "DELETE FROM CLASS WHERE ClassId = @id";
         await _context.Database.ExecuteSqlRawAsync(deleteQuery, new SqlParameter("@id", id));
 
-        return new ResponseData<ClassDto>(200, "Deleted");
+        return new ResponseData<ClassDto>(200, "Đã xóa thành công");
       }
       catch (Exception ex)
       {
@@ -148,6 +256,7 @@ namespace server.Repositories
       {
         var query = await _context.Classes
         .Where(x => x.ClassId == id)
+        .AsNoTracking()
         .Include(x => x.School)
         .Include(x => x.Teacher)
         .Include(x => x.Grade)
@@ -193,25 +302,68 @@ namespace server.Repositories
           DateUpdated = query.DateUpdated.HasValue ? query.DateUpdated.Value.ToString("dd/MM/yyyy") : string.Empty,
         };
 
-        return new ResponseData<ClassDetails>(200, result);
+        return new ResponseData<ClassDetails>(200, "Thành công", result);
       }
       catch (Exception ex)
       {
         return new ResponseData<ClassDetails>(500, $"Server error: {ex.Message}");
       }
     }
-
-    public async Task<ResponseData<List<ClassDetails>>> GetClasses(QueryObject? queryObject)
+    public async Task<ResponseData<ClassDto>> GetClassDetail(int id)
     {
       try
       {
-        queryObject ??= new QueryObject();
-        var skip = (queryObject.PageNumber - 1) * queryObject.PageSize;
+        var query = await _context.Classes
+        .Where(x => x.ClassId == id)
+        .AsNoTracking()
+        .Select(static x => new
+        {
+          x.ClassId,
+          x.ClassName,
+          x.SchoolId,
+          x.GradeId,
+          x.TeacherId,
+          x.AcademicYearId,
+          x.Description,
+          x.Status,
+          x.DateCreated,
+          x.DateUpdated,
+        })
+        .FirstOrDefaultAsync();
 
+        if (query is null)
+        {
+          return new ResponseData<ClassDto>(404, "Không tìm thấy lớp học");
+        }
+
+        var result = new ClassDto
+        {
+          ClassId = id,
+          ClassName = query.ClassName,
+          SchoolId = query.SchoolId,
+          TeacherId = query.TeacherId,
+          GradeId = query.GradeId,
+          AcademicYearId = query.AcademicYearId,
+          Description = query.Description,
+          Status = query.Status,
+          DateCreated = query.DateCreated,
+          DateUpdated = query.DateUpdated,
+        };
+
+        return new ResponseData<ClassDto>(200, "Thành công", result);
+      }
+      catch (Exception ex)
+      {
+        return new ResponseData<ClassDto>(500, $"Server error: {ex.Message}");
+      }
+    }
+    public async Task<ResponseData<List<ClassDetails>>> GetClasses()
+    {
+      try
+      {
         var classes = await _context.Classes
+            .AsNoTracking()
             .OrderBy(c => c.ClassId)
-            .Skip(skip)
-            .Take(queryObject.PageSize)
             .Select(c => new ClassDetails
             {
               ClassId = c.ClassId,
@@ -223,6 +375,7 @@ namespace server.Repositories
               NienKhoa = c.AcademicYear.DisplayAcademicYearName,
               SchoolId = c.SchoolId,
               ClassName = c.ClassName,
+              SchoolName = c.School.NameSchcool,
               Status = c.Status,
               Description = c.Description,
               DateCreated = c.DateCreated.HasValue ? c.DateCreated.Value.ToString("dd/MM/yyyy") : string.Empty,
@@ -230,8 +383,8 @@ namespace server.Repositories
             })
             .ToListAsync();
 
-        if (!classes.Any())
-          return new ResponseData<List<ClassDetails>>(404, "Không tìm thấy");
+        if (classes.Count == 0)
+          return new ResponseData<List<ClassDetails>>(404, "Không tìm thấy lớp học nào");
 
         return new ResponseData<List<ClassDetails>>(200, "Thành công", classes);
       }
@@ -249,6 +402,7 @@ namespace server.Repositories
         var skip = (queryObject.PageNumber - 1) * queryObject.PageSize;
 
         var classes = await _context.Classes
+            .AsNoTracking()
             .OrderBy(c => c.ClassId)
             .Skip(skip)
             .Take(queryObject.PageSize)
@@ -267,7 +421,7 @@ namespace server.Repositories
             })
             .ToListAsync();
 
-        if (!classes.Any())
+        if (classes.Count == 0)
           return new ResponseData<List<ClassList>>(404, "Không tìm thấy");
 
         return new ResponseData<List<ClassList>>(200, "Thành công", classes);
@@ -278,26 +432,30 @@ namespace server.Repositories
       }
     }
 
-    public async Task<ResponseData<List<ClassList>>> GetClassesBySchool(int schoolId)
+    public async Task<ResponseData<List<ClassDetails>>> GetClassesBySchool(int schoolId)
     {
       try
       {
         if (schoolId == 0)
         {
-          return new ResponseData<List<ClassList>>(400, "Vui lòng nhập mã trường học");
+          return new ResponseData<List<ClassDetails>>(400, "Vui lòng nhập mã trường học");
         }
 
         var query = await _context.Classes
                   .Where(c => c.SchoolId == schoolId)
                   .OrderBy(c => c.ClassId)
-                  .Select(c => new ClassList
+                  .Select(c => new ClassDetails
                   {
                     ClassId = c.ClassId,
                     GradeId = c.GradeId,
+                    GradeName = c.Grade.GradeName,
                     TeacherId = c.Teacher.TeacherId,
+                    TeacherName = c.Teacher.Fullname,
                     AcademicYearId = c.AcademicYearId,
                     SchoolId = c.SchoolId,
+                    NienKhoa = c.AcademicYear.DisplayAcademicYearName,
                     ClassName = c.ClassName,
+                    SchoolName = c.School.NameSchcool,
                     Status = c.Status,
                     Description = c.Description,
                     DateCreated = c.DateCreated.HasValue ? c.DateCreated.Value.ToString("dd/MM/yyyy") : string.Empty,
@@ -305,17 +463,16 @@ namespace server.Repositories
                   })
                   .ToListAsync();
 
-
         if (query.Count == 0 || query is null)
         {
-          return new ResponseData<List<ClassList>>(204, "Trường học này chưa có lớp học hoặc mã trường học không tồn tại", []);
+          return new ResponseData<List<ClassDetails>>(204, "Trường học này chưa có lớp học hoặc mã trường học không tồn tại", []);
         }
 
-        return new ResponseData<List<ClassList>>(200, "Thành công", query);
+        return new ResponseData<List<ClassDetails>>(200, "Thành công", query);
       }
       catch (Exception ex)
       {
-        return new ResponseData<List<ClassList>>(500, $"Server error: {ex.Message}");
+        return new ResponseData<List<ClassDetails>>(500, $"Server error: {ex.Message}");
       }
     }
 
@@ -330,12 +487,12 @@ namespace server.Repositories
 
         if (getClass is null)
         {
-          return new ResponseData<ClassDto>(404, "Không tìm thấy lớp hóc");
+          return new ResponseData<ClassDto>(404, "Không tìm thấy lớp học");
         }
 
-        bool hasChanges = false;
         var parameters = new List<SqlParameter>();
         var queryBuilder = new StringBuilder("UPDATE Class SET ");
+        bool hasChanges = false;
 
         // Conditional checks for each field
         if (model.GradeId != 0 && model.GradeId != getClass.GradeId)
@@ -411,7 +568,7 @@ namespace server.Repositories
         }
         else
         {
-          return new ResponseData<ClassDto>(200, "No changes detected");
+          return new ResponseData<ClassDto>(200, "Không phát hiện sự thay đổi");
         }
       }
       catch (Exception ex)
@@ -503,14 +660,11 @@ namespace server.Repositories
       {
         if (ids == null || !ids.Any())
         {
-          return new ResponseData<string>(400, "No IDs provided");
+          return new ResponseData<string>(400, "Vui lòng cung cấp lớp học muốn xóa");
         }
 
-
-        // Create a comma-separated list of IDs for the SQL query
         var idList = string.Join(",", ids);
 
-        // Prepare the delete query with parameterized input
         var deleteQuery = $"DELETE FROM CLASS WHERE ClassId IN ({idList})";
 
         // Execute
@@ -518,12 +672,12 @@ namespace server.Repositories
 
         if (affectedRows == 0)
         {
-          return new ResponseData<string>(404, "No classes found to delete");
+          return new ResponseData<string>(404, "Không tìm thấy lớp học");
         }
 
         await transaction.CommitAsync();
 
-        return new ResponseData<string>(200, "Deleted Thành côngy");
+        return new ResponseData<string>(200, "Thành công");
       }
       catch (Exception ex)
       {
