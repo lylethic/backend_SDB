@@ -472,6 +472,11 @@ namespace server.Repositories
     {
       try
       {
+        if (schoolId == 0)
+        {
+          return new BiaSoDauBaiResType(400, "Vui lòng cung cấp ít nhất mã trường học");
+        }
+
         var baiSoDauBaiQuery = from biaSo in _context.BiaSoDauBais
                                join lop in _context.Classes on biaSo.ClassId equals lop.ClassId into lopHocGroup
                                from lop in lopHocGroup.DefaultIfEmpty()

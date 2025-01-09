@@ -125,10 +125,10 @@ namespace server.Controllers
         if (result.StatusCode == 200)
         {
           // Safely handle null ListBiaSoDauBaiRes
-          var listBiaSoDauBaiRes = result.ListBiaSoDauBaiRes ?? [];
-          var totalResults = listBiaSoDauBaiRes.Count;
+          var data = result.ListBiaSoDauBaiRes ?? [];
+          var totalResults = data.Count;
           var totalPages = (int)Math.Ceiling((double)totalResults / queryObject.PageSize);
-          var paginatedData = listBiaSoDauBaiRes
+          var paginatedData = data
                                 .Skip((queryObject.PageNumber - 1) * queryObject.PageSize)
                                 .Take(queryObject.PageSize)
                                 .ToList();
@@ -147,6 +147,7 @@ namespace server.Controllers
             }
           });
         }
+
         return StatusCode(result.StatusCode, new
         {
           status = result.StatusCode,

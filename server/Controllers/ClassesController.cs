@@ -54,7 +54,7 @@ namespace server.Controllers
         });
       }
 
-      return StatusCode(result.StatusCode, new
+      return StatusCode(500, new
       {
         status = result.StatusCode,
         message = result.Message

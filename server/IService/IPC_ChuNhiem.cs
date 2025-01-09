@@ -9,9 +9,9 @@ namespace server.IService
 
     Task<ChuNhiemResType> GetPC_ChuNhiem(int id);
 
-    Task<ChuNhiemResType> GetPC_ChuNhiems(int pageNumber, int pageSize);
+    Task<ChuNhiemResType> GetPC_ChuNhiems();
 
-    Task<ChuNhiemResType> Get_ChuNhiem_Teacher_Class(int idClass);
+    Task<ChuNhiemResType> Get_ChuNhiem_Teacher_Class(int schoolId, int? gradeId, int? classId);
 
     Task<ChuNhiemResType> UpdatePC_ChuNhiem(int id, PC_ChuNhiemDto model);
 
@@ -19,6 +19,6 @@ namespace server.IService
 
     Task<ChuNhiemResType> BulkDelete(List<int> ids);
 
-    Task<string> ImportExcelFile(IFormFile file);
+    Task<ResponseData<string>> ImportExcelFile(IFormFile file);
   }
 }

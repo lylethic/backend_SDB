@@ -309,6 +309,7 @@ namespace server.Repositories
         return new ResponseData<ClassDetails>(500, $"Server error: {ex.Message}");
       }
     }
+
     public async Task<ResponseData<ClassDto>> GetClassDetail(int id)
     {
       try
@@ -357,6 +358,7 @@ namespace server.Repositories
         return new ResponseData<ClassDto>(500, $"Server error: {ex.Message}");
       }
     }
+
     public async Task<ResponseData<List<ClassDetails>>> GetClasses()
     {
       try

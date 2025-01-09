@@ -8,11 +8,11 @@ namespace server.Controllers
   [Route("api/[controller]")]
   [ApiController]
   [Authorize]
-  public class AccountController : ControllerBase
+  public class AccountsController : ControllerBase
   {
     private readonly IAccount _acc;
 
-    public AccountController(IAccount acc)
+    public AccountsController(IAccount acc)
     {
       _acc = acc;
     }
@@ -31,34 +31,64 @@ namespace server.Controllers
       return Ok(result);
     }
 
-    // GET: api/Auth
+    // GET: api/Account
     [HttpGet]
-    public async Task<IActionResult> GetAccounts([FromQuery] QueryObject? query)
+    public async Task<IActionResult> GetAccounts([FromQuery] QueryObject? query, [FromQuery] int? schoolId)
     {
-      var result = await _acc.GetAccounts(query);
-      if (result.StatusCode == 404)
-      {
-        return NotFound(new
-        {
-          statusCode = 404,
-          message = result.Message
-        });
-      }
-      if (result.StatusCode == 200)
-      {
+      query ??= new QueryObject();
 
-        return Ok(new
+      try
+      {
+        var result = await _acc.GetAccounts(schoolId);
+        if (result.StatusCode == 200)
+        {
+          var data = result.Data ?? [];
+          var totalResults = data.Count;
+          var totalPages = (int)Math.Ceiling((double)totalResults / query.PageSize);
+          var paginatedData = data
+              .Where(x => !schoolId.HasValue || x.SchoolId == schoolId)
+              .Skip((query.PageNumber - 1) * query.PageSize)
+              .Take(query.PageSize);
+
+          return Ok(new
+          {
+            statusCode = result.StatusCode,
+            message = result.Message,
+            data = paginatedData,
+            pagination = new
+            {
+              query.PageNumber,
+              query.PageSize,
+              totalResults,
+              totalPages
+            }
+          });
+        }
+
+        if (result.StatusCode == 404)
+        {
+          return NotFound(new
+          {
+            statusCode = 404,
+            message = result.Message
+          });
+        }
+
+        return StatusCode(500, new
         {
           statusCode = result.StatusCode,
           message = result.Message,
-          data = result.Data,
         });
       }
-      return StatusCode(500, new
+      catch (Exception ex)
       {
-        statusCode = result.StatusCode,
-        message = result.Message,
-      });
+        // Return error response in case of unexpected exceptions
+        return StatusCode(500, new
+        {
+          statusCode = 500,
+          message = $"An error occurred: {ex.Message}"
+        });
+      }
     }
 
     [HttpGet, Route("get-accounts-by-role")]

@@ -9,7 +9,7 @@ namespace server.IService
 
     Task<int> GetCountAccountsBySchool(int schoolId);
 
-    Task<AccountsResType> GetAccounts(QueryObject? query);
+    Task<AccountsResType> GetAccounts(int? schoolId);
 
     Task<AccountsResType> GetAccountsByRole(QueryObjects? queryObject);
 

@@ -26,7 +26,7 @@ namespace server.Repositories
       {
         if (model is null)
         {
-          return new ChuNhiemResType(400, "Input emtpy");
+          return new ChuNhiemResType(400, "Vui lòng điền đầy đủ thông tin");
         }
 
         // Check if teacherId exists
@@ -35,7 +35,7 @@ namespace server.Repositories
 
         if (!teacherExists)
         {
-          return new ChuNhiemResType(404, "ClassId not found");
+          return new ChuNhiemResType(404, "Giáo viên không tồn tại");
         }
 
         // Check if classId exists
@@ -44,7 +44,7 @@ namespace server.Repositories
 
         if (!classExists)
         {
-          return new ChuNhiemResType(404, "ClassId not found");
+          return new ChuNhiemResType(404, "Lớp học không tồn tại");
         }
 
         // Check if semesterId exists
@@ -53,26 +53,25 @@ namespace server.Repositories
 
         if (!academicYearExistis)
         {
-          return new ChuNhiemResType(404, "SemesterId not found");
+          return new ChuNhiemResType(404, "Năm học không tồn tại");
         }
 
         var queryInsert = @"INSERT INTO PhanCongChuNhiem 
                                         (teacherId, classId, academicYearId, 
-                                          status, dateCreated, dateUpdated, description)
+                                          status, description, dateCreated, dateUpdated)
                                 VALUES 
                                         (@teacherId, @classId, @academicYearId, 
-                                          @status, @dateCreated, @dateUpdated, @description);
-                                SELECT CAST(SCOPE_IDENTITY() AS INT);"
-        ;
+                                          @status, @description, @dateCreated, @dateUpdated);
+                                SELECT CAST(SCOPE_IDENTITY() AS INT);";
 
         var insert = await _context.Database.ExecuteSqlRawAsync(queryInsert,
             new SqlParameter("@teacherId", model.TeacherId),
             new SqlParameter("@classId", model.ClassId),
             new SqlParameter("@academicYearId", model.AcademicYearId),
             new SqlParameter("@status", model.Status),
+            new SqlParameter("@description", model.Description),
             new SqlParameter("@dateCreated", DateTime.UtcNow),
-            new SqlParameter("@dateUpdated", DBNull.Value),
-            new SqlParameter("@description", model.Description)
+            new SqlParameter("@dateUpdated", DBNull.Value)
         );
 
         await transaction.CommitAsync();
@@ -84,17 +83,14 @@ namespace server.Repositories
           ClassId = model.ClassId,
           AcademicYearId = model.AcademicYearId,
           Status = model.Status,
-          Description = model.Description,
+          Description = model.Description
         };
 
-        var result = new ChuNhiemResType(200, "Insert thành công", data);
-
-        return result;
+        return new ChuNhiemResType(200, "Tạo mới thành công", data);
       }
       catch (Exception ex)
       {
         await transaction.RollbackAsync();
-
         return new ChuNhiemResType(500, $"Server Error: {ex.Message}");
       }
     }
@@ -110,19 +106,28 @@ namespace server.Repositories
                             from classes in classesGroup.DefaultIfEmpty()
                             join academicYear in _context.AcademicYears on chuNhiem.AcademicYearId equals academicYear.AcademicYearId into academicYearGroup
                             from academicYear in academicYearGroup.DefaultIfEmpty()
+                            join school in _context.Schools on classes.SchoolId equals school.SchoolId into schoolGroup
+                            from school in schoolGroup.DefaultIfEmpty()
                             select new PhanCongData
                             {
-                              PhanCongId = chuNhiem.PhanCongChuNhiemId,
+                              PhanCongChuNhiemId = chuNhiem.PhanCongChuNhiemId,
+                              SchoolId = school.SchoolId,
+                              SchoolName = school.NameSchcool,
                               TeacherId = chuNhiem.TeacherId,
                               TeacherName = teacher.Fullname,
+                              GradeId = classes.GradeId,
                               ClassId = classes.ClassId,
                               NameClass = classes.ClassName,
                               AcademicYearId = (int)(chuNhiem.AcademicYearId ?? null)!,
                               AcademicYearName = academicYear.DisplayAcademicYearName,
                               Status = chuNhiem.Status,
+                              DateCreated = chuNhiem.DateCreated,
+                              DateUpdated = chuNhiem.DateUpdated
                             };
 
-        var result = await chuNhiemQuery.FirstOrDefaultAsync(x => x.PhanCongId == id);
+        var result = await chuNhiemQuery
+        .Where(x => x.PhanCongChuNhiemId == id)
+        .FirstOrDefaultAsync();
 
         if (result is null)
         {
@@ -137,12 +142,10 @@ namespace server.Repositories
       }
     }
 
-    public async Task<ChuNhiemResType> GetPC_ChuNhiems(int pageNumber, int pageSize)
+    public async Task<ChuNhiemResType> GetPC_ChuNhiems()
     {
       try
       {
-        var skip = (pageNumber - 1) * pageSize;
-
         var chuNhiemQuery = from chuNhiem in _context.PhanCongChuNhiems
                             join teacher in _context.Teachers on chuNhiem.TeacherId equals teacher.TeacherId into teacherGroup
                             from teacher in teacherGroup.DefaultIfEmpty()
@@ -150,9 +153,14 @@ namespace server.Repositories
                             from classes in classesGroup.DefaultIfEmpty()
                             join academicYear in _context.AcademicYears on chuNhiem.AcademicYearId equals academicYear.AcademicYearId into academicYearGroup
                             from academicYear in academicYearGroup.DefaultIfEmpty()
+                            join school in _context.Schools on classes.SchoolId equals school.SchoolId into schoolGroup
+                            from school in schoolGroup.DefaultIfEmpty()
                             select new PhanCongData
                             {
-                              PhanCongId = chuNhiem.PhanCongChuNhiemId,
+                              PhanCongChuNhiemId = chuNhiem.PhanCongChuNhiemId,
+                              SchoolId = classes.SchoolId,
+                              SchoolName = school.NameSchcool,
+                              GradeId = classes.GradeId,
                               TeacherId = chuNhiem.TeacherId,
                               TeacherName = teacher.Fullname,
                               ClassId = chuNhiem.ClassId,
@@ -160,11 +168,12 @@ namespace server.Repositories
                               AcademicYearId = (int)(chuNhiem.AcademicYearId ?? null)!,
                               AcademicYearName = academicYear.DisplayAcademicYearName,
                               Status = chuNhiem.Status,
+                              DateCreated = chuNhiem.DateCreated,
+                              DateUpdated = chuNhiem.DateUpdated
                             };
 
         var result = await chuNhiemQuery
-        .OrderBy(x => x.PhanCongId)
-        .Skip(skip).Take(pageSize)
+        .OrderBy(x => x.PhanCongChuNhiemId)
         .ToListAsync();
 
         if (result is null || result.Count == 0)
@@ -180,10 +189,15 @@ namespace server.Repositories
       }
     }
 
-    public async Task<ChuNhiemResType> Get_ChuNhiem_Teacher_Class(int idClass)
+    public async Task<ChuNhiemResType> Get_ChuNhiem_Teacher_Class(int schoolId, int? gradeId, int? classId)
     {
       try
       {
+        if (schoolId == 0)
+        {
+          return new ChuNhiemResType(400, "Vui lòng cung cấp ít nhất mã trường học");
+        }
+
         var chuNhiemQuery = from chuNhiem in _context.PhanCongChuNhiems
                             join teacher in _context.Teachers on chuNhiem.TeacherId equals teacher.TeacherId into teacherGroup
                             from teacher in teacherGroup.DefaultIfEmpty()
@@ -191,23 +205,33 @@ namespace server.Repositories
                             from classes in classesGroup.DefaultIfEmpty()
                             join academicYear in _context.AcademicYears on chuNhiem.AcademicYearId equals academicYear.AcademicYearId into academicYearGroup
                             from academicYear in academicYearGroup.DefaultIfEmpty()
+                            join school in _context.Schools on classes.SchoolId equals school.SchoolId into schoolGroup
+                            from school in schoolGroup.DefaultIfEmpty()
+                            where teacher.SchoolId == schoolId
+                                    && (gradeId == null || classes.GradeId == gradeId)
+                                    && (classId == null || classes.ClassId == classId)
                             select new PhanCongData
                             {
-                              PhanCongId = chuNhiem.PhanCongChuNhiemId,
+                              PhanCongChuNhiemId = chuNhiem.PhanCongChuNhiemId,
+                              SchoolId = classes.SchoolId,
+                              SchoolName = school.NameSchcool,
                               TeacherId = chuNhiem.TeacherId,
                               TeacherName = teacher.Fullname,
+                              GradeId = classes.GradeId,
                               ClassId = classes.ClassId,
                               NameClass = classes.ClassName,
                               AcademicYearId = (int)(chuNhiem.AcademicYearId ?? null)!,
                               AcademicYearName = academicYear.DisplayAcademicYearName,
                               Status = chuNhiem.Status,
+                              DateCreated = chuNhiem.DateCreated,
+                              DateUpdated = chuNhiem.DateUpdated
                             };
 
-        var result = await chuNhiemQuery.FirstOrDefaultAsync(x => x.ClassId == idClass);
+        var result = await chuNhiemQuery.ToListAsync();
 
-        if (result is null)
+        if (result is null || result.Count == 0)
         {
-          return new ChuNhiemResType(404, "Không tìm thấy");
+          return new ChuNhiemResType(404, "Không có kết quả");
         }
 
         return new ChuNhiemResType(200, "Thành công", result);
@@ -223,35 +247,65 @@ namespace server.Repositories
       using var transaction = await _context.Database.BeginTransactionAsync();
       try
       {
+        if (id == 0)
+        {
+          return new ChuNhiemResType(400, "Vui lòng cung cấp mã phân công");
+
+        }
         var existing = await _context.PhanCongChuNhiems.FindAsync(id);
         if (existing is null)
         {
           return new ChuNhiemResType(404, "Không tìm thấy");
         }
 
-        existing.TeacherId = model.TeacherId;
-        existing.ClassId = model.ClassId;
-        existing.AcademicYearId = model.AcademicYearId;
-        existing.Status = model.Status;
-        existing.DateUpdated = DateTime.UtcNow;
-        existing.Description = model.Description;
+        var hasChange = false;
 
-        await _context.SaveChangesAsync();
-        await transaction.CommitAsync();
-
-        var updatedDto = new PhanCongData
+        if (model.TeacherId != 0 && model.TeacherId != existing.TeacherId)
         {
-          PhanCongId = existing.PhanCongChuNhiemId,
-          TeacherId = model.TeacherId,
-          ClassId = model.ClassId,
-          AcademicYearId = model.AcademicYearId,
-          Status = existing.Status,
-          DateCreated = existing.DateCreated,
-          DateUpdated = existing.DateUpdated,
-          Description = model.Description
-        };
+          existing.TeacherId = model.TeacherId;
+          hasChange = true;
+        }
+        if (model.ClassId != 0 && model.ClassId != existing.ClassId)
+        {
+          existing.ClassId = model.ClassId;
+          hasChange = true;
+        }
 
-        return new ChuNhiemResType(200, "Cập nhật thành công", updatedDto);
+        if (model.AcademicYearId != 0 && model.AcademicYearId != existing.AcademicYearId)
+        {
+          existing.AcademicYearId = model.AcademicYearId;
+          hasChange = true;
+        }
+        if (model.Status != existing.Status)
+        {
+          existing.Status = model.Status;
+          hasChange = true;
+        }
+        if (model.DateCreated.HasValue)
+        {
+          existing.DateCreated = model.DateCreated.Value;
+          hasChange = true;
+        }
+        if (DateTime.UtcNow != existing.DateUpdated)
+        {
+          existing.DateUpdated = DateTime.UtcNow;
+          hasChange = true;
+        }
+        if (model.Description != existing.Description)
+        {
+          existing.Description = model.Description;
+          hasChange = true;
+        }
+        if (hasChange)
+        {
+          await transaction.CommitAsync();
+          await _context.SaveChangesAsync();
+          return new ChuNhiemResType(200, "Cập nhật thành công");
+        }
+        else
+        {
+          return new ChuNhiemResType(200, "Không có sự thay đổi");
+        }
       }
       catch (Exception ex)
       {
@@ -295,7 +349,7 @@ namespace server.Repositories
       {
         if (ids is null || ids.Count == 0)
         {
-          return new ChuNhiemResType(400, "No IDs provided.");
+          return new ChuNhiemResType(400, "Vui lòng cung cấp dữ liệu");
         }
 
         var idList = string.Join(",", ids);
@@ -306,12 +360,12 @@ namespace server.Repositories
 
         if (delete == 0)
         {
-          return new ChuNhiemResType(404, "No PhanCongChuNhiemId found to delete");
+          return new ChuNhiemResType(404, "Dữ liệu bạn chọn không tồn tại");
         }
 
         await transaction.CommitAsync();
 
-        return new ChuNhiemResType(200, "Deleted succesfully");
+        return new ChuNhiemResType(200, "Đã xóa thành công");
       }
       catch (Exception ex)
       {
@@ -320,7 +374,7 @@ namespace server.Repositories
       }
     }
 
-    public async Task<string> ImportExcelFile(IFormFile file)
+    public async Task<ResponseData<string>> ImportExcelFile(IFormFile file)
     {
       try
       {
@@ -381,10 +435,10 @@ namespace server.Repositories
             } while (reader.NextResult());
           }
 
-          return "Tải lên thành công.";
+          return new ResponseData<string>(200, "Tải danh sách thành công");
         }
 
-        return "No file uploaded";
+        return new ResponseData<string>(400, "Không có tệp nào được tải lên");
       }
       catch (Exception ex)
       {

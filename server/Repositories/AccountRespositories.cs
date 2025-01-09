@@ -198,19 +198,16 @@ namespace server.Repositories
       }
     }
 
-    public async Task<AccountsResType> GetAccounts(QueryObject? queryObject)
+    public async Task<AccountsResType> GetAccounts(int? schoolId)
     {
       try
       {
-        queryObject ??= new QueryObject();
-        var skip = (queryObject.PageNumber - 1) * queryObject.PageSize;
-
-        // Use LINQ to join tables and select specific columns
         var accountsQuery = from account in _context.Accounts
                             join role in _context.Roles on account.RoleId equals role.RoleId into roleGroup
                             from role in roleGroup.DefaultIfEmpty()
                             join school in _context.Schools on account.SchoolId equals school.SchoolId into schoolGroup
                             from school in schoolGroup.DefaultIfEmpty()
+                            where schoolId == null || account.SchoolId == schoolId
                             select new AccountsResData
                             {
                               AccountId = account.AccountId,
@@ -227,8 +224,6 @@ namespace server.Repositories
         var pagedAccounts = await accountsQuery
                             .AsNoTracking()
                             .OrderBy(a => a.AccountId)
-                            .Skip(skip)
-                            .Take(queryObject.PageSize)
                             .ToListAsync();
 
         if (pagedAccounts == null || pagedAccounts.Count == 0)
