@@ -11,10 +11,12 @@ namespace server.Controllers
   public class TeachersController : ControllerBase
   {
     private readonly ITeacher _teacherRepo;
+    private readonly IPhotoService _photoService;
 
-    public TeachersController(ITeacher teacherRepo)
+    public TeachersController(ITeacher teacherRepo, IPhotoService photoService)
     {
       this._teacherRepo = teacherRepo;
+      this._photoService = photoService;
     }
 
     // GET: api/Teachers
@@ -181,7 +183,7 @@ namespace server.Controllers
         {
           statusCode = teacher.StatusCode,
           message = teacher.Message,
-          data = teacher.Data
+          data = teacher.TeacherToUpdate
         });
       }
 
@@ -203,7 +205,7 @@ namespace server.Controllers
 
     // PUT: api/Teachers/5
     [HttpPut("{id}")]
-    public async Task<IActionResult> UpdateTeacher(int id, TeacherDto model)
+    public async Task<IActionResult> UpdateTeacher(int id, [FromForm] TeacherDto model)
     {
       var teacher = await _teacherRepo.UpdateTeacher(id, model);
 
@@ -232,10 +234,17 @@ namespace server.Controllers
       });
     }
 
+    [HttpPost("add-photo")]
+    public async Task<IActionResult> CreatePhotoPath(IFormFile file)
+    {
+      var result = await _photoService.CreatePhotoAsync(file);
+      return Ok(result.SecureUrl.ToString());
+    }
+
     // POST: api/Teachers
     [Authorize(Policy = "SuperAdminAndAdmin")]
     [HttpPost]
-    public async Task<IActionResult> PostTeacher(TeacherDto model)
+    public async Task<IActionResult> PostTeacher([FromForm] TeacherDto model)
     {
       var result = await _teacherRepo.CreateTeacher(model);
 

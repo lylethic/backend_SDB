@@ -208,6 +208,7 @@ namespace server.Controllers
 
     [Authorize(Policy = "SuperAdminAndAdmin")]
     [HttpPost("upload")]
+    [Consumes("multipart/form-data")]
     public async Task<IActionResult> ImportExcelFile(IFormFile file)
     {
       var result = await _subject_Assgm.ImportExcel(file);

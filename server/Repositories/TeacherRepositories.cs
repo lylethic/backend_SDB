@@ -3,6 +3,7 @@ using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using server.Data;
 using server.Dtos;
+using server.IService;
 using server.Models;
 using server.Types.Teacher;
 using System.Text;
@@ -12,67 +13,13 @@ namespace server.Repositories
   public class TeacherRepositories : IService.ITeacher
   {
     private readonly SoDauBaiContext _context;
+    private readonly IPhotoService _photo;
 
-    public TeacherRepositories(SoDauBaiContext context)
+    public TeacherRepositories(SoDauBaiContext context, IPhotoService photo)
     {
       this._context = context;
+      this._photo = photo;
     }
-
-    public async Task<TeacherResType> CreateTeacher(TeacherDto model)
-    {
-      try
-      {
-        var findTeacher = "SELECT * FROM Teacher WHERE teacherId = @id";
-
-        var teacher = await _context.Teachers
-          .FromSqlRaw(findTeacher, new SqlParameter("@id", model.TeacherId))
-          .FirstOrDefaultAsync();
-
-        if (teacher is not null)
-        {
-          return new TeacherResType(409, "Teacher already exists");
-        }
-
-        var sqlInsert = @"INSERT INTO Teacher (AccountId, SchoolId, Fullname, DateOfBirth, Gender, Address, Status, DateCreate, DateUpdate) 
-                          VALUES (@AccountId, @SchoolId, @Fullname, @DateOfBirth, @Gender, @Address, @Status, @DateCreate, @DateUpdate);
-                          SELECT CAST(SCOPE_IDENTITY() as int);";
-
-        var currentdate = DateTime.UtcNow;
-
-        var insert = await _context.Database.ExecuteSqlRawAsync(sqlInsert,
-          new SqlParameter("@AccountId", model.AccountId),
-          new SqlParameter("@SchoolId", model.SchoolId),
-          new SqlParameter("@Fullname", model.Fullname),
-          new SqlParameter("@DateOfBirth", model.DateOfBirth),
-          new SqlParameter("@Gender", model.Gender),
-          new SqlParameter("@Address", model.Address),
-          new SqlParameter("@Status", model.Status),
-          new SqlParameter("@DateCreate", currentdate),
-          new SqlParameter("@DateUpdate", DBNull.Value)
-        );
-
-        var result = new TeacherDto
-        {
-          TeacherId = insert,
-          AccountId = model.AccountId,
-          SchoolId = model.SchoolId,
-          Fullname = model.Fullname,
-          DateOfBirth = model.DateOfBirth,
-          Gender = model.Gender,
-          Address = model.Address,
-          Status = model.Status,
-          DateCreate = model.DateCreate,
-          DateUpdate = model.DateUpdate
-        };
-
-        return new TeacherResType(200, "Tạo mới thành công", result);
-      }
-      catch (Exception ex)
-      {
-        return new TeacherResType(500, $"Server error: {ex.Message}");
-      }
-    }
-
     public async Task<TeacherResType> GetTeacher(int id)
     {
       try
@@ -89,7 +36,8 @@ namespace server.Repositories
                                   s.nameSchcool, 
                                   s.schoolType,
                                   t.dateCreate,
-			                            t.dateUpdate
+			                            t.dateUpdate,
+                                  t.photoPath
                             FROM TEACHER T
                             LEFT JOIN SCHOOL S
                             ON T.schoolId = S.schoolId
@@ -113,7 +61,8 @@ namespace server.Repositories
               SchoolType = x.School.SchoolType
             },
             DateCreate = x.DateCreate,
-            DateUpdate = x.DateUpdate
+            DateUpdate = x.DateUpdate,
+            PhotoPath = x.PhotoPath,
           })
           .FirstOrDefaultAsync();
 
@@ -137,6 +86,7 @@ namespace server.Repositories
           SchoolType = teacher.School.SchoolType ? "Công lập" : "Dân lập",
           DateCreate = teacher.DateCreate?.ToString("dd/MM/yyyy HH:mm:ss") ?? string.Empty,
           DateUpdate = teacher.DateUpdate?.ToString("dd/MM/yyyy HH:mm:ss") ?? string.Empty,
+          PhotoPath = teacher.PhotoPath,
         };
 
         return new TeacherResType(200, "Thành công", result);
@@ -161,7 +111,8 @@ namespace server.Repositories
                                   t.address, 
                                   t.status,
                                   t.dateCreate,
-			                            t.dateUpdate
+			                            t.dateUpdate,
+                                  t.photoPath
                             FROM TEACHER t
                             LEFT JOIN SCHOOL s
                             ON t.schoolId = s.schoolId
@@ -180,7 +131,8 @@ namespace server.Repositories
             Address = x.Address,
             Status = x.Status,
             DateCreate = x.DateCreate,
-            DateUpdate = x.DateUpdate
+            DateUpdate = x.DateUpdate,
+            PhotoPath = x.PhotoPath,
           })
           .FirstOrDefaultAsync();
 
@@ -189,8 +141,7 @@ namespace server.Repositories
           return new TeacherResType(404, "Không tìm thấy giáo viên");
         }
 
-
-        var result = new TeacherDto
+        var result = new TeacherToUpdate
         {
           TeacherId = id,
           AccountId = teacher.AccountId,
@@ -201,7 +152,8 @@ namespace server.Repositories
           Status = teacher.Status,
           SchoolId = teacher.SchoolId,
           DateCreate = teacher.DateCreate,
-          DateUpdate = teacher.DateUpdate
+          DateUpdate = teacher.DateUpdate,
+          PhotoPath = teacher.PhotoPath,
         };
 
         return new TeacherResType(200, "Thành công", result);
@@ -263,7 +215,8 @@ namespace server.Repositories
           Status = x.Status ? "Hoạt động" : "Không hoạt động",
           DateCreate = x.DateCreate?.ToString("dd/MM/yyyy HH:mm:ss") ?? string.Empty,
           DateUpdate = x.DateUpdate?.ToString("dd/MM/yyyy HH:mm:ss") ?? string.Empty,
-          SchoolType = x.School.SchoolType ? "Công lập" : "Dân lập"
+          SchoolType = x.School.SchoolType ? "Công lập" : "Dân lập",
+          PhotoPath = x.PhotoPath
         }).ToList();
 
         return new TeacherResType(200, "Thành công", result);
@@ -313,7 +266,8 @@ namespace server.Repositories
           Status = x.Status ? "Hoạt động" : "Không hoạt động",
           DateCreate = x.DateCreate?.ToString("dd/MM/yyyy HH:mm:ss") ?? string.Empty,
           DateUpdate = x.DateUpdate?.ToString("dd/MM/yyyy HH:mm:ss") ?? string.Empty,
-          SchoolType = x.School.SchoolType ? "Công lập" : "Dân lập"
+          SchoolType = x.School.SchoolType ? "Công lập" : "Dân lập",
+          PhotoPath = x.PhotoPath
         }).ToList();
 
         return new TeacherResType(200, "Thành công", result);
@@ -356,10 +310,58 @@ namespace server.Repositories
           Status = x.Status ? "Hoạt động" : "Không hoạt động",
           DateCreate = x.DateCreate?.ToString("dd/MM/yyyy HH:mm:ss") ?? string.Empty,
           DateUpdate = x.DateUpdate?.ToString("dd/MM/yyyy HH:mm:ss") ?? string.Empty,
-          SchoolType = x.School.SchoolType ? "Công lập" : "Dân lập"
+          SchoolType = x.School.SchoolType ? "Công lập" : "Dân lập",
+          PhotoPath = x.PhotoPath,
         }).ToList();
 
         return new TeacherResType(200, "Thành công", result);
+      }
+      catch (Exception ex)
+      {
+        return new TeacherResType(500, $"Server error: {ex.Message}");
+      }
+    }
+
+    public async Task<TeacherResType> CreateTeacher(TeacherDto model)
+    {
+      try
+      {
+        var photoUploadResult = model.PhotoPath != null
+            ? await _photo.CreatePhotoAsync(model.PhotoPath)
+            : null;
+
+        var findTeacher = "SELECT * FROM Teacher WHERE teacherId = @id";
+
+        var teacher = await _context.Teachers
+          .FromSqlRaw(findTeacher, new SqlParameter("@id", model.TeacherId))
+          .FirstOrDefaultAsync();
+
+        if (teacher is not null)
+        {
+          return new TeacherResType(409, "Teacher already exists");
+        }
+
+        var sqlInsert = @"INSERT INTO Teacher (AccountId, SchoolId, Fullname, DateOfBirth, Gender, Address, Status, DateCreate, DateUpdate, PhotoPath) 
+                          VALUES (@AccountId, @SchoolId, @Fullname, @DateOfBirth, @Gender, @Address, @Status, @DateCreate, @DateUpdate, @PhotoPath);
+                          SELECT CAST(SCOPE_IDENTITY() as int);";
+
+        var currentdate = DateTime.UtcNow;
+        var imgUrl = photoUploadResult?.SecureUrl.ToString();
+
+        var insert = await _context.Database.ExecuteSqlRawAsync(sqlInsert,
+          new SqlParameter("@AccountId", model.AccountId),
+          new SqlParameter("@SchoolId", model.SchoolId),
+          new SqlParameter("@Fullname", model.Fullname),
+          new SqlParameter("@DateOfBirth", model.DateOfBirth),
+          new SqlParameter("@Gender", model.Gender),
+          new SqlParameter("@Address", model.Address),
+          new SqlParameter("@Status", model.Status),
+          new SqlParameter("@DateCreate", currentdate),
+          new SqlParameter("@DateUpdate", DBNull.Value),
+          new SqlParameter("@PhotoPath", imgUrl ?? "")
+        );
+
+        return new TeacherResType(200, "Tạo mới thành công");
       }
       catch (Exception ex)
       {
@@ -382,6 +384,11 @@ namespace server.Repositories
         {
           return new TeacherResType(404, "Không tìm thấ y giáo viên");
         }
+
+        var photoUploadResult = model.PhotoPath != null
+                   ? await _photo.CreatePhotoAsync(model.PhotoPath)
+                   : null;
+        var imgUrl = photoUploadResult?.SecureUrl.ToString();
 
         bool hasChanges = false;
 
@@ -446,6 +453,9 @@ namespace server.Repositories
 
         queryBuilder.Append("DateUpdate = @DateUpdate, ");
         parameters.Add(new SqlParameter("@DateUpdate", DateTime.UtcNow));
+
+        queryBuilder.Append("PhotoPath = @PhotoPath, ");
+        parameters.Add(new SqlParameter("@PhotoPath", imgUrl ?? ""));
 
         if (hasChanges)
         {
@@ -534,7 +544,8 @@ namespace server.Repositories
                   Address = reader.GetValue(6).ToString()?.Trim() ?? "address",
                   Status = Convert.ToBoolean(reader.GetValue(7)),
                   DateCreate = DateTime.UtcNow,
-                  DateUpdate = null
+                  DateUpdate = null,
+                  PhotoPath = reader.GetValue(8).ToString(),
                 };
 
                 await _context.Teachers.AddAsync(myTeachers);

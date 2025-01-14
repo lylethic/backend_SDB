@@ -15,7 +15,10 @@ namespace server.Repositories
   {
     readonly SoDauBaiContext _context;
 
-    public SemesterRepositories(SoDauBaiContext context) { this._context = context; }
+    public SemesterRepositories(SoDauBaiContext context)
+    {
+      this._context = context;
+    }
 
     public async Task<ResponseData<SemesterDto>> CreateSemester(SemesterDto model)
     {
@@ -61,32 +64,7 @@ namespace server.Repositories
           Status = model.Status,
         };
 
-        return new ResponseData<SemesterDto>(200, result);
-      }
-      catch (Exception ex)
-      {
-        return new ResponseData<SemesterDto>(200, $"Server error: {ex.Message}");
-      }
-    }
-
-    public async Task<ResponseData<SemesterDto>> DeleteSemester(int id)
-    {
-      try
-      {
-        var find = "SELECT * FROM Semester WHERE SemesterId = @id";
-        var semester = await _context.Semesters
-          .FromSqlRaw(find, new SqlParameter("@id", id))
-          .FirstOrDefaultAsync();
-
-        if (semester is null)
-        {
-          return new ResponseData<SemesterDto>(404, "Semester not found");
-        }
-
-        var deleteQuery = "DELETE FROM Semester WHERE SemesterId = @id";
-        await _context.Database.ExecuteSqlRawAsync(deleteQuery, new SqlParameter("@id", id));
-
-        return new ResponseData<SemesterDto>(200, "Deleted");
+        return new ResponseData<SemesterDto>(200, "Thành công", result);
       }
       catch (Exception ex)
       {
@@ -132,7 +110,7 @@ namespace server.Repositories
 
         if (semester is null)
         {
-          return new ResponseData<SemesterResData>(404, "Semester not found");
+          return new ResponseData<SemesterResData>(404, "Học kỳ không tồn tại");
         }
 
         var result = new SemesterResData
@@ -148,7 +126,7 @@ namespace server.Repositories
           YearEnd = semester.AcademicYear.YearEnd
         };
 
-        return new ResponseData<SemesterResData>(200, result);
+        return new ResponseData<SemesterResData>(200, "Thành công", result);
       }
       catch (Exception ex)
       {
@@ -156,21 +134,14 @@ namespace server.Repositories
       }
     }
 
-    public async Task<ResponseData<List<SemesterDto>>> GetSemesters(int pageNumber, int pageSize)
+    public async Task<ResponseData<List<SemesterDto>>> GetSemesters()
     {
       try
       {
-        var skip = (pageNumber - 1) * pageSize;
-
         var query = @"SELECT * FROM Semester 
-                      ORDER BY SEMESTERNAME
-                      OFFSET @skip ROWS
-                      FETCH NEXT @pageSize ROWS ONLY;";
+                      ORDER BY SEMESTERID";
 
-        var semester = await _context.Semesters.FromSqlRaw(query,
-              new SqlParameter("@skip", skip),
-              new SqlParameter("@pageSize", pageSize))
-          .ToListAsync();
+        var semester = await _context.Semesters.FromSqlRaw(query).ToListAsync();
 
         var result = semester.Select(x => new SemesterDto
         {
@@ -183,7 +154,7 @@ namespace server.Repositories
           Status = x.Status,
         }).ToList();
 
-        return new ResponseData<List<SemesterDto>>(200, result);
+        return new ResponseData<List<SemesterDto>>(200, "Thành công", result);
       }
       catch (Exception ex)
       {
@@ -204,7 +175,7 @@ namespace server.Repositories
 
         if (existingSemester is null)
         {
-          return new ResponseData<SemesterDto>(404, "Semester not found");
+          return new ResponseData<SemesterDto>(404, "Học kỳ không tồn tại");
         }
 
         bool hasChanges = false;
@@ -265,7 +236,7 @@ namespace server.Repositories
         }
         else
         {
-          return new ResponseData<SemesterDto>(200, "Không phát hiện sự thay đổi");
+          return new ResponseData<SemesterDto>(400, "Không phát hiện sự thay đổi");
         }
       }
       catch (Exception ex)
@@ -324,7 +295,7 @@ namespace server.Repositories
                 var mySemester = new Models.Semester
                 {
                   AcademicYearId = Convert.ToInt16(reader.GetValue(1)),
-                  SemesterName = reader.GetValue(2).ToString() ?? "Semester name",
+                  SemesterName = reader.GetValue(2).ToString() ?? "_",
                   DateStart = ExcelHelper.ConvertExcelDateToDateOnly(reader.GetValue(3))
                   ?? DateOnly.FromDateTime(DateTime.UtcNow),
                   DateEnd = ExcelHelper.ConvertExcelDateToDateOnly(reader.GetValue(4))
@@ -341,11 +312,36 @@ namespace server.Repositories
 
           return new ResponseData<string>(200, "Thành công");
         }
-        return new ResponseData<string>(200, "Không có tệp nào được tải lên");
+        return new ResponseData<string>(400, "Không có tệp nào được tải lên");
       }
       catch (Exception ex)
       {
-        return new ResponseData<string>(200, $"Server error: {ex.Message}");
+        return new ResponseData<string>(500, $"Server error: {ex.Message}");
+      }
+    }
+
+    public async Task<ResponseData<SemesterDto>> DeleteSemester(int id)
+    {
+      try
+      {
+        var find = "SELECT * FROM Semester WHERE SemesterId = @id";
+        var semester = await _context.Semesters
+          .FromSqlRaw(find, new SqlParameter("@id", id))
+          .FirstOrDefaultAsync();
+
+        if (semester is null)
+        {
+          return new ResponseData<SemesterDto>(404, "Học kỳ không tồn tại");
+        }
+
+        var deleteQuery = "DELETE FROM Semester WHERE SemesterId = @id";
+        await _context.Database.ExecuteSqlRawAsync(deleteQuery, new SqlParameter("@id", id));
+
+        return new ResponseData<SemesterDto>(200, "Xóa thành công");
+      }
+      catch (Exception ex)
+      {
+        return new ResponseData<SemesterDto>(500, $"Server error: {ex.Message}");
       }
     }
 
@@ -368,12 +364,12 @@ namespace server.Repositories
 
         if (delete == 0)
         {
-          return new ResponseData<string>(404, "Mã số không tồn tại");
+          return new ResponseData<string>(404, "Học kỳ không tồn tại");
         }
 
         await transaction.CommitAsync();
 
-        return new ResponseData<string>(200, "Đã xóa");
+        return new ResponseData<string>(200, "Đã xóa thành công");
       }
       catch (Exception ex)
       {

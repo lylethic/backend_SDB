@@ -1,5 +1,3 @@
-using System;
-
 namespace server.Dtos;
 
 public partial class TeacherDetail
@@ -27,4 +25,5 @@ public partial class TeacherDetail
   public string? NameSchool { get; set; }
 
   public string SchoolType { get; set; }
+  public string? PhotoPath { get; set; }
 }

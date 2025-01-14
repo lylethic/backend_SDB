@@ -593,6 +593,10 @@ public partial class SoDauBaiContext : DbContext
             entity.Property(e => e.Gender)
                 .HasDefaultValue(true)
                 .HasColumnName("gender");
+            entity.Property(e => e.PhotoPath)
+                .HasMaxLength(255)
+                .IsUnicode(false)
+                .HasColumnName("photoPath");
             entity.Property(e => e.SchoolId).HasColumnName("schoolId");
             entity.Property(e => e.Status)
                 .HasDefaultValue(true)

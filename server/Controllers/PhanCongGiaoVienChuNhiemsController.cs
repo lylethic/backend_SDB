@@ -130,6 +130,7 @@ namespace server.Controllers
           {
             statusCode = result.StatusCode,
             message = result.Message,
+            data = result.Datas
           });
         }
         if (result.StatusCode == 404)
@@ -138,6 +139,7 @@ namespace server.Controllers
           {
             statusCode = result.StatusCode,
             message = result.Message,
+            data = result.Datas
           });
         }
 
@@ -181,6 +183,7 @@ namespace server.Controllers
           {
             statusCode = result.StatusCode,
             message = result.Message,
+            data = result.Datas
           });
         }
         if (result.StatusCode == 404)
@@ -189,6 +192,7 @@ namespace server.Controllers
           {
             statusCode = result.StatusCode,
             message = result.Message,
+            data = result.Datas
           });
         }
 
@@ -232,6 +236,7 @@ namespace server.Controllers
           {
             statusCode = result.StatusCode,
             message = result.Message,
+            data = result.Datas
           });
         }
         if (result.StatusCode == 404)
@@ -240,6 +245,7 @@ namespace server.Controllers
           {
             statusCode = result.StatusCode,
             message = result.Message,
+            data = result.Datas
           });
         }
 

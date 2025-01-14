@@ -19,62 +19,133 @@ namespace server.Controllers
 
     // GET: api/AcademicYears1
     [HttpGet]
-    public async Task<IActionResult> GetSemesters(int pageNumber = 1, int pageSize = 50)
+    public async Task<IActionResult> GetSemesters([FromQuery] QueryObject? queryObject)
     {
-      var academicYears = await _semester.GetSemesters(pageNumber, pageSize);
-      if (academicYears.StatusCode == 200)
+      queryObject ??= new QueryObject();
+      var result = await _semester.GetSemesters();
+      if (result.StatusCode == 200)
       {
+        var data = result.Data ?? [];
+        var totalResults = data.Count;
+        var totalPages = (int)Math.Ceiling((double)totalResults / queryObject.PageSize);
+        var paginatedData = data.Skip((queryObject.PageNumber - 1) * queryObject.PageSize).Take(queryObject.PageSize);
+
         return Ok(new
         {
-          data = academicYears.Data
+          message = result.Message,
+          data = paginatedData,
+          pagination = new
+          {
+            queryObject.PageNumber,
+            queryObject.PageSize,
+            totalPages,
+            totalResults
+          }
         });
       }
-      return StatusCode(500, academicYears); // 200
-
+      return StatusCode(500, new
+      {
+        statusCode = result.StatusCode,
+        message = result.Message,
+      });
     }
 
     // GET: api/AcademicYears1/5
     [HttpGet("{id}")]
     public async Task<IActionResult> Get(int id)
     {
-      var semester = await _semester.GetSemester(id);
+      var result = await _semester.GetSemester(id);
 
-      if (semester.StatusCode != 200)
+      if (result.StatusCode == 200)
       {
-        return BadRequest(semester);
+        return Ok(new
+        {
+          status = result.StatusCode,
+          message = result.Message,
+        });
       }
-
-      return Ok(semester);
+      if (result.StatusCode == 404)
+      {
+        return NotFound(new
+        {
+          status = result.StatusCode,
+          message = result.Message,
+        });
+      }
+      return StatusCode(500, new
+      {
+        statusCode = result.StatusCode,
+        message = result.Message,
+      });
     }
 
     // PUT: api/AcademicYears1/5
     [Authorize(Policy = "SuperAdminAndAdmin")]
     [HttpPut("{id}")]
-    public async Task<IActionResult> Put(int id, SemesterDto model)
+    public async Task<IActionResult> UpdateSemester(int id, SemesterDto model)
     {
-      var semester = await _semester.UpdateSemester(id, model);
+      var result = await _semester.UpdateSemester(id, model);
 
-      if (semester.StatusCode != 200)
+      if (result.StatusCode == 200)
       {
-        return BadRequest(semester);
+        return Ok(new
+        {
+          status = result.StatusCode,
+          message = result.Message,
+        });
       }
-
-      return Ok(semester);
+      if (result.StatusCode == 404)
+      {
+        return NotFound(new
+        {
+          status = result.StatusCode,
+          message = result.Message,
+        });
+      }
+      if (result.StatusCode == 400)
+      {
+        return BadRequest(new
+        {
+          status = result.StatusCode,
+          message = result.Message,
+        });
+      }
+      return StatusCode(500, new
+      {
+        statusCode = result.StatusCode,
+        message = result.Message,
+      });
     }
 
     // POST: api/AcademicYears1
     [Authorize(Policy = "SuperAdminAndAdmin")]
     [HttpPost]
-    public async Task<IActionResult> Post(SemesterDto model)
+    public async Task<IActionResult> CreateSemester(SemesterDto model)
     {
-      var semester = await _semester.CreateSemester(model);
+      var result = await _semester.CreateSemester(model);
 
-      if (semester.StatusCode != 200)
+      if (result.StatusCode == 200)
       {
-        return BadRequest(semester);
+        return Ok(new
+        {
+          status = result.StatusCode,
+          message = result.Message,
+          data = result.Data,
+        });
       }
-
-      return Ok(semester);
+      if (result.StatusCode == 400)
+      {
+        return BadRequest(new
+        {
+          status = result.StatusCode,
+          message = result.Message,
+        });
+      }
+      return StatusCode(500, new
+      {
+        statusCode = result.StatusCode,
+        message = result.Message,
+      });
     }
 
     // DELETE: api/AcademicYears1/5
@@ -82,28 +153,58 @@ namespace server.Controllers
     [HttpDelete("{id}")]
     public async Task<IActionResult> Delete(int id)
     {
-      var semester = await _semester.DeleteSemester(id);
+      var result = await _semester.DeleteSemester(id);
 
-      if (semester.StatusCode != 200)
+      if (result.StatusCode == 200)
       {
-        return BadRequest(semester);
+        return Ok(new
+        {
+          status = result.StatusCode,
+          message = result.Message,
+        });
       }
-
-      return Ok(semester);
+      if (result.StatusCode == 404)
+      {
+        return NotFound(new
+        {
+          status = result.StatusCode,
+          message = result.Message,
+        });
+      }
+      return StatusCode(500, new
+      {
+        statusCode = result.StatusCode,
+        message = result.Message,
+      });
     }
 
     [Authorize(Policy = "SuperAdminAndAdmin")]
-    [HttpDelete("bulkdelete")]
+    [HttpDelete("bulk-delete")]
     public async Task<IActionResult> BulkDelete(List<int> ids)
     {
-      var semester = await _semester.BulkDelete(ids);
+      var result = await _semester.BulkDelete(ids);
 
-      if (semester.StatusCode != 200)
+      if (result.StatusCode == 200)
       {
-        return BadRequest(semester);
+        return Ok(new
+        {
+          status = result.StatusCode,
+          message = result.Message,
+        });
       }
-
-      return Ok(semester);
+      if (result.StatusCode == 404)
+      {
+        return NotFound(new
+        {
+          status = result.StatusCode,
+          message = result.Message,
+        });
+      }
+      return StatusCode(500, new
+      {
+        statusCode = result.StatusCode,
+        message = result.Message,
+      });
     }
 
     [Authorize(Policy = "SuperAdminAndAdmin")]
@@ -113,10 +214,25 @@ namespace server.Controllers
       var result = await _semester.ImportExcelFile(file);
       if (result.StatusCode == 200)
       {
-        return Ok(result);
+        return Ok(new
+        {
+          status = result.StatusCode,
+          message = result.Message,
+        });
       }
-
-      return StatusCode(500, result);
+      if (result.StatusCode == 400)
+      {
+        return BadRequest(new
+        {
+          status = result.StatusCode,
+          message = result.Message,
+        });
+      }
+      return StatusCode(500, new
+      {
+        statusCode = result.StatusCode,
+        message = result.Message,
+      });
     }
   }
 }

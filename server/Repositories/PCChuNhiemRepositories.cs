@@ -195,7 +195,7 @@ namespace server.Repositories
       {
         if (schoolId == 0)
         {
-          return new ChuNhiemResType(400, "Vui lòng cung cấp ít nhất mã trường học");
+          return new ChuNhiemResType(400, "Vui lòng cung cấp ít nhất mã trường học", []);
         }
 
         var chuNhiemQuery = from chuNhiem in _context.PhanCongChuNhiems
@@ -231,7 +231,7 @@ namespace server.Repositories
 
         if (result is null || result.Count == 0)
         {
-          return new ChuNhiemResType(404, "Không có kết quả");
+          return new ChuNhiemResType(404, "Không có kết quả", []);
         }
 
         return new ChuNhiemResType(200, "Thành công", result);
@@ -422,11 +422,11 @@ namespace server.Repositories
                 {
                   TeacherId = Convert.ToInt16(reader.GetValue(1)),
                   ClassId = Convert.ToInt16(reader.GetValue(2)),
-                  AcademicYearId = Convert.ToInt16(reader.GetValue(3)),
-                  Status = Convert.ToBoolean(reader.GetValue(4)),
-                  Description = reader.GetValue(5).ToString()?.Trim() ?? "",
+                  Status = Convert.ToBoolean(reader.GetValue(3)),
                   DateCreated = DateTime.UtcNow,
                   DateUpdated = null,
+                  Description = reader.GetValue(6).ToString()?.Trim() ?? null,
+                  AcademicYearId = Convert.ToInt16(reader.GetValue(7)),
                 };
 
                 await _context.PhanCongChuNhiems.AddAsync(myPhanCongChuNhiem);
@@ -445,6 +445,5 @@ namespace server.Repositories
         throw new Exception($"Error while uploading file: {ex.Message}");
       }
     }
-
   }
 }

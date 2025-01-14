@@ -5,11 +5,15 @@ namespace server.Types.Teacher
   public class TeacherResType : ModelResType
   {
     public int TotalCount { get; set; }
+
     public List<TeacherDetail>? TeacherListDetails { get; set; }
     public TeacherDetail? TeacherDetail { get; set; }
 
     public List<TeacherDto>? Datas { get; set; }
     public TeacherDto? Data { get; set; }
+
+    public List<TeacherToUpdate>? TeacherToUpdates { get; set; }
+    public TeacherToUpdate? TeacherToUpdate { get; set; }
 
     public TeacherResType() { }
 
@@ -31,6 +35,20 @@ namespace server.Types.Teacher
       this.StatusCode = statusCode;
       this.Message = message;
       this.Datas = datas;
+    }
+
+    public TeacherResType(int statusCode, string message, TeacherToUpdate data)
+    {
+      this.StatusCode = statusCode;
+      this.Message = message;
+      this.TeacherToUpdate = data;
+    }
+
+    public TeacherResType(int statusCode, string message, List<TeacherToUpdate> datas)
+    {
+      this.StatusCode = statusCode;
+      this.Message = message;
+      this.TeacherToUpdates = datas;
     }
 
     public TeacherResType(int statusCode, string message, TeacherDetail data)

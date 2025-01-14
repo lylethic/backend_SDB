@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using server;
+using server.Dtos;
 using server.IService;
 using server.Repositories;
 using System.Text;
@@ -84,6 +85,11 @@ builder.Services.AddAuthentication(options =>
   };
 });
 
+
+// Cloudinary
+builder.Services.Configure<CloudinarySetting>
+  (builder.Configuration.GetSection("CloudinarySettings"));
+builder.Services.AddScoped<IPhotoService, PhotoRepositories>();
 
 // Add AutoMapper and configure profiles
 builder.Services.AddAutoMapper(typeof(Program));

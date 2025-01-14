@@ -4,7 +4,6 @@ using Microsoft.EntityFrameworkCore;
 using server.Data;
 using server.Dtos;
 using server.IService;
-using server.Models;
 using System.Text;
 
 namespace server.Repositories
@@ -330,17 +329,26 @@ namespace server.Repositories
                 }
 
                 // Check if there are no more rows or empty rows
-                if (reader.GetValue(1) == null && reader.GetValue(2) == null && reader.GetValue(3) == null)
+                if (reader.GetValue(1) == null && reader.GetValue(2) == null)
                 {
                   // Stop processing when an empty row is encountered
                   break;
                 }
 
+                int teacherId = Convert.ToInt32(reader.GetValue(1));
+                int subjectId = Convert.ToInt32(reader.GetValue(2));
+                var teacherExisting = await _context.Teachers.AnyAsync(x => x.TeacherId == teacherId);
+                var subjectExisting = await _context.Subjects.AnyAsync(x => x.SubjectId == subjectId);
+                if (!teacherExisting || !subjectExisting)
+                {
+                  continue;
+                }
+
                 var mySubjects = new Models.SubjectAssignment
                 {
-                  TeacherId = Convert.ToInt16(reader.GetValue(1)),
-                  SubjectId = Convert.ToInt16(reader.GetValue(2)),
-                  Description = reader.GetValue(3).ToString()?.Trim() ?? "null",
+                  TeacherId = teacherId,
+                  SubjectId = subjectId,
+                  Description = reader.GetValue(3).ToString()?.Trim() ?? "_",
                   DateCreated = DateTime.UtcNow,
                   DateUpdated = null
                 };
@@ -357,7 +365,11 @@ namespace server.Repositories
       }
       catch (Exception ex)
       {
-        throw new Exception($"Error while uploading file: {ex.Message}");
+        if (ex.InnerException != null)
+        {
+          Console.WriteLine($"Inner Exception: {ex.InnerException.Message}");
+        }
+        throw new Exception($"Error while uploading file: {ex.Message}", ex);
       }
     }
 

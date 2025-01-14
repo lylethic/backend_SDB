@@ -25,6 +25,8 @@ public partial class Teacher
 
     public DateTime? DateUpdate { get; set; }
 
+    public string? PhotoPath { get; set; }
+
     public virtual Account Account { get; set; } = null!;
 
     public virtual ICollection<Class> Classes { get; set; } = new List<Class>();
