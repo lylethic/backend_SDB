@@ -29,7 +29,7 @@ namespace server.Repositories
 
         if (academicYear is not null)
         {
-          return new ResponseData<AcademicYearDto>(409, "AcademicYear already exists");
+          return new ResponseData<AcademicYearDto>(409, "Năm học đã tồn tại");
         }
 
         var sqlInsert = @"INSERT INTO AcademicYear (displayAcademicYear_Name, YearStart, YearEnd, Description, Status) 
@@ -57,31 +57,7 @@ namespace server.Repositories
           Status = model.Status,
         };
 
-        return new ResponseData<AcademicYearDto>(200, result);
-      }
-      catch (Exception ex)
-      {
-        return new ResponseData<AcademicYearDto>(200, $"Server error: {ex.Message}");
-      }
-    }
-
-    public async Task<ResponseData<AcademicYearDto>> DeleteAcademicYear(int id)
-    {
-      try
-      {
-        var find = "SELECT * FROM AcademicYear WHERE AcademicYearId = @id";
-        var academicYear = await _context.AcademicYears
-          .FromSqlRaw(find, new SqlParameter("@id", id))
-          .FirstOrDefaultAsync();
-
-        if (academicYear is null)
-        {
-          return new ResponseData<AcademicYearDto>(404, "AcademicYear not found");
-        }
-
-        var deleteQuery = "DELETE FROM AcademicYear WHERE AcademicYearId = @id";
-        await _context.Database.ExecuteSqlRawAsync(deleteQuery, new SqlParameter("@id", id));
-        return new ResponseData<AcademicYearDto>(200, "Deleted");
+        return new ResponseData<AcademicYearDto>(200, "Tạo mới thành công", result);
       }
       catch (Exception ex)
       {
@@ -121,27 +97,23 @@ namespace server.Repositories
       }
     }
 
-    public async Task<ResponseData<List<AcademicYearDto>>> GetAcademicYears(QueryObject? queryObject)
+    public async Task<ResponseData<List<AcademicYearDto>>> GetAcademicYears()
     {
       try
       {
-        queryObject ??= new QueryObject();
-        var skip = (queryObject.PageNumber - 1) * queryObject.PageSize;
+        var countAllAcademicYear = _context.AcademicYears
+        .AsNoTracking()
+        .AsQueryable();
 
-        var countAllAcademicYear = _context.AcademicYears.AsNoTracking().AsQueryable();
         int totalResults = await countAllAcademicYear.CountAsync();
 
         var query = @"SELECT * 
                       FROM AcademicYear
-                      ORDER BY CASE WHEN Status = 1 THEN 1 ELSE 0 END desc
-                      OFFSET @skip ROWS
-                      FETCH NEXT @pageSize ROWS ONLY";
+                      ORDER BY CASE WHEN Status = 1 THEN 1 ELSE 0 END desc";
 
         var academicYear = await _context.AcademicYears
-          .FromSqlRaw(query,
-          new SqlParameter("@skip", skip),
-          new SqlParameter("@pageSize", queryObject.PageSize)
-          ).ToListAsync() ?? throw new Exception("Empty");
+          .FromSqlRaw(query)
+          .ToListAsync() ?? throw new Exception("Empty");
 
         var result = academicYear.Select(x => new AcademicYearDto
         {
@@ -153,7 +125,7 @@ namespace server.Repositories
           Status = x.Status,
         }).ToList();
 
-        return new ResponseData<List<AcademicYearDto>>(200, "Thành công", result, totalResults);
+        return new ResponseData<List<AcademicYearDto>>(200, "Thành công", result);
       }
       catch (Exception ex)
       {
@@ -318,6 +290,30 @@ namespace server.Repositories
       catch (Exception ex)
       {
         throw new Exception($"Error while uploading file: {ex.Message}");
+      }
+    }
+
+    public async Task<ResponseData<AcademicYearDto>> DeleteAcademicYear(int id)
+    {
+      try
+      {
+        var find = "SELECT * FROM AcademicYear WHERE AcademicYearId = @id";
+        var academicYear = await _context.AcademicYears
+          .FromSqlRaw(find, new SqlParameter("@id", id))
+          .FirstOrDefaultAsync();
+
+        if (academicYear is null)
+        {
+          return new ResponseData<AcademicYearDto>(404, "AcademicYear not found");
+        }
+
+        var deleteQuery = "DELETE FROM AcademicYear WHERE AcademicYearId = @id";
+        await _context.Database.ExecuteSqlRawAsync(deleteQuery, new SqlParameter("@id", id));
+        return new ResponseData<AcademicYearDto>(200, "Deleted");
+      }
+      catch (Exception ex)
+      {
+        return new ResponseData<AcademicYearDto>(500, $"Server error: {ex.Message}");
       }
     }
 

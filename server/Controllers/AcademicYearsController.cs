@@ -22,21 +22,35 @@ namespace server.Controllers
     [HttpGet]
     public async Task<IActionResult> GetAcademicYears([FromQuery] QueryObject? query)
     {
-      try
+      query ??= new QueryObject();
+      var result = await _acaYearRepo.GetAcademicYears();
+
+      if (result.StatusCode == 200)
       {
-        query ??= new QueryObject();
-        var academicYears = await _acaYearRepo.GetAcademicYears(query);
-        if (academicYears == null)
+        var data = result.Data ?? [];
+        var totalResults = data.Count;
+        var totalPages = (int)Math.Ceiling((double)totalResults / query.PageSize);
+        var paginatedData = data.Skip((query.PageNumber - 1) * query.PageSize).Take(query.PageSize);
+
+        return Ok(new
         {
-          return NotFound(); // 404
-        }
-        return Ok(academicYears); // 200
+          status = result.StatusCode,
+          message = result.Message,
+          data = paginatedData,
+          pagination = new
+          {
+            query.PageNumber,
+            query.PageSize,
+            totalPages,
+            totalResults
+          }
+        });
       }
-      catch (Exception ex)
+      return StatusCode(500, new
       {
-        Console.WriteLine(ex.Message);
-        return StatusCode(500, $"Server error: {ex.Message}"); // 500
-      }
+        status = result.StatusCode,
+        message = result.Message
+      });
     }
 
     // GET: api/AcademicYears/5

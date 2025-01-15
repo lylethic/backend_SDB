@@ -8,7 +8,7 @@ namespace server.IService
 
     Task<ResponseData<AcademicYearDto>> GetAcademicYear(int id);
 
-    Task<ResponseData<List<AcademicYearDto>>> GetAcademicYears(QueryObject? query);
+    Task<ResponseData<List<AcademicYearDto>>> GetAcademicYears();
 
     Task<ResponseData<AcademicYearDto>> DeleteAcademicYear(int id);
 
