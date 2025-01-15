@@ -173,22 +173,17 @@ namespace server.Repositories
       }
     }
 
-    public async Task<SchoolResType> GetSchools(int pageNumber, int pageSize)
+    public async Task<SchoolResType> GetSchools()
     {
       try
       {
-        var skip = (pageNumber - 1) * pageSize;
-
         var query = @"SELECT * FROM SCHOOL 
-                      ORDER BY schoolId 
-                      OFFSET @skip ROWS
-                      FETCH NEXT @pageSize ROWS ONLY";
+                      ORDER BY schoolId";
 
         var schoolList = await _context.Schools
-          .FromSqlRaw(query,
-          new SqlParameter("@skip", skip),
-          new SqlParameter("@pageSize", pageSize)
-          ).ToListAsync();
+          .FromSqlRaw(query)
+          .AsNoTracking()
+          .ToListAsync();
 
         var result = schoolList.Select(x => new SchoolDto
         {
@@ -218,7 +213,8 @@ namespace server.Repositories
         var query = @"SELECT * FROM SCHOOL";
 
         var schoolList = await _context.Schools
-          .FromSqlRaw(query).ToListAsync() ?? throw new Exception("Empty");
+          .FromSqlRaw(query)
+          .ToListAsync() ?? throw new Exception("Empty");
 
         var result = schoolList.Select(x => new SchoolDto
         {

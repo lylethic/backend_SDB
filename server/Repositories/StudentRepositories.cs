@@ -13,7 +13,10 @@ namespace server.Repositories
   {
     private readonly Data.SoDauBaiContext _context;
 
-    public StudentRepositories(SoDauBaiContext context) { this._context = context; }
+    public StudentRepositories(SoDauBaiContext context)
+    {
+      this._context = context;
+    }
 
     public async Task<ResponseData<StudentDto>> CreateStudent(StudentDto model)
     {
@@ -60,7 +63,7 @@ namespace server.Repositories
           DateUpdated = model.DateUpdated
         };
 
-        return new ResponseData<StudentDto>(200, result);
+        return new ResponseData<StudentDto>(200, "Thành công", result);
       }
       catch (Exception ex)
       {
@@ -79,12 +82,12 @@ namespace server.Repositories
 
         if (student is null)
         {
-          return new ResponseData<StudentDto>(404, "Student not found");
+          return new ResponseData<StudentDto>(404, "Không tìm thấy học sinh");
         }
 
         var deleteQuery = "DELETE FROM Student WHERE StudentId = @id";
         await _context.Database.ExecuteSqlRawAsync(deleteQuery, new SqlParameter("@id", id));
-        return new ResponseData<StudentDto>(200, "Deleted");
+        return new ResponseData<StudentDto>(200, "Xóa thành công");
       }
       catch (Exception ex)
       {
@@ -154,16 +157,14 @@ namespace server.Repositories
       }
     }
 
-    public async Task<List<StudentDto>> GetStudents(int pageNumber, int pageSize)
+    public async Task<ResponseData<List<StudentDto>>> GetStudents()
     {
       try
       {
-        var skip = (pageNumber - 1) * pageSize;
-        var query = @"SELECT * FROM Student ORDER BY FULLNAME OFFSET @skip ROWS FETCH NEXT @pageSize ROWS ONLY;";
-        var students = await _context.Students.FromSqlRaw(query,
-              new SqlParameter("@skip", skip),
-              new SqlParameter("@pageSize", pageSize)
-          ).ToListAsync();
+        var query = @"SELECT * FROM Student ORDER BY FULLNAME";
+        var students = await _context.Students.FromSqlRaw(query)
+          .AsNoTracking()
+          .ToListAsync();
 
         var result = students.Select(x => new StudentDto
         {
@@ -178,12 +179,11 @@ namespace server.Repositories
           DateUpdated = x.DateUpdated,
         }).ToList();
 
-        return result;
+        return new ResponseData<List<StudentDto>>(200, "Thành công", result);
       }
       catch (Exception ex)
       {
-        Console.WriteLine(ex.Message);
-        throw new Exception($"Error: {ex.Message}");
+        return new ResponseData<List<StudentDto>>(500, $"Error: {ex.Message}");
       }
     }
 
@@ -198,7 +198,7 @@ namespace server.Repositories
 
         if (exists is null)
         {
-          return new ResponseData<StudentDto>(404, "Student not found");
+          return new ResponseData<StudentDto>(404, "Học sinh này không tồn tại");
         }
 
         bool hasChanges = false;
@@ -272,13 +272,13 @@ namespace server.Repositories
           parameters.Add(new SqlParameter("@id", id));
 
           var updateQuery = queryBuilder.ToString();
-          await _context.Database.ExecuteSqlRawAsync(updateQuery, parameters.ToArray());
+          await _context.Database.ExecuteSqlRawAsync(updateQuery, [.. parameters]);
 
-          return new ResponseData<StudentDto>(200, "Updated");
+          return new ResponseData<StudentDto>(200, "Cập nhật thành công");
         }
         else
         {
-          return new ResponseData<StudentDto>(200, "No changes detected");
+          return new ResponseData<StudentDto>(200, "Không phát hiện sự thay đổi");
         }
       }
       catch (Exception ex)
@@ -287,7 +287,7 @@ namespace server.Repositories
       }
     }
 
-    public async Task<string> ImportExcel(IFormFile file)
+    public async Task<ResponseData<string>> ImportExcel(IFormFile file)
     {
       try
       {
@@ -348,9 +348,9 @@ namespace server.Repositories
             } while (reader.NextResult());
           }
 
-          return "Tải lên thành công all classes.";
+          return new ResponseData<string>(200, "Tải lên thành công");
         }
-        return "No file uploaded";
+        return new ResponseData<string>(200, "Không có tệp nào được tải lên");
 
       }
       catch (Exception ex)
@@ -367,7 +367,7 @@ namespace server.Repositories
       {
         if (ids is null || ids.Count == 0)
         {
-          return new ResponseData<string>(400, "No IDs provided.");
+          return new ResponseData<string>(400, "Vui lòng cung cấp mã học sinh");
         }
 
         var idList = string.Join(",", ids);
@@ -378,12 +378,12 @@ namespace server.Repositories
 
         if (delete == 0)
         {
-          return new ResponseData<string>(404, "No students found to delete");
+          return new ResponseData<string>(404, "Học sinh không tồn tại");
         }
 
         await transaction.CommitAsync();
 
-        return new ResponseData<string>(200, "Deleted succesfully");
+        return new ResponseData<string>(200, "Đã xóa");
       }
       catch (Exception ex)
       {

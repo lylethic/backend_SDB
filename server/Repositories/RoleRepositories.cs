@@ -59,22 +59,17 @@ namespace server.Repositories
       }
     }
 
-    public async Task<RoleResType> GetRoles(int pageNumber, int pageSize)
+    public async Task<RoleResType> GetRoles()
     {
       try
       {
-        var skip = (pageNumber - 1) * pageSize;
-
         var query = @"SELECT * FROM Role
-                      ORDER BY RoleId 
-                      OFFSET @skip ROWS
-                      FETCH NEXT  @pageSize ROWS ONLY";
+                      ORDER BY RoleId ";
 
         var roles = await _context.Roles
-          .FromSqlRaw(query,
-                      new SqlParameter("@skip", skip),
-                      new SqlParameter("@pageSize", pageSize)
-          ).ToListAsync() ?? throw new Exception("Empty");
+          .FromSqlRaw(query)
+          .AsNoTracking()
+          .ToListAsync() ?? throw new Exception("Empty");
 
         var result = roles.Select(x => new RoleDto
         {

@@ -26,17 +26,33 @@ namespace server.Controllers
 
     // GET: api/Roles`  
     [HttpGet]
-    public async Task<IActionResult> GetRoles(int pageNumber = 1, int pageSize = 50)
+    public async Task<IActionResult> GetRoles(QueryObject? queryObject)
     {
-      var result = await _roleRepo.GetRoles(pageNumber, pageSize);
+      queryObject ??= new QueryObject();
+      var result = await _roleRepo.GetRoles();
 
       if (result.StatusCode == 200)
       {
+        var data = result.RoleData ?? [];
+        var totalResults = data.Count;
+        var totalPages = (int)Math.Ceiling((double)totalResults / queryObject.PageSize);
+        var paginagedData = data
+        .Skip((queryObject.PageNumber - 1) * queryObject.PageSize)
+        .Take(queryObject.PageSize)
+        .ToList();
+
         return StatusCode(200, new
         {
-          statusCode = result.StatusCode,
+          status = result.StatusCode,
           message = result.Message,
-          data = result.RoleData
+          data = paginagedData,
+          pagination = new
+          {
+            queryObject.PageNumber,
+            queryObject.PageSize,
+            totalResults,
+            totalPages
+          }
         });
       }
 

@@ -8,17 +8,17 @@
 
     public string SemesterName { get; set; } = null!;
 
-    public DateOnly DateStart { get; set; }
+    public DateTime? DateStart { get; set; }
 
-    public DateOnly DateEnd { get; set; }
+    public DateTime? DateEnd { get; set; }
     public bool Status { get; set; }
 
     public string? Description { get; set; }
 
     public string? DisplayAcademicYearName { get; set; } = null;
 
-    public DateOnly? YearStart { get; set; }
+    public DateTime? YearStart { get; set; }
 
-    public DateOnly? YearEnd { get; set; }
+    public DateTime? YearEnd { get; set; }
   }
 }

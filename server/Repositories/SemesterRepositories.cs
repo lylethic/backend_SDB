@@ -3,7 +3,6 @@ using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using server.Data;
 using server.Dtos;
-using server.Helpers;
 using server.IService;
 using server.Models;
 using server.Types.Semester;
@@ -40,15 +39,11 @@ namespace server.Repositories
                           SELECT CAST(SCOPE_IDENTITY() as int);"
         ;
 
-        // DateOnly expects a specific format (ISO 8601, e.g., yyyy-MM-dd) to be correctly parsed during JSON deserialization. 
-        var dateStart = new DateTime(model.DateStart.Year, model.DateStart.Month, model.DateStart.Day);
-        var dateEnd = new DateTime(model.DateEnd.Year, model.DateEnd.Month, model.DateEnd.Day);
-
         var insert = await _context.Database.ExecuteSqlRawAsync(sqlInsert,
           new SqlParameter("@academicYearId", model.AcademicYearId),
           new SqlParameter("@semesterName", model.SemesterName),
-          new SqlParameter("@dateStart", dateStart),
-          new SqlParameter("@dateEnd", dateEnd),
+          new SqlParameter("@dateStart", model.DateStart),
+          new SqlParameter("@dateEnd", model.DateEnd),
           new SqlParameter("@description", model.Description),
           new SqlParameter("@status", model.Status)
         );
@@ -296,10 +291,8 @@ namespace server.Repositories
                 {
                   AcademicYearId = Convert.ToInt16(reader.GetValue(1)),
                   SemesterName = reader.GetValue(2).ToString() ?? "_",
-                  DateStart = ExcelHelper.ConvertExcelDateToDateOnly(reader.GetValue(3))
-                  ?? DateOnly.FromDateTime(DateTime.UtcNow),
-                  DateEnd = ExcelHelper.ConvertExcelDateToDateOnly(reader.GetValue(4))
-                  ?? DateOnly.FromDateTime(DateTime.UtcNow),
+                  DateStart = Convert.ToDateTime(reader.GetValue(3)),
+                  DateEnd = Convert.ToDateTime(reader.GetValue(4)),
                   Description = reader.GetValue(5).ToString(),
                   Status = Convert.ToBoolean(reader.GetValue(6))
                 };

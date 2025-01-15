@@ -11,9 +11,9 @@ public partial class Semester
 
     public string SemesterName { get; set; } = null!;
 
-    public DateOnly DateStart { get; set; }
+    public DateTime? DateStart { get; set; }
 
-    public DateOnly DateEnd { get; set; }
+    public DateTime? DateEnd { get; set; }
 
     public string? Description { get; set; }
 

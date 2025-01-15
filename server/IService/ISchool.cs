@@ -11,7 +11,7 @@ namespace server.IService
 
     Task<string> GetNameOfSchool(int id);
 
-    Task<SchoolResType> GetSchools(int pageNumber, int pageSize);
+    Task<SchoolResType> GetSchools();
 
     Task<SchoolResType> GetSchoolsNoPagnination();
 

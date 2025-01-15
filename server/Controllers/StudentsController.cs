@@ -20,22 +20,39 @@ namespace server.Controllers
 
     // GET: api/Students
     [HttpGet]
-    public async Task<IActionResult> GetStudents(int pageNumber = 1, int pageSize = 50)
+    public async Task<IActionResult> GetStudents([FromQuery] QueryObject? queryObject)
     {
-      try
+      queryObject ??= new QueryObject();
+      var result = await _studentRepo.GetStudents();
+      if (result.StatusCode == 200)
       {
-        var roles = await _studentRepo.GetStudents(pageNumber, pageSize);
-        if (roles == null)
+        var data = result.Data ?? [];
+        var totalResults = data.Count;
+        var totalPages = (int)Math.Ceiling((double)totalResults / queryObject.PageSize);
+        var paginagedData = data
+        .Skip((queryObject.PageNumber - 1) * queryObject.PageSize)
+        .Take(queryObject.PageSize)
+        .ToList();
+
+        return StatusCode(200, new
         {
-          return NotFound(); // 404
-        }
-        return Ok(roles); // 200
+          status = result.StatusCode,
+          message = result.Message,
+          data = paginagedData,
+          pagination = new
+          {
+            queryObject.PageNumber,
+            queryObject.PageSize,
+            totalResults,
+            totalPages
+          }
+        });
       }
-      catch (Exception ex)
+      return StatusCode(500, new
       {
-        Console.WriteLine(ex.Message);
-        return StatusCode(500, "Server error"); // 500
-      }
+        status = result.StatusCode,
+        message = result.Message
+      });
     }
 
     // GET: api/Students/5
@@ -43,12 +60,36 @@ namespace server.Controllers
     public async Task<IActionResult> GetStudent(int id)
     {
       var result = await _studentRepo.GetStudent(id);
-      if (result.StatusCode != 200)
+      if (result.StatusCode == 200)
       {
-        return BadRequest(result);
+        return Ok(new
+        {
+          status = result.StatusCode,
+          message = result.Message,
+          data = result.Data
+        });
       }
-
-      return Ok(result);
+      if (result.StatusCode == 400)
+      {
+        return BadRequest(new
+        {
+          status = result.StatusCode,
+          message = result.Message
+        });
+      }
+      if (result.StatusCode == 404)
+      {
+        return NotFound(new
+        {
+          status = result.StatusCode,
+          message = result.Message
+        });
+      }
+      return StatusCode(500, new
+      {
+        status = result.StatusCode,
+        message = result.Message
+      });
     }
 
     // PUT: api/Students/5
@@ -57,12 +98,35 @@ namespace server.Controllers
     public async Task<IActionResult> PutStudent(int id, StudentDto model)
     {
       var result = await _studentRepo.UpdateStudent(id, model);
-      if (result.StatusCode != 200)
+      if (result.StatusCode == 200)
       {
-        return BadRequest(result);
+        return Ok(new
+        {
+          status = result.StatusCode,
+          message = result.Message,
+        });
       }
-
-      return Ok(result);
+      if (result.StatusCode == 400)
+      {
+        return BadRequest(new
+        {
+          status = result.StatusCode,
+          message = result.Message
+        });
+      }
+      if (result.StatusCode == 404)
+      {
+        return NotFound(new
+        {
+          status = result.StatusCode,
+          message = result.Message
+        });
+      }
+      return StatusCode(500, new
+      {
+        status = result.StatusCode,
+        message = result.Message
+      });
     }
 
     // POST: api/Students
@@ -71,12 +135,28 @@ namespace server.Controllers
     public async Task<ActionResult<Student>> PostStudent(StudentDto model)
     {
       var result = await _studentRepo.CreateStudent(model);
-      if (result.StatusCode != 200)
+      if (result.StatusCode == 200)
       {
-        return BadRequest(result);
+        return Ok(new
+        {
+          status = result.StatusCode,
+          message = result.Message
+        });
       }
 
-      return Ok(result);
+      if (result.StatusCode == 400)
+      {
+        return BadRequest(new
+        {
+          status = result.StatusCode,
+          message = result.Message
+        });
+      }
+      return StatusCode(500, new
+      {
+        status = result.StatusCode,
+        message = result.Message
+      });
     }
 
     // DELETE: api/Students/5
@@ -85,46 +165,97 @@ namespace server.Controllers
     public async Task<IActionResult> DeleteStudent(int id)
     {
       var result = await _studentRepo.DeleteStudent(id);
-      if (result.StatusCode != 200)
+      if (result.StatusCode == 200)
       {
-        return BadRequest(result);
+        return Ok(new
+        {
+          status = result.StatusCode,
+          message = result.Message,
+          data = result.Data
+        });
       }
-
-      return Ok(result);
+      if (result.StatusCode == 400)
+      {
+        return BadRequest(new
+        {
+          status = result.StatusCode,
+          message = result.Message
+        });
+      }
+      if (result.StatusCode == 404)
+      {
+        return NotFound(new
+        {
+          status = result.StatusCode,
+          message = result.Message
+        });
+      }
+      return StatusCode(500, new
+      {
+        status = result.StatusCode,
+        message = result.Message
+      });
     }
 
     [Authorize(Policy = "SuperAdminAndAdmin")]
-    [HttpDelete("bulkdelete")]
+    [HttpDelete("bulk-delete")]
     public async Task<IActionResult> BulkDelete(List<int> ids)
     {
       var result = await _studentRepo.BulkDelete(ids);
-      if (result.StatusCode != 200)
+
+      if (result.StatusCode == 400)
       {
-        return BadRequest(result);
+        return BadRequest(new
+        {
+          status = result.StatusCode,
+          message = result.Message
+        });
+      }
+      if (result.StatusCode == 404)
+      {
+        return NotFound(new
+        {
+          status = result.StatusCode,
+          message = result.Message
+        });
       }
 
-      return Ok(result);
+      if (result.StatusCode == 200)
+      {
+        return Ok(new
+        {
+          status = result.StatusCode,
+          message = result.Message,
+          data = result.Data
+        });
+      }
+      return StatusCode(500, new
+      {
+        status = result.StatusCode,
+        message = result.Message
+      });
     }
 
     [Authorize(Policy = "SuperAdminAndAdmin")]
     [HttpPost("upload")]
     public async Task<IActionResult> UploadExcelFile(IFormFile file)
     {
-      try
-      {
-        var result = await _studentRepo.ImportExcel(file);
+      var result = await _studentRepo.ImportExcel(file);
 
-        if (result.Contains("Thành côngy"))
+      if (result.StatusCode == 200)
+      {
+        return Ok(new
         {
-          return Ok(result);
-        }
+          status = result.StatusCode,
+          message = result.Message
+        });
+      }
 
-        return BadRequest(result);
-      }
-      catch (Exception ex)
+      return StatusCode(500, new
       {
-        return StatusCode(500, $"Server Error: {ex.Message}");
-      }
+        status = result.StatusCode,
+        message = result.Message
+      });
     }
   }
 }

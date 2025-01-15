@@ -4,7 +4,6 @@ using Microsoft.EntityFrameworkCore;
 using server.Data;
 using server.Dtos;
 using server.IService;
-using server.Models;
 using server.Types.Week;
 using System.Globalization;
 using System.Text;
@@ -21,40 +20,6 @@ namespace server.Repositories
       this._context = context ?? throw new ArgumentNullException(nameof(context));
       this._logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
-
-    public async Task<ResponseData<string>> BulkDelete(List<int> ids)
-    {
-      await using var transaction = await _context.Database.BeginTransactionAsync();
-
-      try
-      {
-        if (ids is null || ids.Count == 0)
-        {
-          return new ResponseData<string>(400, "Không có mã tuần nào được cung cấp");
-        }
-
-        var idList = string.Join(",", ids);
-
-        var deleteQuery = $"DELETE FROM Week WHERE WeekId IN ({idList})";
-
-        var delete = await _context.Database.ExecuteSqlRawAsync(deleteQuery);
-
-        if (delete == 0)
-        {
-          return new ResponseData<string>(404, "Tuần không tồn tại");
-        }
-
-        await transaction.CommitAsync();
-
-        return new ResponseData<string>(200, "Đã xóa");
-      }
-      catch (Exception ex)
-      {
-        await transaction.RollbackAsync();
-        return new ResponseData<string>(500, $"Server error: {ex.Message}");
-      }
-    }
-
     public async Task<ResponseData<WeekDto>> CreateWeek(WeekDto model)
     {
       try
@@ -67,7 +32,7 @@ namespace server.Repositories
 
         if (existingWeek is not null)
         {
-          return new ResponseData<WeekDto>(409, "Week already exists");
+          return new ResponseData<WeekDto>(409, "Tuần học đã tồn tại");
         }
 
         var findSemester = "SELECT * FROM Semester WHERE SemesterId = @id";
@@ -78,21 +43,19 @@ namespace server.Repositories
 
         if (semester is null)
         {
-          return new ResponseData<WeekDto>(409, "Semester not found");
+          return new ResponseData<WeekDto>(404, "Học kỳ không tồn tại");
         }
 
         var sqlInsert = @"INSERT INTO Week (SemesterId, WeekName, WeekStart, WeekEnd, Status) 
                           VALUES (@SemesterId, @WeekName, @WeekStart, @WeekEnd, @Status);
                           SELECT CAST(SCOPE_IDENTITY() as int);";
 
-        var WeekStart = new DateTime(model.WeekStart.Year, model.WeekStart.Month, model.WeekStart.Day);
-        var WeekEnd = new DateTime(model.WeekEnd.Year, model.WeekEnd.Month, model.WeekEnd.Day);
 
         var insert = await _context.Database.ExecuteSqlRawAsync(sqlInsert,
           new SqlParameter("@SemesterId", model.SemesterId),
           new SqlParameter("@WeekName", model.WeekName),
-          new SqlParameter("@WeekStart", WeekStart),
-          new SqlParameter("@WeekEnd", WeekEnd),
+          new SqlParameter("@WeekStart", model.WeekStart),
+          new SqlParameter("@WeekEnd", model.WeekEnd),
           new SqlParameter("@status", model.Status)
         );
 
@@ -106,7 +69,7 @@ namespace server.Repositories
           Status = model.Status,
         };
 
-        return new ResponseData<WeekDto>(200, result);
+        return new ResponseData<WeekDto>(200, "Thành công", result);
       }
       catch (Exception ex)
       {
@@ -114,86 +77,56 @@ namespace server.Repositories
       }
     }
 
-    public async Task<ResponseData<WeekDto>> DeleteWeek(int id)
-    {
-      try
-      {
-        var findSemester = "SELECT * FROM Semester WHERE SemesterId = @id";
-
-        var semester = await _context.Semesters
-          .FromSqlRaw(findSemester, new SqlParameter("@id", id))
-          .FirstOrDefaultAsync();
-
-        if (semester is null)
-        {
-          return new ResponseData<WeekDto>(404, "Semester not found");
-        }
-
-        var deleteQuery = "DELETE FROM Week WHERE WeekId = @id";
-
-        await _context.Database.ExecuteSqlRawAsync(deleteQuery, new SqlParameter("@id", id));
-
-        return new ResponseData<WeekDto>(200, "A Week Deleted");
-      }
-      catch (Exception ex)
-      {
-        return new ResponseData<WeekDto>(500, $"Server error: {ex.Message}");
-      }
-    }
-
     public async Task<ResponseData<WeekData>> GetWeek(int id)
     {
       try
       {
-        var find = @"SELECT *
-                      FROM WEEK as W INNER JOIN Semester as A ON W.semesterId = A.semesterId 
-                      WHERE W.weekId = @id;";
+        if (id <= 0)
+        {
+          return new ResponseData<WeekData>(400, "Vui lòng cung cấp mã tuần học");
+        }
+
+        var find = @"SELECT w.*, a.semesterName, a.dateStart, a.dateEnd
+                    FROM WEEK as w 
+                    INNER JOIN Semester as a ON w.semesterId = a.semesterId 
+                    WHERE W.weekId = @id";
 
         var week = await _context.Weeks
           .FromSqlRaw(find, new SqlParameter("@id", id))
-          .Select(static x => new Week
+          .AsNoTracking()
+          .Select(static x => new
           {
-            WeekId = x.WeekId,
-            WeekName = x.WeekName,
-            WeekStart = x.WeekStart,
-            WeekEnd = x.WeekEnd,
-            Status = x.Status,
-            SemesterId = x.SemesterId,
-            Semester = new Semester
-            {
-              SemesterName = x.Semester.SemesterName,
-              DateStart = x.Semester.DateStart,
-              DateEnd = x.Semester.DateEnd,
-            }
+            x.WeekId,
+            x.WeekName,
+            x.WeekStart,
+            x.WeekEnd,
+            x.Status,
+            x.SemesterId,
+            SemesterName = x.Semester.SemesterName,
+            DateStart = x.Semester.DateStart,
+            DateEnd = x.Semester.DateEnd,
           })
           .FirstOrDefaultAsync();
 
         if (week is null)
         {
-          return new ResponseData<WeekData>(404, "Week not found");
+          return new ResponseData<WeekData>(404, "Tuần học không tồn tại");
         }
 
-        if (!week.Status)
+        var result = new WeekData
         {
-          return new ResponseData<WeekData>(400, "Week is inactive.This week are locked.");
-        }
-        else
-        {
-          var result = new WeekData
-          {
-            WeekId = id,
-            WeekName = week.WeekName,
-            WeekStart = week.WeekStart,
-            WeekEnd = week.WeekEnd,
-            Status = week.Status,
-            SemesterId = week.SemesterId,
-            SemesterName = week.Semester.SemesterName,
-            DateStart = week.Semester.DateStart,
-            DateEnd = week.Semester.DateEnd
-          };
+          WeekId = id,
+          WeekName = week.WeekName,
+          WeekStart = week.WeekStart?.ToString("dd/MM/yyyy"),
+          WeekEnd = week.WeekEnd?.ToString("dd/MM/yyyy"),
+          Status = week.Status,
+          SemesterId = week.SemesterId,
+          SemesterName = week.SemesterName,
+          DateStart = week.DateStart?.ToString("dd/MM/yyyy"),
+          DateEnd = week.DateEnd?.ToString("dd/MM/yyyy")
+        };
 
-          return new ResponseData<WeekData>(200, result);
-        }
+        return new ResponseData<WeekData>(200, "Thành công", result);
       }
       catch (Exception ex)
       {
@@ -201,59 +134,120 @@ namespace server.Repositories
       }
     }
 
-    public async Task<ResponseData<List<WeekDto>>> GetWeeks(int pageNumber, int pageSize)
+    public async Task<ResponseData<WeekDto>> GetWeekToUpdate(int id)
     {
       try
       {
-        var skip = (pageNumber - 1) * pageSize;
-
-        var query = @"SELECT * FROM Week
-                      ORDER BY CASE WHEN Status = 1 THEN 1 ELSE 0 END desc, weekId
-                      OFFSET @skip ROWS
-                      FETCH NEXT @pageSize ROWS ONLY";
-
-        var weeks = await _context.Weeks
-          .FromSqlRaw(query,
-          new SqlParameter("@skip", skip),
-          new SqlParameter("@pageSize", pageSize)
-          ).ToListAsync() ?? throw new Exception("Empty");
-
-        var result = weeks.Select(x => new WeekDto
+        if (id <= 0)
         {
-          WeekId = x.WeekId,
-          SemesterId = x.SemesterId,
-          WeekName = x.WeekName,
-          WeekStart = x.WeekStart,
-          WeekEnd = x.WeekEnd,
-          Status = x.Status
-        }).ToList();
+          return new ResponseData<WeekDto>(400, "Vui lòng cung cấp mã tuần học");
+        }
 
-        return new ResponseData<List<WeekDto>>(200, result);
+        var find = @"SELECT w.*, a.semesterName, a.dateStart, a.dateEnd
+                    FROM WEEK as w 
+                    INNER JOIN Semester as a ON w.semesterId = a.semesterId 
+                    WHERE W.weekId = @id";
+
+        var week = await _context.Weeks
+          .FromSqlRaw(find, new SqlParameter("@id", id))
+          .AsNoTracking()
+          .Select(static x => new
+          {
+            x.WeekId,
+            x.SemesterId,
+            x.WeekName,
+            x.WeekStart,
+            x.WeekEnd,
+            x.Status,
+          })
+          .FirstOrDefaultAsync();
+
+        if (week is null)
+        {
+          return new ResponseData<WeekDto>(404, "Tuần học không tồn tại");
+        }
+
+        var result = new WeekDto
+        {
+          WeekId = id,
+          SemesterId = week.SemesterId,
+          WeekName = week.WeekName,
+          WeekStart = week.WeekStart,
+          WeekEnd = week.WeekEnd,
+          Status = week.Status,
+        };
+
+        return new ResponseData<WeekDto>(200, "Thành công", result);
       }
       catch (Exception ex)
       {
-        return new ResponseData<List<WeekDto>>(200, $"Server error: {ex.Message}");
+        return new ResponseData<WeekDto>(500, $"Server error: {ex.Message}");
       }
     }
 
-    public async Task<List<WeekDto>> GetWeeksBySemester(int pageNumber, int pageSize, int semesterId)
+    public async Task<ResponseData<List<WeekData>>> GetWeeks()
     {
       try
       {
-        var skip = (pageNumber - 1) * pageSize;
+        var query = @"SELECT w.*, a.semesterName, a.dateStart, a.dateEnd 
+                      FROM Week as w
+                      INNER JOIN Semester as a ON w.semesterId = a.semesterId 
+                      ORDER BY CASE WHEN w.Status = 1 THEN 1 ELSE 0 END desc, weekId";
 
+        var weekQuery = from week in _context.Weeks
+                        join hocKy in _context.Semesters on week.SemesterId equals hocKy.SemesterId into hocKyGroup
+                        from hocKy in hocKyGroup.DefaultIfEmpty()
+                        select new
+                        {
+                          week.WeekId,
+                          week.SemesterId,
+                          week.WeekName,
+                          week.WeekStart,
+                          week.WeekEnd,
+                          week.Status,
+                          SemesterName = hocKy.SemesterName,
+                          DateStart = hocKy.DateStart,
+                          DateEnd = hocKy.DateEnd,
+                        };
+
+        var weeks = await weekQuery
+          .AsNoTracking()
+          .OrderByDescending(x => x.Status == true)
+          .ToListAsync();
+
+        var result = weeks.Select(week => new WeekData
+        {
+          WeekId = week.WeekId,
+          WeekName = week.WeekName,
+          WeekStart = week.WeekStart?.ToString("dd/MM/yyyy"),
+          WeekEnd = week.WeekEnd?.ToString("dd/MM/yyyy"),
+          Status = week.Status,
+          SemesterId = week.SemesterId,
+          SemesterName = week.SemesterName,
+          DateStart = week.DateStart?.ToString("dd/MM/yyyy"),
+          DateEnd = week.DateEnd?.ToString("dd/MM/yyyy")
+        }).ToList();
+
+        return new ResponseData<List<WeekData>>(200, "Thành công", result);
+      }
+      catch (Exception ex)
+      {
+        return new ResponseData<List<WeekData>>(500, $"Server error: {ex.Message}");
+      }
+    }
+
+    public async Task<ResponseData<List<WeekDto>>> GetWeeksBySemester(int semesterId)
+    {
+      try
+      {
         var query = @"SELECT * FROM Week
                       WHERE SEMESTERID = @semesterId
-                      ORDER BY WeekId
-                      OFFSET @skip ROWS
-                      FETCH NEXT @pageSize ROWS ONLY";
+                      ORDER BY WeekId";
 
         var weeks = await _context.Weeks
-          .FromSqlRaw(query,
-          new SqlParameter("@skip", skip),
-          new SqlParameter("@pageSize", pageSize),
-          new SqlParameter("@semesterId", semesterId)
-          ).ToListAsync() ?? throw new Exception("Empty");
+          .FromSqlRaw(query, new SqlParameter("@semesterId", semesterId))
+          .AsNoTracking()
+          .ToListAsync() ?? throw new Exception("Empty");
 
         var result = weeks.Select(x => new WeekDto
         {
@@ -264,7 +258,7 @@ namespace server.Repositories
           WeekEnd = x.WeekEnd,
         }).ToList();
 
-        return result;
+        return new ResponseData<List<WeekDto>>(200, "Thành công", result);
       }
       catch (Exception ex)
       {
@@ -273,7 +267,7 @@ namespace server.Repositories
       }
     }
 
-    public async Task<string> ImportExcelFile(IFormFile file)
+    public async Task<ResponseData<string>> ImportExcelFile(IFormFile file)
     {
       try
       {
@@ -326,11 +320,11 @@ namespace server.Repositories
 
                 var myWeek = new Models.Week
                 {
-                  SemesterId = reader.GetValue(1) != null ? Convert.ToInt16(reader.GetValue(1)) : 0,  // Provide default value or handle appropriately
+                  SemesterId = reader.GetValue(1) != null ? Convert.ToInt16(reader.GetValue(1)) : 0,
                   WeekName = reader.GetValue(2)?.ToString() ?? "null",
-                  WeekStart = reader.GetValue(3) != null ? DateOnly.FromDateTime((DateTime)reader.GetValue(3)) : DateOnly.MinValue,  // Handle potential null
-                  WeekEnd = reader.GetValue(4) != null ? DateOnly.FromDateTime((DateTime)reader.GetValue(4)) : DateOnly.MinValue,    // Handle potential null
-                  Status = reader.GetValue(5) != null && Convert.ToBoolean(reader.GetValue(5))  // Handle potential null
+                  WeekStart = Convert.ToDateTime(reader.GetValue(3)),
+                  WeekEnd = Convert.ToDateTime(reader.GetValue(4)),
+                  Status = reader.GetValue(5) != null && Convert.ToBoolean(reader.GetValue(5))
                 };
 
 
@@ -340,13 +334,13 @@ namespace server.Repositories
             } while (reader.NextResult());
           }
 
-          return "Tải lên thành công";
+          return new ResponseData<string>(200, "Tải lên thành công");
         }
-        return "No file uploaded";
+        return new ResponseData<string>(400, "Không có tệp nào được tải lên");
       }
-      catch (DbUpdateException dbEx)
+      catch (DbUpdateException ex)
       {
-        throw new Exception($"Error while uploading file: {dbEx.Message}");
+        throw new Exception($"Error while uploading file: {ex.Message}");
       }
     }
 
@@ -362,7 +356,7 @@ namespace server.Repositories
 
         if (existingWeek is null)
         {
-          return new ResponseData<WeekDto>(404, "Week not found");
+          return new ResponseData<WeekDto>(404, "Tuần học không tồn tại");
         }
 
         bool hasChanges = false;
@@ -384,14 +378,14 @@ namespace server.Repositories
           hasChanges = true;
         }
 
-        if (model.WeekStart != existingWeek.WeekStart)
+        if (model.WeekStart != default && model.WeekStart != existingWeek.WeekStart)
         {
           queryBuilder.Append("WeekStart = @WeekStart, ");
           parameters.Add(new SqlParameter("@WeekStart", model.WeekStart));
           hasChanges = true;
         }
 
-        if (model.WeekEnd != existingWeek.WeekEnd)
+        if (model.WeekEnd != default && model.WeekEnd != existingWeek.WeekEnd)
         {
           queryBuilder.Append("WeekEnd = @WeekEnd, ");
           parameters.Add(new SqlParameter("@WeekEnd", model.WeekEnd));
@@ -409,12 +403,12 @@ namespace server.Repositories
           // Execute the update query
           var updateQuery = queryBuilder.ToString();
           await _context.Database.ExecuteSqlRawAsync(updateQuery, [.. parameters]);
-          return new ResponseData<WeekDto>(200, "Updated");
 
+          return new ResponseData<WeekDto>(200, "Đã cập nhật");
         }
         else
         {
-          return new ResponseData<WeekDto>(200, "No changes detected");
+          return new ResponseData<WeekDto>(200, "Không phát hiện sự thay đổi");
         }
       }
       catch (Exception ex)
@@ -423,34 +417,112 @@ namespace server.Repositories
       }
     }
 
+    public async Task<ResponseData<WeekDto>> DeleteWeek(int id)
+    {
+      try
+      {
+        var query = "SELECT * FROM Week WHERE weekId = @id";
+
+        var week = await _context.Weeks
+          .FromSqlRaw(query, new SqlParameter("@id", id))
+          .FirstOrDefaultAsync();
+
+        if (week is null)
+        {
+          return new ResponseData<WeekDto>(404, "Tuần học không tồn tại");
+        }
+
+        var deleteQuery = "DELETE FROM Week WHERE WeekId = @id";
+
+        await _context.Database.ExecuteSqlRawAsync(deleteQuery, new SqlParameter("@id", id));
+
+        return new ResponseData<WeekDto>(200, "Đã xóa thành công");
+      }
+      catch (Exception ex)
+      {
+        return new ResponseData<WeekDto>(500, $"Server error: {ex.Message}");
+      }
+    }
+
+    public async Task<ResponseData<string>> BulkDelete(List<int> ids)
+    {
+      await using var transaction = await _context.Database.BeginTransactionAsync();
+
+      try
+      {
+        if (ids is null || ids.Count == 0)
+        {
+          return new ResponseData<string>(400, "Không có mã tuần nào được cung cấp");
+        }
+
+        var idList = string.Join(",", ids);
+
+        var deleteQuery = $"DELETE FROM Week WHERE WeekId IN ({idList})";
+
+        var delete = await _context.Database.ExecuteSqlRawAsync(deleteQuery);
+
+        if (delete == 0)
+        {
+          return new ResponseData<string>(404, "Tuần học không tồn tại");
+        }
+
+        await transaction.CommitAsync();
+
+        return new ResponseData<string>(200, "Đã xóa");
+      }
+      catch (Exception ex)
+      {
+        await transaction.RollbackAsync();
+        return new ResponseData<string>(500, $"Server error: {ex.Message}");
+      }
+    }
+
     public async Task<WeekResType> Get7DaysInWeek(int selectedWeekId)
     {
-      var selectedWeek = await _context.Weeks.FirstOrDefaultAsync(x => x.WeekId == selectedWeekId);
-      if (selectedWeek == null)
+      try
       {
-        return new WeekResType("Không tìm thấy");
-      }
+        var selectedWeek = await _context.Weeks
+        .AsNoTracking()
+        .FirstOrDefaultAsync(x => x.WeekId == selectedWeekId);
 
-      var daysInWeek = new List<SevenDaysInWeek>();
-
-      // Align `currentDate` to the nearest Monday
-      var currentDate = selectedWeek.WeekStart;
-      var dayOfWeek = (int)currentDate.DayOfWeek;
-      int offsetToMonday = (dayOfWeek == 0 ? -6 : 1) - dayOfWeek; // Adjust Sunday (0) to -6 for Monday alignment
-      currentDate = currentDate.AddDays(offsetToMonday);
-
-      for (int i = 0; i < 7; i++)
-      {
-        daysInWeek.Add(new SevenDaysInWeek
+        if (selectedWeek == null)
         {
-          Day = currentDate.ToString("dddd", new CultureInfo("vi-VN")),
-          Date = currentDate.ToString("dd/MM/yyyy")
-        });
+          return new WeekResType(404, "Không tìm thấy");
+        }
 
-        currentDate = currentDate.AddDays(1); // Add one day
+        var daysInWeek = new List<SevenDaysInWeek>();
+
+        // Align `currentDate` to the nearest Monday
+        var currentDate = selectedWeek.WeekStart;
+
+        if (currentDate.HasValue) // Ensure that currentDate is not null
+        {
+          var dayOfWeek = (int)currentDate.Value.DayOfWeek;
+          int offsetToMonday = (dayOfWeek == 0 ? -6 : 1) - dayOfWeek; // Adjust Sunday (0) to -6 for Monday alignment
+          currentDate = currentDate.Value.AddDays(offsetToMonday); // Access DateTime value and add days
+
+          for (int i = 0; i < 7; i++)
+          {
+            daysInWeek.Add(new SevenDaysInWeek
+            {
+              Day = currentDate?.ToString("dddd", new CultureInfo("vi-VN")),
+              Date = currentDate?.ToString("dd/MM/yyyy")
+            });
+
+            currentDate = currentDate.Value.AddDays(1); // Add one day
+          }
+        }
+        else
+        {
+          return new WeekResType(400, "WeekStart date is null");
+        }
+
+        return new WeekResType(200, "Thành công", daysInWeek);
       }
-
-      return new WeekResType("Thành công", daysInWeek);
+      catch (System.Exception ex)
+      {
+        return new WeekResType(500, $"Server error: {ex.Message}");
+      }
     }
 
   }

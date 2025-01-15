@@ -17,53 +17,59 @@ namespace server.Controllers
     }
 
     [HttpGet]
-    public async Task<IActionResult> GetSchools(int pageNumber = 1, int pageSize = 50)
+    public async Task<IActionResult> GetSchools([FromQuery] QueryObject? queryObject)
     {
-      try
-      {
-        var result = await _school.GetSchools(pageNumber, pageSize);
+      queryObject ??= new QueryObject();
+      var result = await _school.GetSchools();
 
-        if (result.StatusCode == 200)
+      if (result.StatusCode == 200)
+      {
+        var data = result.SchoolData ?? [];
+        var totalResults = data.Count;
+        var totalPages = (int)Math.Ceiling((double)totalResults / queryObject.PageSize);
+        var paginagedData = data
+        .Skip((queryObject.PageNumber - 1) * queryObject.PageSize)
+        .Take(queryObject.PageSize)
+        .ToList();
+
+        return StatusCode(200, new
         {
-          return StatusCode(200, new
+          status = result.StatusCode,
+          message = result.Message,
+          data = paginagedData,
+          pagination = new
           {
-            statusCode = result.StatusCode,
-            message = result.Message,
-            data = result.SchoolData
-          });
-        }
+            queryObject.PageNumber,
+            queryObject.PageSize,
+            totalResults,
+            totalPages
+          }
+        });
+      }
 
-        return StatusCode(500, result);
-      }
-      catch (Exception ex)
+      return StatusCode(500, new
       {
-        return StatusCode(500, $"Server error: {ex.Message}");
-      }
+        statusCode = result.StatusCode,
+        message = result.Message,
+      });
     }
 
     [HttpGet("get-schools-no-pagination")]
     public async Task<IActionResult> GetSchoolsNoPagination()
     {
-      try
-      {
-        var result = await _school.GetSchoolsNoPagnination();
+      var result = await _school.GetSchoolsNoPagnination();
 
-        if (result.StatusCode == 200)
+      if (result.StatusCode == 200)
+      {
+        return StatusCode(200, new
         {
-          return StatusCode(200, new
-          {
-            statusCode = result.StatusCode,
-            message = result.Message,
-            data = result.SchoolData
-          });
-        }
+          statusCode = result.StatusCode,
+          message = result.Message,
+          data = result.SchoolData
+        });
+      }
 
-        return StatusCode(500, result);
-      }
-      catch (Exception ex)
-      {
-        return StatusCode(500, $"Server error: {ex.Message}");
-      }
+      return StatusCode(500, result);
     }
 
     [HttpGet, Route("{id}")]

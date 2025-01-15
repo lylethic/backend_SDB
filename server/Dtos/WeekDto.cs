@@ -8,9 +8,9 @@
 
     public string WeekName { get; set; } = null!;
 
-    public DateOnly WeekStart { get; set; }
+    public DateTime? WeekStart { get; set; }
 
-    public DateOnly WeekEnd { get; set; }
+    public DateTime? WeekEnd { get; set; }
 
     public bool Status { get; set; }
   }

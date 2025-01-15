@@ -8,9 +8,9 @@ public class WeekData
 
   public string WeekName { get; set; } = null!;
 
-  public DateOnly WeekStart { get; set; }
+  public string? WeekStart { get; set; }
 
-  public DateOnly WeekEnd { get; set; }
+  public string? WeekEnd { get; set; }
 
   public bool Status { get; set; }
 
@@ -18,7 +18,7 @@ public class WeekData
 
   public string SemesterName { get; set; } = null!;
 
-  public DateOnly DateStart { get; set; }
+  public string? DateStart { get; set; }
 
-  public DateOnly DateEnd { get; set; }
+  public string? DateEnd { get; set; }
 }

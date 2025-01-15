@@ -62,7 +62,7 @@ namespace server.Controllers
     // POST api/<SubjectsController>
     [Authorize(Policy = "SuperAdminAndAdmin")]
     [HttpPost]
-    public async Task<IActionResult> Post(SubjectDto model)
+    public async Task<IActionResult> CreateSubject(SubjectDto model)
     {
       var subject = await _subjectRepo.CreateSubject(model);
 
@@ -77,7 +77,7 @@ namespace server.Controllers
     // PUT api/<SubjectsController>/5
     [Authorize(Policy = "SuperAdminAndAdmin")]
     [HttpPut("{id}")]
-    public async Task<IActionResult> Put(int id, SubjectDto model)
+    public async Task<IActionResult> UpdateSubject(int id, SubjectDto model)
     {
       var result = await _subjectRepo.UpdateSubject(id, model);
 

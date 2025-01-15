@@ -101,8 +101,8 @@ namespace server.Repositories
                              GradeId = grade.GradeId,
                              GradeName = grade.GradeName,
                              DisplayAcademicYear_Name = acad.DisplayAcademicYearName,
-                             YearStart = acad.YearStart.ToString("dd/MM/yyyy"),
-                             YearEnd = acad.YearEnd.ToString("dd/MM/yyyy")
+                             YearStart = acad.YearStart.HasValue ? acad.YearStart.Value.ToString("dd/MM/yyyy") : "",
+                             YearEnd = acad.YearEnd.HasValue ? acad.YearEnd.Value.ToString("dd/MM/yyyy") : ""
                            };
 
         var result = await querySubject.FirstOrDefaultAsync();
@@ -139,8 +139,8 @@ namespace server.Repositories
                              GradeId = grade.GradeId,
                              GradeName = grade.GradeName,
                              DisplayAcademicYear_Name = acad.DisplayAcademicYearName,
-                             YearStart = acad.YearStart.ToString("dd/MM/yyyy"),
-                             YearEnd = acad.YearEnd.ToString("dd/MM/yyyy")
+                             YearStart = acad.YearStart.HasValue ? acad.YearStart.Value.ToString("dd/MM/yyyy") : "",
+                             YearEnd = acad.YearEnd.HasValue ? acad.YearEnd.Value.ToString("dd/MM/yyyy") : ""
                            };
 
         var result = await querySubject

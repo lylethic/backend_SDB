@@ -3,7 +3,6 @@ using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using server.Data;
 using server.Dtos;
-using server.Helpers;
 using server.IService;
 using System.Text;
 
@@ -38,15 +37,12 @@ namespace server.Repositories
                           SELECT CAST(SCOPE_IDENTITY() as int);"
         ;
 
-        var yearStart = new DateTime(model.YearStart.Year, model.YearStart.Month, model.YearStart.Day);
-        var yearEnd = new DateTime(model.YearEnd.Year, model.YearEnd.Month, model.YearEnd.Day);
-
 
         var insert = await _context.Database.ExecuteSqlRawAsync(sqlInsert,
           new SqlParameter("@AcademicYearId", model.AcademicYearId),
           new SqlParameter("@displayAcademicYear_Name", model.DisplayAcademicYearName),
-          new SqlParameter("@YearStart", yearStart),
-          new SqlParameter("@YearEnd", yearEnd),
+          new SqlParameter("@YearStart", model.YearStart),
+          new SqlParameter("@YearEnd", model.YearEnd),
           new SqlParameter("@Description", model.Description),
           new SqlParameter("@Status", model.Status)
         );
@@ -301,10 +297,8 @@ namespace server.Repositories
                   var myAcademicYear = new Models.AcademicYear
                   {
                     DisplayAcademicYearName = reader.GetValue(1).ToString() ?? "null",
-                    YearStart = ExcelHelper.ConvertExcelDateToDateOnly(reader.GetValue(2))
-                    ?? DateOnly.FromDateTime(DateTime.UtcNow),
-                    YearEnd = ExcelHelper.ConvertExcelDateToDateOnly(reader.GetValue(3))
-                    ?? DateOnly.FromDateTime(DateTime.UtcNow),
+                    YearStart = Convert.ToDateTime(reader.GetValue(2)),
+                    YearEnd = Convert.ToDateTime(reader.GetValue(3)),
                     Description = reader.GetValue(4).ToString() ?? "null",
                     Status = Convert.ToBoolean(reader.GetValue(5))
                   };

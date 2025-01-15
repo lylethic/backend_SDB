@@ -358,11 +358,19 @@ namespace server.Controllers
 
       if (result.StatusCode == 200)
       {
-        return Ok(result);
+        return Ok(new
+        {
+          status = result.StatusCode,
+          message = result.Message,
+        });
       }
       if (result.StatusCode == 400)
       {
-        return BadRequest(result);
+        return BadRequest(new
+        {
+          status = result.StatusCode,
+          message = result.Message,
+        });
       }
 
       return StatusCode(500, new { message = result.Message });

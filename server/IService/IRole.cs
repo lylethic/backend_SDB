@@ -5,7 +5,7 @@ namespace server.IService
 {
   public interface IRole
   {
-    Task<RoleResType> GetRoles(int pageNumber, int pageSize);
+    Task<RoleResType> GetRoles();
 
     Task<RoleResType> GetRolesNoPagnination();
 

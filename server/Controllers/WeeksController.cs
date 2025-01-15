@@ -19,52 +19,127 @@ namespace server.Controllers
     }
 
     [HttpGet]
-    public async Task<IActionResult> GetAllWeek(int pageNumber = 1, int pageSize = 50)
+    public async Task<IActionResult> GetAllWeek([FromQuery] QueryObject? queryObject)
     {
-      var result = await _week.GetWeeks(pageNumber, pageSize);
+      queryObject ??= new QueryObject();
+      var result = await _week.GetWeeks();
       if (result.StatusCode == 200)
       {
+        var data = result.Data ?? [];
+        var totalResults = data.Count;
+        var totalPages = (int)Math.Ceiling((double)totalResults / queryObject.PageSize);
+        var paginagedData = data
+        .Skip((queryObject.PageNumber - 1) * queryObject.PageSize)
+        .Take(queryObject.PageSize)
+        .ToList();
+
         return Ok(new
         {
-          totalResults = result.Total,
+          status = result.StatusCode,
           message = result.Message,
-          data = result.Data,
+          data = paginagedData,
+          pagination = new
+          {
+            queryObject.PageNumber,
+            queryObject.PageSize,
+            totalResults,
+            totalPages
+          }
         });
       }
 
-      return StatusCode(500, result);
+      return StatusCode(500, new
+      {
+        status = result.StatusCode,
+        message = result.Message
+      });
     }
 
     // GET api/<WeeksController>/5
     [HttpGet("{id}")]
     public async Task<IActionResult> GetById(int id)
     {
-      var subject = await _week.GetWeek(id);
-
-      if (subject.StatusCode != 200)
+      var result = await _week.GetWeek(id);
+      if (result.StatusCode == 200)
       {
-        return BadRequest(subject);
+        return Ok(new
+        {
+          status = result.StatusCode,
+          message = result.Message,
+          data = result.Data
+        });
       }
 
-      return Ok(subject);
+      if (result.StatusCode == 404)
+      {
+        return NotFound(new
+        {
+          status = result.StatusCode,
+          message = result.Message
+        });
+      }
+      return StatusCode(500, new
+      {
+        status = result.StatusCode,
+        message = result.Message
+      });
+    }
+
+    [HttpGet("get-week-to-update/{id}")]
+    public async Task<IActionResult> GetWeekToUpdate(int id)
+    {
+      var result = await _week.GetWeekToUpdate(id);
+      if (result.StatusCode == 200)
+      {
+        return Ok(new
+        {
+          status = result.StatusCode,
+          message = result.Message,
+          data = result.Data
+        });
+      }
+
+      if (result.StatusCode == 404)
+      {
+        return NotFound(new
+        {
+          status = result.StatusCode,
+          message = result.Message
+        });
+      }
+      return StatusCode(500, new
+      {
+        status = result.StatusCode,
+        message = result.Message
+      });
     }
 
     [HttpGet, Route("Get7DaysInWeek")]
     public async Task<IActionResult> Get7DaysInWeek(int selectedWeekId)
     {
-      try
+      var result = await _week.Get7DaysInWeek(selectedWeekId);
+      if (result.StatusCode == 200)
       {
-        var result = await _week.Get7DaysInWeek(selectedWeekId);
         return Ok(new
         {
+          status = result.StatusCode,
           message = result.Message,
           data = result.Data
         });
       }
-      catch (Exception ex)
+      if (result.StatusCode == 404)
       {
-        return BadRequest($"Có lỗi: {ex.Message}");
+        return NotFound(new
+        {
+          status = result.StatusCode,
+          message = result.Message,
+        });
       }
+      return StatusCode(500, new
+      {
+        status = result.StatusCode,
+        message = result.Message
+      });
     }
 
     // POST api/<WeeksController>
@@ -81,14 +156,38 @@ namespace server.Controllers
     [HttpPost]
     public async Task<IActionResult> CreateWeek(WeekDto model)
     {
-      var subject = await _week.CreateWeek(model);
+      var result = await _week.CreateWeek(model);
 
-      if (subject.StatusCode != 200)
+      if (result.StatusCode == 404)
       {
-        return BadRequest(subject);
+        return NotFound(new
+        {
+          status = result.StatusCode,
+          message = result.Message
+        });
       }
-
-      return Ok(subject);
+      if (result.StatusCode == 409)
+      {
+        return StatusCode(409, new
+        {
+          status = result.StatusCode,
+          message = result.Message
+        });
+      }
+      if (result.StatusCode == 200)
+      {
+        return Ok(new
+        {
+          status = result.StatusCode,
+          message = result.Message,
+          data = result.Data
+        });
+      }
+      return StatusCode(500, new
+      {
+        status = result.StatusCode,
+        message = result.Message
+      });
     }
 
     // PUT api/<WeeksController>/5
@@ -96,14 +195,30 @@ namespace server.Controllers
     [HttpPut("{id}")]
     public async Task<IActionResult> UpdateWeek(int id, WeekDto model)
     {
-      var subject = await _week.UpdateWeek(id, model);
+      var result = await _week.UpdateWeek(id, model);
 
-      if (subject.StatusCode != 200)
+      if (result.StatusCode == 404)
       {
-        return BadRequest(subject);
+        return NotFound(new
+        {
+          status = result.StatusCode,
+          message = result.Message
+        });
       }
-
-      return Ok(subject);
+      if (result.StatusCode == 200)
+      {
+        return Ok(new
+        {
+          status = result.StatusCode,
+          message = result.Message,
+          data = result.Data
+        });
+      }
+      return StatusCode(500, new
+      {
+        status = result.StatusCode,
+        message = result.Message
+      });
     }
 
     // DELETE api/<WeeksController>/5
@@ -111,51 +226,99 @@ namespace server.Controllers
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeleteWeek(int id)
     {
-      var subject = await _week.DeleteWeek(id);
+      var result = await _week.DeleteWeek(id);
 
-      if (subject.StatusCode != 200)
+      if (result.StatusCode == 404)
       {
-        return BadRequest(subject);
+        return NotFound(new
+        {
+          status = result.StatusCode,
+          message = result.Message
+        });
       }
-
-      return Ok(subject);
+      if (result.StatusCode == 200)
+      {
+        return Ok(new
+        {
+          status = result.StatusCode,
+          message = result.Message,
+          data = result.Data
+        });
+      }
+      return StatusCode(500, new
+      {
+        status = result.StatusCode,
+        message = result.Message
+      });
     }
 
     [Authorize(Policy = "SuperAdminAndAdmin")]
     [HttpDelete("bulk-delete")]
     public async Task<IActionResult> BulkDelete([FromBody] List<int> ids)
     {
-      var subject = await _week.BulkDelete(ids);
+      var result = await _week.BulkDelete(ids);
 
-      if (subject.StatusCode != 200)
+      if (result.StatusCode == 404)
       {
-        return BadRequest(subject);
+        return NotFound(new
+        {
+          status = result.StatusCode,
+          message = result.Message
+        });
       }
 
-      return Ok(subject);
+      if (result.StatusCode == 400)
+      {
+        return BadRequest(new
+        {
+          status = result.StatusCode,
+          message = result.Message
+        });
+      }
+      if (result.StatusCode == 200)
+      {
+        return Ok(new
+        {
+          status = result.StatusCode,
+          message = result.Message,
+          data = result.Data
+        });
+      }
+      return StatusCode(500, new
+      {
+        status = result.StatusCode,
+        message = result.Message
+      });
     }
 
     [Authorize(Policy = "SuperAdminAndAdmin")]
     [HttpPost("upload")]
     public async Task<IActionResult> ImportExcelFile(IFormFile file)
     {
-      try
-      {
-        var result = await _week.ImportExcelFile(file);
+      var result = await _week.ImportExcelFile(file);
 
-        if (result.Contains("Thành côngy"))
+      if (result.StatusCode == 200)
+      {
+        return Ok(new
         {
-          return Ok(result);
-        }
-
-        return BadRequest(result);
+          status = result.StatusCode,
+          message = result.Message,
+        });
       }
-      catch (DbUpdateException dbEx)
+      if (result.StatusCode == 400)
       {
-        throw new Exception($"Error: {dbEx.Message}");
+        return BadRequest(new
+        {
+          status = result.StatusCode,
+          message = result.Message,
+        });
       }
+      return StatusCode(500, new
+      {
+        status = result.StatusCode,
+        message = result.Message
+      });
     }
-
   }
 }
 

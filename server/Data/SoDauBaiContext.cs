@@ -73,8 +73,12 @@ public partial class SoDauBaiContext : DbContext
             entity.Property(e => e.Status)
                 .HasDefaultValue(true)
                 .HasColumnName("status");
-            entity.Property(e => e.YearEnd).HasColumnName("yearEnd");
-            entity.Property(e => e.YearStart).HasColumnName("yearStart");
+            entity.Property(e => e.YearEnd)
+                .HasColumnType("datetime")
+                .HasColumnName("yearEnd");
+            entity.Property(e => e.YearStart)
+                .HasColumnType("datetime")
+                .HasColumnName("yearStart");
         });
 
         modelBuilder.Entity<Account>(entity =>
@@ -430,8 +434,12 @@ public partial class SoDauBaiContext : DbContext
 
             entity.Property(e => e.SemesterId).HasColumnName("semesterId");
             entity.Property(e => e.AcademicYearId).HasColumnName("academicYearId");
-            entity.Property(e => e.DateEnd).HasColumnName("dateEnd");
-            entity.Property(e => e.DateStart).HasColumnName("dateStart");
+            entity.Property(e => e.DateEnd)
+                .HasColumnType("datetime")
+                .HasColumnName("dateEnd");
+            entity.Property(e => e.DateStart)
+                .HasColumnType("datetime")
+                .HasColumnName("dateStart");
             entity.Property(e => e.Description)
                 .HasMaxLength(100)
                 .HasColumnName("description");
@@ -624,11 +632,16 @@ public partial class SoDauBaiContext : DbContext
             entity.Property(e => e.Status)
                 .HasDefaultValue(true)
                 .HasColumnName("status");
-            entity.Property(e => e.WeekEnd).HasColumnName("weekEnd");
+            entity.Property(e => e.WeekEnd)
+                .HasColumnType("datetime")
+                .HasColumnName("weekEnd");
             entity.Property(e => e.WeekName)
                 .HasMaxLength(50)
+                .UseCollation("Vietnamese_CI_AI")
                 .HasColumnName("weekName");
-            entity.Property(e => e.WeekStart).HasColumnName("weekStart");
+            entity.Property(e => e.WeekStart)
+                .HasColumnType("datetime")
+                .HasColumnName("weekStart");
 
             entity.HasOne(d => d.Semester).WithMany(p => p.Weeks)
                 .HasForeignKey(d => d.SemesterId)
