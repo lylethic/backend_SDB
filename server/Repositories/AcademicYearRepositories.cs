@@ -72,6 +72,7 @@ namespace server.Repositories
         var find = "SELECT * FROM AcademicYear WHERE academicYearId = @id";
         var academicYear = await _context.AcademicYears
           .FromSqlRaw(find, new SqlParameter("@id", id))
+          .AsNoTracking()
           .FirstOrDefaultAsync();
 
         if (academicYear is null)
@@ -108,11 +109,12 @@ namespace server.Repositories
         int totalResults = await countAllAcademicYear.CountAsync();
 
         var query = @"SELECT * 
-                      FROM AcademicYear
-                      ORDER BY CASE WHEN Status = 1 THEN 1 ELSE 0 END desc";
+                    FROM AcademicYear
+                    ORDER BY YearEnd DESC";
 
         var academicYear = await _context.AcademicYears
           .FromSqlRaw(query)
+          .AsNoTracking()
           .ToListAsync() ?? throw new Exception("Empty");
 
         var result = academicYear.Select(x => new AcademicYearDto
@@ -129,8 +131,7 @@ namespace server.Repositories
       }
       catch (Exception ex)
       {
-        Console.WriteLine(ex.Message);
-        throw new Exception($"Server error: {ex.Message}");
+        return new ResponseData<List<AcademicYearDto>>(500, $"Server error: {ex.Message}");
       }
     }
 

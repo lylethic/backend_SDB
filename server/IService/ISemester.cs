@@ -9,7 +9,7 @@ namespace server.IService
 
     Task<ResponseData<SemesterResData>> GetSemester(int id);
 
-    Task<ResponseData<List<SemesterDto>>> GetSemesters();
+    Task<ResponseData<List<SemesterResData>>> GetSemesters();
 
     Task<ResponseData<SemesterDto>> DeleteSemester(int id);
 

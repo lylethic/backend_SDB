@@ -194,7 +194,7 @@ namespace server.Controllers
       });
     }
 
-    [HttpDelete("bulkdelete")]
+    [HttpDelete("bulk-delete")]
     public async Task<IActionResult> BulkDelete(List<int> ids)
     {
       var result = await _grade.BulkDelete(ids);

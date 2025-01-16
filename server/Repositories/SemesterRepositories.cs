@@ -79,8 +79,9 @@ namespace server.Repositories
                             a.displayAcademicYear_Name, 
 				                    a.yearStart, 
 				                    a.yearEnd,
-                            s.status
-                    FROM Semester s INNER JOIN
+                            s.status,
+                            s.description
+                    FROM Semester s LEFT JOIN
                     AcademicYear A ON S.academicYearId = A.academicYearId
                     WHERE s.SemesterId = @id";
 
@@ -93,6 +94,7 @@ namespace server.Repositories
             DateStart = x.DateStart,
             DateEnd = x.DateEnd,
             Status = x.Status,
+            Description = x.Description,
             AcademicYearId = x.AcademicYearId,
             AcademicYear = new AcademicYear
             {
@@ -115,6 +117,7 @@ namespace server.Repositories
           DateStart = semester.DateStart,
           DateEnd = semester.DateEnd,
           Status = semester.Status,
+          Description = semester.Description,
           AcademicYearId = semester.AcademicYearId,
           DisplayAcademicYearName = semester.AcademicYear.DisplayAcademicYearName,
           YearStart = semester.AcademicYear.YearStart,
@@ -129,31 +132,47 @@ namespace server.Repositories
       }
     }
 
-    public async Task<ResponseData<List<SemesterDto>>> GetSemesters()
+    public async Task<ResponseData<List<SemesterResData>>> GetSemesters()
     {
       try
       {
-        var query = @"SELECT * FROM Semester 
-                      ORDER BY SEMESTERID";
+        var query = @"SELECT s.semesterId, 
+				                    s.semesterName, 
+				                    s.dateStart, 
+				                    s.dateEnd,
+				                    a.academicYearId, 
+                            a.displayAcademicYear_Name, 
+				                    a.yearStart, 
+				                    a.yearEnd,
+                            s.status,
+                            s.description
+                    FROM Semester as s 
+                    LEFT JOIN AcademicYear as a ON s.academicYearId = a.academicYearId";
 
-        var semester = await _context.Semesters.FromSqlRaw(query).ToListAsync();
+        var semester = await _context.Semesters
+        .FromSqlRaw(query)
+        .Include(x => x.AcademicYear)
+        .ToListAsync();
 
-        var result = semester.Select(x => new SemesterDto
+        var result = semester.Select(x => new SemesterResData
         {
           SemesterId = x.SemesterId,
           SemesterName = x.SemesterName,
-          AcademicYearId = x.AcademicYearId,
           DateStart = x.DateStart,
           DateEnd = x.DateEnd,
-          Description = x.Description,
           Status = x.Status,
+          Description = x.Description,
+          AcademicYearId = x.AcademicYearId,
+          DisplayAcademicYearName = x.AcademicYear.DisplayAcademicYearName,
+          YearStart = x.AcademicYear.YearStart,
+          YearEnd = x.AcademicYear.YearEnd
         }).ToList();
 
-        return new ResponseData<List<SemesterDto>>(200, "Thành công", result);
+        return new ResponseData<List<SemesterResData>>(200, "Thành công", result);
       }
       catch (Exception ex)
       {
-        return new ResponseData<List<SemesterDto>>(500, $"Server error: {ex.Message}");
+        return new ResponseData<List<SemesterResData>>(500, $"Server error: {ex.Message}");
       }
     }
 
@@ -225,7 +244,7 @@ namespace server.Repositories
 
           // Execute the update query
           var updateQuery = queryBuilder.ToString();
-          await _context.Database.ExecuteSqlRawAsync(updateQuery, parameters.ToArray());
+          await _context.Database.ExecuteSqlRawAsync(updateQuery, [.. parameters]);
           await transaction.CommitAsync();
           return new ResponseData<SemesterDto>(200, "Cập nhật Thành công");
         }

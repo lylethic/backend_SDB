@@ -109,7 +109,7 @@ namespace server.Controllers
     }
 
     [Authorize(Policy = "SuperAdminAndAdmin")]
-    [HttpDelete("bulkdelete")]
+    [HttpDelete("bulk-delete")]
     public async Task<IActionResult> BulkDelete(List<int> ids)
     {
       var result = await _subjectRepo.BulkDelete(ids);

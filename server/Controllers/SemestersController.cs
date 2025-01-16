@@ -52,7 +52,7 @@ namespace server.Controllers
 
     // GET: api/AcademicYears1/5
     [HttpGet("{id}")]
-    public async Task<IActionResult> Get(int id)
+    public async Task<IActionResult> GetSemesterById(int id)
     {
       var result = await _semester.GetSemester(id);
 
@@ -62,6 +62,7 @@ namespace server.Controllers
         {
           status = result.StatusCode,
           message = result.Message,
+          data = result.Data
         });
       }
       if (result.StatusCode == 404)
