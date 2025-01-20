@@ -11,7 +11,7 @@ public partial class School
 
     public byte DistrictId { get; set; }
 
-    public string NameSchcool { get; set; } = null!;
+    public string NameSchool { get; set; } = null!;
 
     public string Address { get; set; } = null!;
 

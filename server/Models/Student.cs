@@ -23,6 +23,10 @@ public partial class Student
 
     public string? Description { get; set; }
 
+    public DateTime? DateOfBirth { get; set; }
+
+    public string? Address { get; set; }
+
     public virtual Account Account { get; set; } = null!;
 
     public virtual Class Class { get; set; } = null!;

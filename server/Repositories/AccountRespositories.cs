@@ -111,7 +111,8 @@ namespace server.Repositories
       }
       catch (Exception ex)
       {
-        return new AccountsResType(500, $"Server error: {ex.Message}");
+        return new AccountsResType(500, "Có lỗi xảy ra tại máy chủ. Vui lòng liên hệ quản trị viên để sớm khắc phục");
+        throw new Exception($"Server error: {ex.Message}");
       }
     }
 
@@ -163,7 +164,8 @@ namespace server.Repositories
       }
       catch (Exception ex)
       {
-        return new AccountsResType(500, $"Server error: {ex.Message}");
+        return new AccountsResType(500, "Có lỗi xảy ra tại máy chủ. Vui lòng liên hệ quản trị viên để sớm khắc phục");
+        throw new Exception($"Server error: {ex.Message}");
       }
     }
 
@@ -194,7 +196,8 @@ namespace server.Repositories
       }
       catch (Exception ex)
       {
-        return new AccountsResType(500, $"Server error: {ex.Message}");
+        return new AccountsResType(500, "Có lỗi xảy ra tại máy chủ. Vui lòng liên hệ quản trị viên để sớm khắc phục");
+        throw new Exception($"Server error: {ex.Message}");
       }
     }
 
@@ -214,7 +217,7 @@ namespace server.Repositories
                               RoleId = account.RoleId,
                               SchoolId = account.SchoolId,
                               RoleName = role.NameRole,
-                              SchoolName = school.NameSchcool,
+                              SchoolName = school.NameSchool,
                               Email = account.Email,
                               DateCreated = account.DateCreated,
                               DateUpdated = account.DateUpdated
@@ -236,7 +239,8 @@ namespace server.Repositories
       catch (Exception ex)
       {
         Console.WriteLine($"Error occurred: {ex.Message}, Inner Exception: {ex.InnerException?.Message}");
-        return new AccountsResType(500, $"An error occurred: {ex.Message}");
+        return new AccountsResType(500, "Có lỗi xảy ra tại máy chủ. Vui lòng liên hệ quản trị viên để sớm khắc phục");
+        throw new Exception($"Server error: {ex.Message}");
       }
     }
 
@@ -259,7 +263,7 @@ namespace server.Repositories
                               RoleId = account.RoleId,
                               SchoolId = account.SchoolId,
                               RoleName = role.NameRole,
-                              SchoolName = school.NameSchcool,
+                              SchoolName = school.NameSchool,
                               Email = account.Email,
                               DateCreated = account.DateCreated,
                               DateUpdated = account.DateUpdated
@@ -283,29 +287,31 @@ namespace server.Repositories
       catch (Exception ex)
       {
         Console.WriteLine($"Error occurred: {ex.Message}, Inner Exception: {ex.InnerException?.Message}");
-        return new AccountsResType(500, $"An error occurred: {ex.Message}");
+        return new AccountsResType(500, "Có lỗi xảy ra tại máy chủ. Vui lòng liên hệ quản trị viên để sớm khắc phục");
+        throw new Exception($"Server error: {ex.Message}");
       }
     }
 
-    public async Task<AccountsResType> GetAccountsByRole(QueryObjects? queryObject)
+    public async Task<AccountsResType> GetAccountsByRole(int? roleId, int? schoolId)
     {
       try
       {
-        queryObject ??= new QueryObjects();
-        var skip = (queryObject.PageNumber - 1) * queryObject.PageSize;
-
         var query = @"SELECT * FROM ACCOUNT 
-                      WHERE RoleId = @roleId
-                      ORDER BY EMAIL 
-                      OFFSET @skip ROWS
-                      FETCH NEXT @pageSize ROWS ONLY;";
+                      WHERE (@roleId IS NULL OR RoleId = @roleId)
+                        AND (@schoolId IS NULL OR SchoolId = @schoolId)
+                      ORDER BY EMAIL";
+
+        var roleIdParam = roleId.HasValue
+          ? new SqlParameter("@roleId", roleId)
+          : new SqlParameter("@roleId", DBNull.Value);
+
+        var schoolIdParam = schoolId.HasValue
+                 ? new SqlParameter("@schoolId", schoolId)
+                 : new SqlParameter("@schoolId", DBNull.Value);
 
         var accsList = await _context.Accounts
-            .FromSqlRaw(query,
-                        new SqlParameter("@roleId", queryObject.RoleId),
-                        new SqlParameter("@skip", skip),
-                        new SqlParameter("@pageSize", queryObject.PageSize)
-            ).ToListAsync() ?? throw new Exception("Empty");
+            .FromSqlRaw(query, roleIdParam, schoolIdParam)
+            .ToListAsync() ?? throw new Exception("Empty");
 
         var result = accsList.Select(acc => new AccountDto
         {
@@ -317,14 +323,15 @@ namespace server.Repositories
 
         if (result is null || result.Count == 0)
         {
-          return new AccountsResType(404, $"Vai trò {queryObject.RoleId} không có tài khoản nào.");
+          return new AccountsResType(404, $"Vai trò mã số {roleId} và trường học mã số {schoolId} không có tài khoản nào.");
         }
 
         return new AccountsResType(200, "Thành công", result);
       }
       catch (Exception ex)
       {
-        return new AccountsResType(500, $"Server error: {ex.Message}");
+        return new AccountsResType(500, "Có lỗi xảy ra tại máy chủ. Vui lòng liên hệ quản trị viên để sớm khắc phục");
+        throw new Exception($"Server error: {ex.Message}");
       }
     }
 
@@ -410,7 +417,8 @@ namespace server.Repositories
       }
       catch (Exception ex)
       {
-        return new AccountsResType(500, $"Server Error: {ex.Message}");
+        return new AccountsResType(500, "Có lỗi xảy ra tại máy chủ. Vui lòng liên hệ quản trị viên để sớm khắc phục");
+        throw new Exception($"Server error: {ex.Message}");
       }
     }
 
@@ -439,7 +447,8 @@ namespace server.Repositories
       }
       catch (Exception ex)
       {
-        return new AccountsResType(500, $"Server error deleting account: {ex.Message}");
+        return new AccountsResType(500, "Có lỗi xảy ra tại máy chủ. Vui lòng liên hệ quản trị viên để sớm khắc phục");
+        throw new Exception($"Server error: {ex.Message}");
       }
     }
 
@@ -576,7 +585,8 @@ namespace server.Repositories
       catch (Exception ex)
       {
         await transaction.RollbackAsync();
-        return new AccountsResType(500, $"Server error: {ex.Message}");
+        return new AccountsResType(500, "Có lỗi xảy ra tại máy chủ. Vui lòng liên hệ quản trị viên để sớm khắc phục");
+        throw new Exception($"Server error: {ex.Message}");
       }
     }
 
@@ -622,7 +632,7 @@ namespace server.Repositories
             RoleId = account.RoleId,
             SchoolId = account.SchoolId,
             RoleName = account.Role.NameRole,
-            SchoolName = account.School.NameSchcool,
+            SchoolName = account.School.NameSchool,
             Email = account.Email,
             DateCreated = account.DateCreated,
             DateUpdated = account.DateUpdated
@@ -638,7 +648,8 @@ namespace server.Repositories
       }
       catch (Exception ex)
       {
-        return new AccountsResType(500, $"Server error: {ex.Message}");
+        return new AccountsResType(500, "Có lỗi xảy ra tại máy chủ. Vui lòng liên hệ quản trị viên để sớm khắc phục");
+        throw new Exception($"Server error: {ex.Message}");
       }
     }
 

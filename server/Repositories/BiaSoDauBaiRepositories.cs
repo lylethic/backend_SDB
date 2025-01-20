@@ -134,7 +134,7 @@ namespace server.Repositories
         var query = @"SELECT 
                   b.BiaSoDauBaiId,
                   b.SchoolId,
-                  ISNULL(s.NameSchcool, '') AS SchoolName,
+                  ISNULL(s.NameSchool, '') AS SchoolName,
                   b.AcademicyearId,
                   ISNULL(ay.displayAcademicYear_Name, '') AS NienKhoaName,
                   b.ClassId,
@@ -162,7 +162,7 @@ namespace server.Repositories
             {
               BiaSoDauBaiId = x.BiaSoDauBaiId,
               SchoolId = x.SchoolId,
-              SchoolName = x.School.NameSchcool,
+              SchoolName = x.School.NameSchool,
               AcademicyearId = x.AcademicyearId,
               NienKhoaName = x.Academicyear.DisplayAcademicYearName,
               ClassId = x.ClassId,
@@ -267,7 +267,7 @@ namespace server.Repositories
                                {
                                  BiaSoDauBaiId = biaSo.BiaSoDauBaiId,
                                  SchoolId = biaSo.SchoolId,
-                                 SchoolName = truong.NameSchcool,
+                                 SchoolName = truong.NameSchool,
                                  AcademicyearId = biaSo.AcademicyearId,
                                  NienKhoaName = nienKhoa.DisplayAcademicYearName,
                                  ClassId = biaSo.ClassId,
@@ -322,7 +322,7 @@ namespace server.Repositories
                                {
                                  BiaSoDauBaiId = biaSo.BiaSoDauBaiId,
                                  SchoolId = biaSo.SchoolId,
-                                 SchoolName = truong.NameSchcool,
+                                 SchoolName = truong.NameSchool,
                                  AcademicyearId = biaSo.AcademicyearId,
                                  NienKhoaName = nienKhoa.DisplayAcademicYearName,
                                  ClassId = biaSo.ClassId,
@@ -373,7 +373,7 @@ namespace server.Repositories
                                {
                                  BiaSoDauBaiId = biaSo.BiaSoDauBaiId,
                                  SchoolId = biaSo.SchoolId,
-                                 SchoolName = truong.NameSchcool,
+                                 SchoolName = truong.NameSchool,
                                  AcademicyearId = biaSo.AcademicyearId,
                                  NienKhoaName = nienKhoa.DisplayAcademicYearName,
                                  ClassId = biaSo.ClassId,
@@ -422,7 +422,7 @@ namespace server.Repositories
                                {
                                  biaSo.BiaSoDauBaiId,
                                  biaSo.SchoolId,
-                                 truong.NameSchcool,
+                                 truong.NameSchool,
                                  biaSo.AcademicyearId,
                                  nienKhoa.DisplayAcademicYearName,
                                  biaSo.ClassId,
@@ -444,7 +444,7 @@ namespace server.Repositories
         {
           BiaSoDauBaiId = x.BiaSoDauBaiId,
           SchoolId = x.SchoolId,
-          SchoolName = x.NameSchcool ?? string.Empty,
+          SchoolName = x.NameSchool ?? string.Empty,
           AcademicyearId = x.AcademicyearId,
           NienKhoaName = x.DisplayAcademicYearName ?? string.Empty,
           ClassId = x.ClassId,
@@ -490,7 +490,7 @@ namespace server.Repositories
                                {
                                  BiaSoDauBaiId = biaSo.BiaSoDauBaiId,
                                  SchoolId = biaSo.SchoolId,
-                                 SchoolName = truong.NameSchcool,
+                                 SchoolName = truong.NameSchool,
                                  AcademicyearId = biaSo.AcademicyearId,
                                  NienKhoaName = nienKhoa.DisplayAcademicYearName,
                                  ClassId = biaSo.ClassId,
@@ -502,13 +502,12 @@ namespace server.Repositories
                                };
 
         var biaSoDauBai = await baiSoDauBaiQuery
+            .AsNoTracking()
             .OrderBy(x => x.ClassName)
             .ToListAsync();
 
         if (biaSoDauBai is null || biaSoDauBai.Count == 0)
-        {
           return new BiaSoDauBaiResType(404, "Không có kết quả");
-        }
 
         return new BiaSoDauBaiResType(200, "Thành công", biaSoDauBai);
       }
@@ -775,7 +774,7 @@ namespace server.Repositories
         x.ClassId,
         x.SchoolId,
         x.AcademicyearId,
-        SchoolName = x.School.NameSchcool,
+        SchoolName = x.School.NameSchool,
         ClassName = x.Class.ClassName,
         NienKhoaName = x.Academicyear.DisplayAcademicYearName,
         TenGiaoVienChuNhiem = x.Class.Teacher.Fullname,

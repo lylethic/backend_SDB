@@ -412,9 +412,9 @@ public partial class SoDauBaiContext : DbContext
                 .HasMaxLength(100)
                 .HasColumnName("description");
             entity.Property(e => e.DistrictId).HasColumnName("districtId");
-            entity.Property(e => e.NameSchcool)
+            entity.Property(e => e.NameSchool)
                 .HasMaxLength(200)
-                .HasColumnName("nameSchcool");
+                .HasColumnName("nameSchool");
             entity.Property(e => e.PhoneNumber)
                 .HasMaxLength(10)
                 .IsUnicode(false)
@@ -488,10 +488,16 @@ public partial class SoDauBaiContext : DbContext
 
             entity.Property(e => e.StudentId).HasColumnName("studentId");
             entity.Property(e => e.AccountId).HasColumnName("accountId");
+            entity.Property(e => e.Address)
+                .HasMaxLength(255)
+                .HasColumnName("address");
             entity.Property(e => e.ClassId).HasColumnName("classId");
             entity.Property(e => e.DateCreated)
                 .HasColumnType("datetime")
                 .HasColumnName("dateCreated");
+            entity.Property(e => e.DateOfBirth)
+                .HasColumnType("datetime")
+                .HasColumnName("dateOfBirth");
             entity.Property(e => e.DateUpdated)
                 .HasColumnType("datetime")
                 .HasColumnName("dateUpdated");

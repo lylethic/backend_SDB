@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using DocumentFormat.OpenXml.Wordprocessing;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using server.Dtos;
 using server.IService;
@@ -52,7 +53,7 @@ namespace server.Controllers
 
           return Ok(new
           {
-            statusCode = result.StatusCode,
+            status = result.StatusCode,
             message = result.Message,
             data = paginatedData,
             pagination = new
@@ -92,9 +93,10 @@ namespace server.Controllers
     }
 
     [HttpGet, Route("get-accounts-by-role")]
-    public async Task<IActionResult> GetAccountsByRole([FromQuery] QueryObjects? queryObject)
+    public async Task<IActionResult> GetAccountsByRole([FromQuery] QueryObject? queryObject, int? roleId = null, int? schoolId = null)
     {
-      var result = await _acc.GetAccountsByRole(queryObject);
+      queryObject ??= new QueryObject();
+      var result = await _acc.GetAccountsByRole(roleId, schoolId);
       if (result.StatusCode == 404)
       {
         return NotFound(new
@@ -106,11 +108,25 @@ namespace server.Controllers
 
       if (result.StatusCode == 200)
       {
+        var data = result.AccountDto ?? [];
+        var totalResults = data.Count;
+        var totalPages = (int)Math.Ceiling((double)totalResults / queryObject.PageSize);
+        var paginatedData = data
+             .Skip((queryObject.PageNumber - 1) * queryObject.PageSize)
+             .Take(queryObject.PageSize);
+
         return Ok(new
         {
-          statusCode = result.StatusCode,
+          status = result.StatusCode,
           message = result.Message,
-          data = result.AccountDto,
+          data = paginatedData,
+          pagination = new
+          {
+            queryObject.PageNumber,
+            queryObject.PageSize,
+            totalResults,
+            totalPages
+          }
         });
       }
 
@@ -348,7 +364,7 @@ namespace server.Controllers
     }
 
     [Authorize(Policy = "SuperAdminAndAdmin")]
-    [HttpDelete, Route("bulkdelete")]
+    [HttpDelete, Route("bulk-delete")]
     public async Task<IActionResult> BulkDelete(List<int> ids)
     {
       var result = await _acc.BulkDelete(ids);

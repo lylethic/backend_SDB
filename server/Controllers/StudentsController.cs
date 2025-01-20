@@ -20,10 +20,10 @@ namespace server.Controllers
 
     // GET: api/Students
     [HttpGet]
-    public async Task<IActionResult> GetStudents([FromQuery] QueryObject? queryObject)
+    public async Task<IActionResult> GetStudents([FromQuery] QueryObject? queryObject, [FromQuery] int? schoolId = null)
     {
       queryObject ??= new QueryObject();
-      var result = await _studentRepo.GetStudents();
+      var result = await _studentRepo.GetStudents(schoolId);
       if (result.StatusCode == 200)
       {
         var data = result.Data ?? [];
@@ -48,6 +48,17 @@ namespace server.Controllers
           }
         });
       }
+
+      if (result.StatusCode == 404)
+      {
+        return NotFound(new
+        {
+          status = result.StatusCode,
+          message = result.Message,
+          data = result.Data
+        });
+      }
+
       return StatusCode(500, new
       {
         status = result.StatusCode,
@@ -92,10 +103,40 @@ namespace server.Controllers
       });
     }
 
+    // POST: api/Students
+    [Authorize(Policy = "SuperAdminAndAdmin")]
+    [HttpPost]
+    public async Task<ActionResult<Student>> CreateStudent([FromBody] StudentDto model)
+    {
+      var result = await _studentRepo.CreateStudent(model);
+      if (result.StatusCode == 200)
+      {
+        return Ok(new
+        {
+          status = result.StatusCode,
+          message = result.Message
+        });
+      }
+
+      if (result.StatusCode == 400)
+      {
+        return BadRequest(new
+        {
+          status = result.StatusCode,
+          message = result.Message
+        });
+      }
+      return StatusCode(500, new
+      {
+        status = result.StatusCode,
+        message = result.Message
+      });
+    }
+
     // PUT: api/Students/5
     [Authorize(Policy = "SuperAdminAndAdmin")]
     [HttpPut("{id}")]
-    public async Task<IActionResult> PutStudent(int id, StudentDto model)
+    public async Task<IActionResult> UpdateStudent(int id, StudentDto model)
     {
       var result = await _studentRepo.UpdateStudent(id, model);
       if (result.StatusCode == 200)
@@ -117,36 +158,6 @@ namespace server.Controllers
       if (result.StatusCode == 404)
       {
         return NotFound(new
-        {
-          status = result.StatusCode,
-          message = result.Message
-        });
-      }
-      return StatusCode(500, new
-      {
-        status = result.StatusCode,
-        message = result.Message
-      });
-    }
-
-    // POST: api/Students
-    [Authorize(Policy = "SuperAdminAndAdmin")]
-    [HttpPost]
-    public async Task<ActionResult<Student>> PostStudent(StudentDto model)
-    {
-      var result = await _studentRepo.CreateStudent(model);
-      if (result.StatusCode == 200)
-      {
-        return Ok(new
-        {
-          status = result.StatusCode,
-          message = result.Message
-        });
-      }
-
-      if (result.StatusCode == 400)
-      {
-        return BadRequest(new
         {
           status = result.StatusCode,
           message = result.Message

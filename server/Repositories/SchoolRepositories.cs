@@ -40,14 +40,14 @@ namespace server.Repositories
           };
         }
 
-        var queryInsert = @"INSERT INTO SCHOOL (provinceId, districtId, nameSchcool, address, phoneNumber, schoolType, description) 
-                            VALUES (@provinceId, @districtId, @nameSchcool, @address, @phoneNumber, @schoolType, @description);
+        var queryInsert = @"INSERT INTO SCHOOL (provinceId, districtId, NameSchool, address, phoneNumber, schoolType, description) 
+                            VALUES (@provinceId, @districtId, @NameSchool, @address, @phoneNumber, @schoolType, @description);
                             SELECT CAST(SCOPE_IDENTITY() as int);";
 
         var schoolInsert = await _context.Database.ExecuteSqlRawAsync(queryInsert,
           new SqlParameter("@provinceId", model.ProvinceId),
           new SqlParameter("@districtId", model.DistrictId),
-          new SqlParameter("@nameSchcool", model.NameSchool),
+          new SqlParameter("@NameSchool", model.NameSchool),
           new SqlParameter("@address", model.Address),
           new SqlParameter("@phoneNumber", model.PhoneNumber),
           new SqlParameter("@schoolType", model.SchoolType),
@@ -139,7 +139,7 @@ namespace server.Repositories
           SchoolId = school.SchoolId,
           ProvinceId = school.ProvinceId,
           DistrictId = school.DistrictId,
-          NameSchool = school.NameSchcool,
+          NameSchool = school.NameSchool,
           PhoneNumber = school.PhoneNumber,
           Address = school.Address,
           SchoolType = school.SchoolType,
@@ -165,7 +165,7 @@ namespace server.Repositories
           return "Không tìm thấy trường học";
         }
 
-        return getName.NameSchcool;
+        return getName.NameSchool;
       }
       catch (Exception ex)
       {
@@ -190,7 +190,7 @@ namespace server.Repositories
           SchoolId = x.SchoolId,
           ProvinceId = x.ProvinceId,
           DistrictId = x.DistrictId,
-          NameSchool = x.NameSchcool,
+          NameSchool = x.NameSchool,
           PhoneNumber = x.PhoneNumber,
           Address = x.Address,
           SchoolType = x.SchoolType,
@@ -221,7 +221,7 @@ namespace server.Repositories
           SchoolId = x.SchoolId,
           ProvinceId = x.ProvinceId,
           DistrictId = x.DistrictId,
-          NameSchool = x.NameSchcool,
+          NameSchool = x.NameSchool,
           PhoneNumber = x.PhoneNumber,
           Address = x.Address,
           SchoolType = x.SchoolType,
@@ -278,17 +278,17 @@ namespace server.Repositories
           hasChanges = true;
         }
 
-        if (!string.IsNullOrEmpty(model.NameSchool) && model.NameSchool != existingSchool.NameSchcool)
+        if (!string.IsNullOrEmpty(model.NameSchool) && model.NameSchool != existingSchool.NameSchool)
         {
           queryBuilder.Append("description = @description, ");
           parameters.Add(new SqlParameter("@Description", model.Description));
           hasChanges = true;
         }
 
-        if (!string.IsNullOrEmpty(model.NameSchool) && model.NameSchool != existingSchool.NameSchcool)
+        if (!string.IsNullOrEmpty(model.NameSchool) && model.NameSchool != existingSchool.NameSchool)
         {
-          queryBuilder.Append("nameSchcool = @nameSchcool, ");
-          parameters.Add(new SqlParameter("@nameSchcool", model.NameSchool));
+          queryBuilder.Append("NameSchool = @NameSchool, ");
+          parameters.Add(new SqlParameter("@NameSchool", model.NameSchool));
           hasChanges = true;
         }
 
@@ -384,7 +384,7 @@ namespace server.Repositories
 
                 Console.WriteLine($"ProvinceId: {reader.GetValue(1)}");
                 Console.WriteLine($"DistrictId: {reader.GetValue(2)}");
-                Console.WriteLine($"NameSchcool: {reader.GetValue(3)}");
+                Console.WriteLine($"NameSchool: {reader.GetValue(3)}");
                 Console.WriteLine($"Address: {reader.GetValue(4)}");
                 Console.WriteLine($"PhoneNumber: {reader.GetValue(5)}");
                 Console.WriteLine($"SchoolType: {reader.GetValue(6)}");
@@ -404,7 +404,7 @@ namespace server.Repositories
                 {
                   ProvinceId = provinceIdValue != null ? (byte)Math.Min(255, Math.Max(0, Convert.ToInt32(provinceIdValue))) : (byte)0,
                   DistrictId = districtIdValue != null ? (byte)Math.Min(255, Math.Max(0, Convert.ToInt32(districtIdValue))) : (byte)0,
-                  NameSchcool = reader.GetValue(3).ToString()! ?? "Default School Name",
+                  NameSchool = reader.GetValue(3).ToString()! ?? "Default School Name",
                   Address = reader.GetValue(4).ToString()!.Trim() ?? "Default Address",
                   PhoneNumber = reader.GetValue(5).ToString()!.Trim() ?? "Default Phone",
                   SchoolType = reader.GetValue(6) != null ? Convert.ToBoolean(reader.GetValue(6)) : false,
@@ -502,7 +502,7 @@ namespace server.Repositories
             worksheet.Cell(i + 2, 1).Value = role.SchoolId;
             worksheet.Cell(i + 2, 2).Value = role.ProvinceId;
             worksheet.Cell(i + 2, 3).Value = role.DistrictId;
-            worksheet.Cell(i + 2, 4).Value = role.NameSchcool;
+            worksheet.Cell(i + 2, 4).Value = role.NameSchool;
             worksheet.Cell(i + 2, 5).Value = role.Address;
             worksheet.Cell(i + 2, 6).Value = role.PhoneNumber;
             worksheet.Cell(i + 2, 7).Value = role.SchoolType;

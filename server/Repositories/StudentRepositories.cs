@@ -33,8 +33,8 @@ namespace server.Repositories
           return new ResponseData<StudentDto>(409, "Student already exists");
         }
 
-        var sqlInsert = @"INSERT INTO STUDENT (ClassId, GradeId, AccountId, Fullname, Status, Description, DateCreated, DateUpdated) 
-                          VALUES (@ClassId, @GradeId, @AccountId, @Fullname, @Status, @Description, @DateCreated, @DateUpdated);
+        var sqlInsert = @"INSERT INTO STUDENT (ClassId, GradeId, AccountId, Fullname, Status, Description, DateCreated, DateUpdated, Address, DateOfBirth) 
+                          VALUES (@ClassId, @GradeId, @AccountId, @Fullname, @Status, @Description, @DateCreated, @DateUpdated, @Address, @DateOfBirth);
                           SELECT CAST(SCOPE_IDENTITY() as int);";
 
         var currentdate = DateTime.UtcNow;
@@ -44,6 +44,8 @@ namespace server.Repositories
           new SqlParameter("@GradeId", model.GradeId),
           new SqlParameter("@AccountId", model.AccountId),
           new SqlParameter("@Fullname", model.Fullname),
+          new SqlParameter("@DateOfBirth", model.DateOfBirth),
+          new SqlParameter("@Address", model.Address),
           new SqlParameter("@Status", model.Status),
           new SqlParameter("@Description", model.Description),
           new SqlParameter("@DateCreated", currentdate),
@@ -57,6 +59,8 @@ namespace server.Repositories
           GradeId = model.GradeId,
           AccountId = model.AccountId,
           Fullname = model.Fullname,
+          DateOfBirth = model.DateOfBirth,
+          Address = model.Address,
           Status = model.Status,
           Description = model.Description,
           DateCreated = model.DateCreated,
@@ -67,48 +71,24 @@ namespace server.Repositories
       }
       catch (Exception ex)
       {
-        return new ResponseData<StudentDto>(200, $"Server error: {ex.Message}");
-      }
-    }
-
-    public async Task<ResponseData<StudentDto>> DeleteStudent(int id)
-    {
-      try
-      {
-        var find = "SELECT * FROM STUDENT WHERE StudentId = @id";
-        var student = await _context.Students
-          .FromSqlRaw(find, new SqlParameter("@id", id))
-          .FirstOrDefaultAsync();
-
-        if (student is null)
-        {
-          return new ResponseData<StudentDto>(404, "Không tìm thấy học sinh");
-        }
-
-        var deleteQuery = "DELETE FROM Student WHERE StudentId = @id";
-        await _context.Database.ExecuteSqlRawAsync(deleteQuery, new SqlParameter("@id", id));
-        return new ResponseData<StudentDto>(200, "Xóa thành công");
-      }
-      catch (Exception ex)
-      {
         return new ResponseData<StudentDto>(500, $"Server error: {ex.Message}");
       }
     }
 
-    public async Task<ResponseData<StudentDto>> GetStudent(int id)
+    public async Task<ResponseData<StudentDetail>> GetStudent(int id)
     {
       try
       {
         // Correct SQL query with proper aliases
         var query = @"
-            SELECT s.StudentId, s.ClassId, s.GradeId, s.AccountId, s.Fullname, s.Status, s.Description,
-                   a.AccountId as A_AccountId, a.RoleId, a.SchoolId, a.Email
+            SELECT s.StudentId, s.ClassId, s.GradeId, s.AccountId, s.Fullname, s.Status, s.Description, s.dateCreated, s.dateUpdated, a.SchoolId, a.Email, s.DateOfBirth, s.Address
             FROM Student s INNER JOIN Account a ON s.AccountId = a.AccountId
             WHERE s.StudentId = @id";
 
         // Fetch the data using FromSqlRaw
         var student = await _context.Students
             .FromSqlRaw(query, new SqlParameter("@id", id))
+            .Include(x => x.Class)
             .Select(static s => new
             {
               s.StudentId,
@@ -116,79 +96,101 @@ namespace server.Repositories
               s.GradeId,
               s.Account.AccountId,
               s.Fullname,
-              s.Status,
               s.Description,
-              AccountAccountId = s.Account.AccountId,
-              RoleId = s.Account.RoleId,
-              SchoolId = s.Account.SchoolId,
-              Email = s.Account.Email
+              s.Status,
+              s.DateCreated,
+              s.DateUpdated,
+              s.Account.SchoolId,
+              s.Account.School.NameSchool,
+              s.Account.Email,
+              s.Class.ClassName,
+              s.Address,
+              s.DateOfBirth
             })
+            .AsNoTracking()
             .FirstOrDefaultAsync();
 
         if (student is null)
         {
-          return new ResponseData<StudentDto>(404, "Student not found");
+          return new ResponseData<StudentDetail>(404, "Học sinh không tồn tại");
         }
 
         // Map the result to the StudentDto
-        var result = new StudentDto
+        var result = new StudentDetail
         {
           StudentId = id,
           ClassId = student.ClassId,
           GradeId = student.GradeId,
           AccountId = student.AccountId,
           Fullname = student.Fullname,
-          Status = student.Status,
           Description = student.Description,
-          Account = new AccountDto
-          {
-            AccountId = student.AccountAccountId,
-            RoleId = student.RoleId,
-            SchoolId = student.SchoolId,
-            Email = student.Email
-          }
+          Status = student.Status,
+          DateCreated = student.DateCreated,
+          DateUpdated = student.DateUpdated,
+          SchoolId = student.SchoolId,
+          SchoolName = student.NameSchool,
+          Email = student.Email,
+          ClassName = student.ClassName,
+          Address = student.Address,
+          DateOfBirth = student.DateOfBirth,
         };
 
-        return new ResponseData<StudentDto>(200, result);
+        return new ResponseData<StudentDetail>(200, "Thành công", result);
       }
       catch (Exception ex)
       {
-        return new ResponseData<StudentDto>(500, $"Server error: {ex.Message}");
+        return new ResponseData<StudentDetail>(500, $"Server error: {ex.Message}");
       }
     }
 
-    public async Task<ResponseData<List<StudentDto>>> GetStudents()
+    public async Task<ResponseData<List<StudentDetail>>> GetStudents(int? schoolId)
     {
       try
       {
-        var query = @"SELECT * FROM Student ORDER BY FULLNAME";
-        var students = await _context.Students.FromSqlRaw(query)
+        if (schoolId == 0) return new ResponseData<List<StudentDetail>>(400, "Vui lòng nhập mã trường học");
+
+        var queryStudentBySchool = from student in _context.Students
+                                   join account in _context.Accounts on student.AccountId equals account.AccountId into accountGroup
+                                   from account in accountGroup.DefaultIfEmpty()
+                                   where account.SchoolId == schoolId || schoolId == null
+                                   select new StudentDetail
+                                   {
+                                     StudentId = student.StudentId,
+                                     ClassId = student.ClassId,
+                                     GradeId = student.GradeId,
+                                     AccountId = student.AccountId,
+                                     Fullname = student.Fullname,
+                                     Status = student.Status,
+                                     Description = student.Description,
+                                     DateCreated = student.DateCreated,
+                                     DateUpdated = student.DateUpdated,
+                                     Email = account.Email,
+                                     SchoolId = account.SchoolId,
+                                     SchoolName = account.School.NameSchool,
+                                     ClassName = student.Class.ClassName,
+                                     Address = student.Address,
+                                     DateOfBirth = student.DateOfBirth,
+                                   };
+
+        var students = await queryStudentBySchool
           .AsNoTracking()
+          .OrderBy(x => x.Fullname)
           .ToListAsync();
 
-        var result = students.Select(x => new StudentDto
-        {
-          StudentId = x.StudentId,
-          ClassId = x.ClassId,
-          GradeId = x.GradeId,
-          AccountId = x.AccountId,
-          Fullname = x.Fullname,
-          Status = x.Status,
-          Description = x.Description,
-          DateCreated = x.DateCreated,
-          DateUpdated = x.DateUpdated,
-        }).ToList();
+        if (students is null || students.Count == 0)
+          return new ResponseData<List<StudentDetail>>(404, "Không có kết quả", []);
 
-        return new ResponseData<List<StudentDto>>(200, "Thành công", result);
+        return new ResponseData<List<StudentDetail>>(200, "Thành công", students);
       }
       catch (Exception ex)
       {
-        return new ResponseData<List<StudentDto>>(500, $"Error: {ex.Message}");
+        return new ResponseData<List<StudentDetail>>(500, $"Error: {ex.Message}");
       }
     }
 
     public async Task<ResponseData<StudentDto>> UpdateStudent(int id, StudentDto model)
     {
+      using var transaction = await _context.Database.BeginTransactionAsync();
       try
       {
         var find = "SELECT * FROM Student WHERE StudentId = @id";
@@ -234,6 +236,20 @@ namespace server.Repositories
           hasChanges = true;
         }
 
+        if (model.DateOfBirth != exists.DateOfBirth)
+        {
+          queryBuilder.Append("DateOfBirth = @DateOfBirth, ");
+          parameters.Add(new SqlParameter("@DateOfBirth", model.DateOfBirth));
+          hasChanges = true;
+        }
+
+        if (!string.IsNullOrEmpty(model.Address) && model.Address != exists.Address)
+        {
+          queryBuilder.Append("Address = @Address, ");
+          parameters.Add(new SqlParameter("@Address", model.Address));
+          hasChanges = true;
+        }
+
         if (model.Status != exists.Status && model.Status != exists.Status)
         {
           queryBuilder.Append("Status = @Status, ");
@@ -272,17 +288,19 @@ namespace server.Repositories
           parameters.Add(new SqlParameter("@id", id));
 
           var updateQuery = queryBuilder.ToString();
+          await transaction.CommitAsync();
           await _context.Database.ExecuteSqlRawAsync(updateQuery, [.. parameters]);
 
           return new ResponseData<StudentDto>(200, "Cập nhật thành công");
         }
         else
         {
-          return new ResponseData<StudentDto>(200, "Không phát hiện sự thay đổi");
+          return new ResponseData<StudentDto>(400, "Không phát hiện sự thay đổi");
         }
       }
       catch (Exception ex)
       {
+        await transaction.RollbackAsync();
         return new ResponseData<StudentDto>(500, $"Server Error: {ex.Message}");
       }
     }
@@ -324,7 +342,9 @@ namespace server.Repositories
                   continue;
                 }
                 // Check if there are no more rows or empty rows
-                if (reader.GetValue(1) == null && reader.GetValue(2) == null && reader.GetValue(3) == null && reader.GetValue(4) == null && reader.GetValue(5) == null && reader.GetValue(6) == null)
+                if (reader.GetValue(1) == null && reader.GetValue(2) == null && reader.GetValue(3) == null
+                  && reader.GetValue(4) == null && reader.GetValue(5) == null && reader.GetValue(8) == null
+                  && reader.GetValue(9) == null && reader.GetValue(10) == null)
                 {
                   // Stop processing when an empty row is encountered
                   break;
@@ -337,9 +357,11 @@ namespace server.Repositories
                   AccountId = Convert.ToInt32(reader.GetValue(3)),
                   Fullname = reader.GetValue(4).ToString() ?? "Undefined",
                   Status = Convert.ToBoolean(reader.GetValue(5)),
-                  Description = reader.GetValue(6)?.ToString() ?? $"{DateTime.UtcNow}",
                   DateCreated = DateTime.UtcNow,
-                  DateUpdated = null
+                  DateUpdated = null,
+                  Description = reader.GetValue(8)?.ToString() ?? $"{DateTime.UtcNow}",
+                  DateOfBirth = Convert.ToDateTime(reader.GetValue(9)),
+                  Address = reader.GetValue(10).ToString() ?? ""
                 };
 
                 await _context.Students.AddAsync(myStudent);
@@ -356,6 +378,30 @@ namespace server.Repositories
       catch (Exception ex)
       {
         throw new Exception($"Error while uploading file: {ex.Message}");
+      }
+    }
+
+    public async Task<ResponseData<StudentDto>> DeleteStudent(int id)
+    {
+      try
+      {
+        var find = "SELECT * FROM STUDENT WHERE StudentId = @id";
+        var student = await _context.Students
+          .FromSqlRaw(find, new SqlParameter("@id", id))
+          .FirstOrDefaultAsync();
+
+        if (student is null)
+        {
+          return new ResponseData<StudentDto>(404, "Không tìm thấy học sinh");
+        }
+
+        var deleteQuery = "DELETE FROM Student WHERE StudentId = @id";
+        await _context.Database.ExecuteSqlRawAsync(deleteQuery, new SqlParameter("@id", id));
+        return new ResponseData<StudentDto>(200, "Xóa thành công");
+      }
+      catch (Exception ex)
+      {
+        return new ResponseData<StudentDto>(500, $"Server error: {ex.Message}");
       }
     }
 

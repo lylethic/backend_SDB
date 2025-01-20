@@ -302,7 +302,6 @@ namespace server.Repositories
                 && reader.GetValue(3) == null && reader.GetValue(4) == null
                 && reader.GetValue(5) == null && reader.GetValue(6) == null)
                 {
-                  // Stop processing when an empty row is encountered
                   break;
                 }
 
@@ -322,7 +321,7 @@ namespace server.Repositories
             } while (reader.NextResult());
           }
 
-          return new ResponseData<string>(200, "Thành công");
+          return new ResponseData<string>(200, "Nhập danh sách thành công");
         }
         return new ResponseData<string>(400, "Không có tệp nào được tải lên");
       }

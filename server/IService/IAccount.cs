@@ -11,7 +11,7 @@ namespace server.IService
 
     Task<AccountsResType> GetAccounts(int? schoolId);
 
-    Task<AccountsResType> GetAccountsByRole(QueryObjects? queryObject);
+    Task<AccountsResType> GetAccountsByRole(int? roleId, int? schoolId);
 
     Task<AccountsResType> GetAccount(int id);
 

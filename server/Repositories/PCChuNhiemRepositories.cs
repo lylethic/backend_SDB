@@ -112,7 +112,7 @@ namespace server.Repositories
                             {
                               PhanCongChuNhiemId = chuNhiem.PhanCongChuNhiemId,
                               SchoolId = school.SchoolId,
-                              SchoolName = school.NameSchcool,
+                              SchoolName = school.NameSchool,
                               TeacherId = chuNhiem.TeacherId,
                               TeacherName = teacher.Fullname,
                               GradeId = classes.GradeId,
@@ -159,7 +159,7 @@ namespace server.Repositories
                             {
                               PhanCongChuNhiemId = chuNhiem.PhanCongChuNhiemId,
                               SchoolId = classes.SchoolId,
-                              SchoolName = school.NameSchcool,
+                              SchoolName = school.NameSchool,
                               GradeId = classes.GradeId,
                               TeacherId = chuNhiem.TeacherId,
                               TeacherName = teacher.Fullname,
@@ -214,7 +214,7 @@ namespace server.Repositories
                             {
                               PhanCongChuNhiemId = chuNhiem.PhanCongChuNhiemId,
                               SchoolId = classes.SchoolId,
-                              SchoolName = school.NameSchcool,
+                              SchoolName = school.NameSchool,
                               TeacherId = chuNhiem.TeacherId,
                               TeacherName = teacher.Fullname,
                               GradeId = classes.GradeId,

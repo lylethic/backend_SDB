@@ -12,6 +12,10 @@
 
     public string Fullname { get; set; } = null!;
 
+    public string? Address { get; set; } = null;
+
+    public DateTime? DateOfBirth { get; set; }
+
     public bool Status { get; set; }
 
     public string? Description { get; set; }
@@ -19,7 +23,16 @@
     public DateTime? DateCreated { get; set; }
 
     public DateTime? DateUpdated { get; set; }
+  }
+  public class StudentDetail : StudentDto
+  {
 
-    public AccountDto? Account { get; set; }
+    public int? SchoolId { get; set; }
+
+    public string Email { get; set; } = null!;
+
+    public string? SchoolName { get; set; }
+
+    public string? ClassName { get; set; }
   }
 }

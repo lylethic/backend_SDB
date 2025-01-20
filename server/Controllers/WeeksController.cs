@@ -28,7 +28,7 @@ namespace server.Controllers
         var data = result.Data ?? [];
         var totalResults = data.Count;
         var totalPages = (int)Math.Ceiling((double)totalResults / queryObject.PageSize);
-        var paginagedData = data
+        var paginatedData = data
         .Skip((queryObject.PageNumber - 1) * queryObject.PageSize)
         .Take(queryObject.PageSize)
         .ToList();
@@ -37,7 +37,7 @@ namespace server.Controllers
         {
           status = result.StatusCode,
           message = result.Message,
-          data = paginagedData,
+          data = paginatedData,
           pagination = new
           {
             queryObject.PageNumber,

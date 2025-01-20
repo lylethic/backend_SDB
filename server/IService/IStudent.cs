@@ -5,8 +5,8 @@ namespace server.IService
   public interface IStudent
   {
     Task<ResponseData<StudentDto>> CreateStudent(StudentDto model);
-    Task<ResponseData<StudentDto>> GetStudent(int id);
-    Task<ResponseData<List<StudentDto>>> GetStudents();
+    Task<ResponseData<StudentDetail>> GetStudent(int id);
+    Task<ResponseData<List<StudentDetail>>> GetStudents(int? schoolId);
     Task<ResponseData<StudentDto>> DeleteStudent(int id);
     Task<ResponseData<StudentDto>> UpdateStudent(int id, StudentDto model);
     Task<ResponseData<string>> BulkDelete(List<int> ids);

@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using DocumentFormat.OpenXml.Spreadsheet;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using server.Dtos;
 using server.IService;
@@ -92,42 +93,58 @@ namespace server.Controllers
     }
 
     [HttpGet, Route("teachers-by-school")]
-    public async Task<IActionResult> GetTeachersBySchool([FromQuery] int schoolId)
+    public async Task<IActionResult> GetAllTeachersBySchool([FromQuery] QueryObject? queryObject, [FromQuery] int? schoolId = null)
     {
-      var teachers = await _teacherRepo.GetTeachersBySchool(schoolId);
+      queryObject ??= new QueryObject();
+      var result = await _teacherRepo.GetTeachersBySchool(schoolId);
 
-      if (teachers.StatusCode == 404)
+      if (result.StatusCode == 200)
+      {
+        var data = result.TeacherListDetails ?? [];
+        var totalResults = data.Count;
+        var totalPages = (int)Math.Ceiling((double)totalResults / queryObject.PageSize);
+        var paginatedData = data
+        .Skip((queryObject.PageNumber - 1) * queryObject.PageSize)
+        .Take(queryObject.PageSize)
+        .ToList();
+
+        return Ok(new
+        {
+          status = result.StatusCode,
+          message = result.Message,
+          data = paginatedData,
+          pagination = new
+          {
+            queryObject.PageNumber,
+            queryObject.PageSize,
+            totalResults,
+            totalPages
+          }
+        });
+      }
+
+      if (result.StatusCode == 404)
       {
         return NotFound(new
         {
-          statusCode = teachers.StatusCode,
-          message = teachers.Message,
+          statusCode = result.StatusCode,
+          message = result.Message,
         });
       }
 
-      if (teachers.StatusCode == 400)
+      if (result.StatusCode == 400)
       {
         return BadRequest(new
         {
-          statusCode = teachers.StatusCode,
-          message = teachers.Message,
-        });
-      }
-
-      if (teachers.StatusCode == 200)
-      {
-        return Ok(new
-        {
-          statusCode = teachers.StatusCode,
-          message = teachers.Message,
-          data = teachers.TeacherListDetails
+          statusCode = result.StatusCode,
+          message = result.Message,
         });
       }
 
       return StatusCode(500, new
       {
-        statusCode = teachers.StatusCode,
-        message = teachers.Message,
+        statusCode = result.StatusCode,
+        message = result.Message,
       });
     }
 

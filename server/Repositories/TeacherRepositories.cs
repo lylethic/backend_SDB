@@ -24,20 +24,10 @@ namespace server.Repositories
     {
       try
       {
-        var findTeacher = @"SELECT 
-			                            t.teacherId, 
-                                  t.accountId, 
-                                  t.fullname, 
-                                  t.dateOfBirth, 
-                                  t.gender, 
-                                  t.address, 
-                                  t.status,
-			                            s.schoolId, 
-                                  s.nameSchcool, 
-                                  s.schoolType,
-                                  t.dateCreate,
-			                            t.dateUpdate,
-                                  t.photoPath
+        var findTeacher = @"SELECT t.teacherId, t.accountId, t.fullname, 
+                                t.dateOfBirth, t.gender, t.address, t.status,
+			                          s.schoolId, s.NameSchool, s.schoolType, t.dateCreate,
+			                          t.dateUpdate, t.photoPath
                             FROM TEACHER T
                             LEFT JOIN SCHOOL S
                             ON T.schoolId = S.schoolId
@@ -57,20 +47,20 @@ namespace server.Repositories
             SchoolId = x.SchoolId,
             School = new School
             {
-              NameSchcool = x.School.NameSchcool,
+              NameSchool = x.School.NameSchool,
               SchoolType = x.School.SchoolType
             },
             DateCreate = x.DateCreate,
             DateUpdate = x.DateUpdate,
             PhotoPath = x.PhotoPath,
           })
+          .AsNoTracking()
           .FirstOrDefaultAsync();
 
         if (teacher is null)
         {
           return new TeacherResType(404, "Không tìm thấy giáo viên");
         }
-
 
         var result = new TeacherDetail
         {
@@ -82,7 +72,7 @@ namespace server.Repositories
           Address = teacher.Address,
           Status = teacher.Status,
           SchoolId = teacher.SchoolId,
-          NameSchool = teacher.School.NameSchcool,
+          NameSchool = teacher.School.NameSchool,
           SchoolType = teacher.School.SchoolType ? "Công lập" : "Dân lập",
           DateCreate = teacher.DateCreate?.ToString("dd/MM/yyyy HH:mm:ss") ?? string.Empty,
           DateUpdate = teacher.DateUpdate?.ToString("dd/MM/yyyy HH:mm:ss") ?? string.Empty,
@@ -93,7 +83,8 @@ namespace server.Repositories
       }
       catch (Exception ex)
       {
-        return new TeacherResType(500, $"Server error: {ex.Message}");
+        return new TeacherResType(500, "Có lỗi xảy ra tại máy chủ. Vui lòng liên hệ quản trị viên để sớm khắc phục");
+        throw new Exception($"Server error: {ex.Message}");
       }
     }
 
@@ -101,18 +92,11 @@ namespace server.Repositories
     {
       try
       {
-        var findTeacher = @"SELECT 
-			                            t.teacherId, 
-                                  t.accountId, 
-			                            s.schoolId, 
-                                  t.fullname, 
-                                  t.dateOfBirth, 
-                                  t.gender, 
-                                  t.address, 
-                                  t.status,
-                                  t.dateCreate,
-			                            t.dateUpdate,
-                                  t.photoPath
+        var findTeacher = @"SELECT t.teacherId, t.accountId, 
+			                            s.schoolId, t.fullname, 
+                                  t.dateOfBirth, t.gender, 
+                                  t.address, t.status,
+                                  t.dateCreate, t.dateUpdate, t.photoPath
                             FROM TEACHER t
                             LEFT JOIN SCHOOL s
                             ON t.schoolId = s.schoolId
@@ -134,6 +118,7 @@ namespace server.Repositories
             DateUpdate = x.DateUpdate,
             PhotoPath = x.PhotoPath,
           })
+          .AsNoTracking()
           .FirstOrDefaultAsync();
 
         if (teacher is null)
@@ -160,7 +145,8 @@ namespace server.Repositories
       }
       catch (Exception ex)
       {
-        return new TeacherResType(500, $"Server error: {ex.Message}");
+        return new TeacherResType(500, "Có lỗi xảy ra tại máy chủ. Vui lòng liên hệ quản trị viên để sớm khắc phục");
+        throw new Exception($"Server error: {ex.Message}");
       }
     }
 
@@ -200,6 +186,7 @@ namespace server.Repositories
           new SqlParameter("@pageSize", queryObject.PageSize)
           )
           .Include("School")
+          .AsNoTracking()
           .ToListAsync() ?? throw new Exception("Empty");
 
         var result = teachers.Select(x => new TeacherDetail
@@ -207,7 +194,7 @@ namespace server.Repositories
           TeacherId = x.TeacherId,
           AccountId = x.AccountId,
           SchoolId = x.SchoolId,
-          NameSchool = x.School.NameSchcool,
+          NameSchool = x.School.NameSchool,
           Fullname = x.Fullname,
           DateOfBirth = x.DateOfBirth.ToString("dd/MM/yyyy"),
           Gender = x.Gender ? "Nam" : "Nữ",
@@ -223,7 +210,8 @@ namespace server.Repositories
       }
       catch (Exception ex)
       {
-        return new TeacherResType(500, $"Server error: {ex.Message}");
+        return new TeacherResType(500, "Có lỗi xảy ra tại máy chủ. Vui lòng liên hệ quản trị viên để sớm khắc phục");
+        throw new Exception($"Server error: {ex.Message}");
       }
     }
 
@@ -248,6 +236,7 @@ namespace server.Repositories
           new SqlParameter("@pageSize", queryObject.PageSize)
           )
           .Include(x => x.School)
+          .AsNoTracking()
           .ToListAsync() ?? throw new Exception("Empty");
 
         if (teachers.Count == 0)
@@ -258,7 +247,7 @@ namespace server.Repositories
           TeacherId = x.TeacherId,
           AccountId = x.AccountId,
           SchoolId = x.SchoolId,
-          NameSchool = x.School.NameSchcool,
+          NameSchool = x.School.NameSchool,
           Fullname = x.Fullname,
           DateOfBirth = x.DateOfBirth.ToString("dd/MM/yyyy") ?? string.Empty,
           Gender = x.Gender ? "Nam" : "Nữ",
@@ -274,27 +263,30 @@ namespace server.Repositories
       }
       catch (Exception ex)
       {
-        return new TeacherResType(500, $"Server error: {ex.Message}");
+        return new TeacherResType(500, "Có lỗi xảy ra tại máy chủ. Vui lòng liên hệ quản trị viên để sớm khắc phục");
+        throw new Exception($"Server error: {ex.Message}");
       }
     }
 
-    public async Task<TeacherResType> GetTeachersBySchool(int schoolId)
+    public async Task<TeacherResType> GetTeachersBySchool(int? schoolId)
     {
       try
       {
-        if (schoolId == 0) return new TeacherResType(400, "Vui lòng nhập mã trường học");
-
         var query = @"SELECT * FROM Teacher
-                      WHERE schoolId = @schoolId";
+                  WHERE @schoolId IS NULL OR schoolId = @schoolId";
+
+        var schoolIdParam = schoolId.HasValue
+          ? new SqlParameter("@schoolId", schoolId)
+          : new SqlParameter("@schoolId", DBNull.Value);
 
         var teachers = await _context.Teachers
-          .FromSqlRaw(query, new SqlParameter("@schoolId", schoolId))
+          .FromSqlRaw(query, schoolIdParam)
           .Include(x => x.School)
           .ToListAsync() ?? throw new Exception("Empty");
 
-        if (teachers.Count == 0)
+        if (teachers is null || teachers.Count == 0)
         {
-          return new TeacherResType(200, $"Trường học này chưa có giáo viên");
+          return new TeacherResType(404, $"Trường học này chưa có giáo viên");
         }
 
         var result = teachers.Select(x => new TeacherDetail
@@ -302,7 +294,7 @@ namespace server.Repositories
           TeacherId = x.TeacherId,
           AccountId = x.AccountId,
           SchoolId = x.SchoolId,
-          NameSchool = x.School.NameSchcool,
+          NameSchool = x.School.NameSchool,
           Fullname = x.Fullname,
           DateOfBirth = x.DateOfBirth.ToString("dd/MM/yyyy") ?? string.Empty,
           Gender = x.Gender ? "Nam" : "Nữ",
@@ -318,7 +310,8 @@ namespace server.Repositories
       }
       catch (Exception ex)
       {
-        return new TeacherResType(500, $"Server error: {ex.Message}");
+        return new TeacherResType(500, "Có lỗi xảy ra tại máy chủ. Vui lòng liên hệ quản trị viên để sớm khắc phục");
+        throw new Exception($"Server error: {ex.Message}");
       }
     }
 
@@ -365,7 +358,8 @@ namespace server.Repositories
       }
       catch (Exception ex)
       {
-        return new TeacherResType(500, $"Server error: {ex.Message}");
+        return new TeacherResType(500, "Có lỗi xảy ra tại máy chủ. Vui lòng liên hệ quản trị viên để sớm khắc phục");
+        throw new Exception($"Server error: {ex.Message}");
       }
     }
 
@@ -561,7 +555,8 @@ namespace server.Repositories
       }
       catch (Exception ex)
       {
-        return new TeacherResType(500, $"Tải lên thất bại. Vui lòng kiểm tra định dạng file {ex.Message}");
+        return new TeacherResType(500, "Có lỗi xảy ra tại máy chủ. Vui lòng liên hệ quản trị viên để sớm khắc phục");
+        throw new Exception($"Server error: {ex.Message}");
       }
     }
 
@@ -585,7 +580,8 @@ namespace server.Repositories
       }
       catch (Exception ex)
       {
-        return new TeacherResType(500, $"Server error: {ex.Message}");
+        return new TeacherResType(500, "Có lỗi xảy ra tại máy chủ. Vui lòng liên hệ quản trị viên để sớm khắc phục");
+        throw new Exception($"Server error: {ex.Message}");
       }
     }
 
@@ -618,7 +614,8 @@ namespace server.Repositories
       catch (Exception ex)
       {
         await transaction.RollbackAsync();
-        return new ResponseData<string>(500, $"Server error: {ex.Message}");
+        return new ResponseData<string>(500, "Có lỗi xảy ra tại máy chủ. Vui lòng liên hệ quản trị viên để sớm khắc phục");
+        throw new Exception($"Server error: {ex.Message}");
       }
     }
 
@@ -630,9 +627,9 @@ namespace server.Repositories
         var skip = (queryObject.PageNumber - 1) * queryObject.PageSize;
 
         var query = _context.Teachers
-          .AsNoTracking()
           .Include(x => x.School)
           .Include(x => x.Account)
+          .AsNoTracking()
           .AsQueryable();
 
         if (queryObject.SchoolId.HasValue)
@@ -660,7 +657,7 @@ namespace server.Repositories
           x.TeacherId,
           x.AccountId,
           x.SchoolId,
-          NameSchool = x.School.NameSchcool,
+          NameSchool = x.School.NameSchool,
           x.Fullname,
           x.DateOfBirth,
           x.Gender,
@@ -694,7 +691,8 @@ namespace server.Repositories
       }
       catch (Exception ex)
       {
-        return new TeacherResType(500, $"Server error: {ex.Message}");
+        return new TeacherResType(500, "Có lỗi xảy ra tại máy chủ. Vui lòng liên hệ quản trị viên để sớm khắc phục");
+        throw new Exception($"Server error: {ex.Message}");
       }
     }
   }
