@@ -49,14 +49,13 @@ namespace server.Repositories
           Score = model.Score,
         };
 
-        return new ResponseData<ClassifyDto>(200, result);
-
+        return new ResponseData<ClassifyDto>(200, "Thành công", result);
       }
       catch (Exception ex)
       {
         await transaction.RollbackAsync();
-
-        return new ResponseData<ClassifyDto>(200, $"Server error: {ex.Message}");
+        return new ResponseData<ClassifyDto>(500, "Có lỗi xảy ra. Vui lòng liên hệ quản trị viên để sớm khắc phục");
+        throw new Exception($"Server error: {ex.Message}");
       }
     }
 
@@ -69,11 +68,12 @@ namespace server.Repositories
         // Fetch 
         var student = await _context.Classifications
             .FromSqlRaw(query, new SqlParameter("@id", id))
+            .AsNoTracking()
             .FirstOrDefaultAsync();
 
         if (student is null)
         {
-          return new ResponseData<ClassifyDto>(404, "Not found");
+          return new ResponseData<ClassifyDto>(404, "Xếp loại này không tồn tại");
         }
 
         // Map the result to the StudentDto
@@ -84,25 +84,21 @@ namespace server.Repositories
           Score = student.Score,
         };
 
-        return new ResponseData<ClassifyDto>(200, result);
+        return new ResponseData<ClassifyDto>(200, "Thành công", result);
       }
       catch (Exception ex)
       {
-        return new ResponseData<ClassifyDto>(500, $"Server error: {ex.Message}");
+        return new ResponseData<ClassifyDto>(500, "Có lỗi xảy ra. Vui lòng liên hệ quản trị viên để sớm khắc phục");
+        throw new Exception($"Server error: {ex.Message}");
       }
     }
 
-    public async Task<ResponseData<List<ClassifyDto>>> GetClassifys(QueryObject? queryObject)
+    public async Task<ResponseData<List<ClassifyDto>>> GetClassifys()
     {
       try
       {
-        queryObject ??= new QueryObject();
-        var skip = (queryObject.PageNumber - 1) * queryObject.PageSize;
-
         var roles = await _context.Classifications
             .AsNoTracking()
-            .Skip(skip)
-            .Take(queryObject.PageSize)
             .ToListAsync();
 
         var result = roles.Select(x => new ClassifyDto
@@ -112,11 +108,17 @@ namespace server.Repositories
           Score = x.Score,
         }).ToList();
 
-        return new ResponseData<List<ClassifyDto>>(200, result);
+        if (result.Count == 0)
+        {
+          return new ResponseData<List<ClassifyDto>>(400, "Không có dữ liệu", result);
+        }
+
+        return new ResponseData<List<ClassifyDto>>(200, "Thành công", result);
       }
       catch (Exception ex)
       {
-        return new ResponseData<List<ClassifyDto>>(500, $"Server error: {ex.Message}");
+        return new ResponseData<List<ClassifyDto>>(500, "Có lỗi xảy ra. Vui lòng liên hệ quản trị viên để sớm khắc phục");
+        throw new Exception($"Server error: {ex.Message}");
       }
     }
 
@@ -133,7 +135,7 @@ namespace server.Repositories
 
           if (exists == null)
           {
-            return new ResponseData<ClassifyDto>(404, "ClassificationId not found");
+            return new ResponseData<ClassifyDto>(404, "Xếp loại không tồn tại");
           }
 
           bool hasChanges = false;
@@ -171,17 +173,18 @@ namespace server.Repositories
 
             await transaction.CommitAsync();
 
-            return new ResponseData<ClassifyDto>(200, "Updated");
+            return new ResponseData<ClassifyDto>(200, "Cập nhật thành công");
           }
           else
           {
-            return new ResponseData<ClassifyDto>(200, "No changes detected");
+            return new ResponseData<ClassifyDto>(200, "Không phát hiện sự thay đổi");
           }
         }
         catch (Exception ex)
         {
           await transaction.RollbackAsync();
-          return new ResponseData<ClassifyDto>(500, $"Server Error: {ex.Message}");
+          return new ResponseData<ClassifyDto>(500, "Có lỗi xảy ra. Vui lòng liên hệ quản trị viên để sớm khắc phục");
+          throw new Exception($"Server error: {ex.Message}");
         }
       }
     }
@@ -197,16 +200,17 @@ namespace server.Repositories
 
         if (Classify is null)
         {
-          return new ResponseData<ClassifyDto>(404, "not found");
+          return new ResponseData<ClassifyDto>(404, "Xếp loại không tồn tại");
         }
 
         var deleteQuery = "DELETE FROM Classification WHERE ClassificationId = @id";
         await _context.Database.ExecuteSqlRawAsync(deleteQuery, new SqlParameter("@id", id));
-        return new ResponseData<ClassifyDto>(200, "Deleted");
+        return new ResponseData<ClassifyDto>(200, "Xóa thành công");
       }
       catch (Exception ex)
       {
-        return new ResponseData<ClassifyDto>(500, $"Server error: {ex.Message}");
+        return new ResponseData<ClassifyDto>(500, "Có lỗi xảy ra. Vui lòng liên hệ quản trị viên để sớm khắc phục");
+        throw new Exception($"Server error: {ex.Message}");
       }
     }
 
@@ -218,7 +222,7 @@ namespace server.Repositories
       {
         if (ids is null || ids.Count == 0)
         {
-          return new ResponseData<string>(400, "No IDs provided.");
+          return new ResponseData<string>(400, "Vui lòng cung cấp mã xếp loại");
         }
 
         var idList = string.Join(",", ids);
@@ -229,17 +233,18 @@ namespace server.Repositories
 
         if (delete == 0)
         {
-          return new ResponseData<string>(404, "No ClassificationId found to delete");
+          return new ResponseData<string>(404, "Mã xếp loại không tồn tại");
         }
 
         await transaction.CommitAsync();
 
-        return new ResponseData<string>(200, "Deleted succesfully");
+        return new ResponseData<string>(200, "Xóa thành công");
       }
       catch (Exception ex)
       {
         await transaction.RollbackAsync();
-        return new ResponseData<string>(500, $"Server error: {ex.Message}");
+        return new ResponseData<string>(500, "Có lỗi xảy ra. Vui lòng liên hệ quản trị viên để sớm khắc phục");
+        throw new Exception($"Server error: {ex.Message}");
       }
     }
 
@@ -266,38 +271,36 @@ namespace server.Repositories
 
           using (var stream = System.IO.File.Open(filePath, FileMode.Open, FileAccess.Read))
           {
-            using (var reader = ExcelReaderFactory.CreateReader(stream))
+            using var reader = ExcelReaderFactory.CreateReader(stream);
+            bool isHeaderSkipped = false;
+
+            do
             {
-              bool isHeaderSkipped = false;
-
-              do
+              while (reader.Read())
               {
-                while (reader.Read())
+                if (!isHeaderSkipped)
                 {
-                  if (!isHeaderSkipped)
-                  {
-                    isHeaderSkipped = true;
-                    continue;
-                  }
-
-                  // Check if there are no more rows or empty rows
-                  if (reader.GetValue(1) == null && reader.GetValue(2) == null)
-                  {
-                    // Stop processing when an empty row is encountered
-                    break;
-                  }
-
-                  var myClassify = new Models.Classification
-                  {
-                    ClassifyName = reader.GetValue(1).ToString() ?? "Xep loai",
-                    Score = Convert.ToInt32(reader.GetValue(2)),
-                  };
-
-                  await _context.Classifications.AddAsync(myClassify);
-                  await _context.SaveChangesAsync();
+                  isHeaderSkipped = true;
+                  continue;
                 }
-              } while (reader.NextResult());
-            }
+
+                // Check if there are no more rows or empty rows
+                if (reader.GetValue(1) == null && reader.GetValue(2) == null)
+                {
+                  // Stop processing when an empty row is encountered
+                  break;
+                }
+
+                var myClassify = new Models.Classification
+                {
+                  ClassifyName = reader.GetValue(1).ToString() ?? "Xep loai",
+                  Score = Convert.ToInt32(reader.GetValue(2)),
+                };
+
+                await _context.Classifications.AddAsync(myClassify);
+                await _context.SaveChangesAsync();
+              }
+            } while (reader.NextResult());
           }
 
           return new ResponseData<string>(200, "Tải lên thành công");
@@ -307,7 +310,8 @@ namespace server.Repositories
       }
       catch (Exception ex)
       {
-        return new ResponseData<string>(500, $"Server error: {ex.Message}");
+        return new ResponseData<string>(500, "Có lỗi xảy ra. Vui lòng liên hệ quản trị viên để sớm khắc phục");
+        throw new Exception($"Server error: {ex.Message}");
       }
     }
   }

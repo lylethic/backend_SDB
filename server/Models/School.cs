@@ -17,7 +17,7 @@ public partial class School
 
     public string PhoneNumber { get; set; } = null!;
 
-    public bool SchoolType { get; set; }
+    public string SchoolType { get; set; } = null!;
 
     public string? Description { get; set; }
 

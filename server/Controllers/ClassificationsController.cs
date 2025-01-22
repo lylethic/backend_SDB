@@ -21,17 +21,52 @@ namespace server.Controllers
     [HttpGet]
     public async Task<IActionResult> GetAll([FromQuery] QueryObject? queryObject)
     {
-      var result = await _classify.GetClassifys(queryObject);
+      queryObject ??= new QueryObject();
+      var result = await _classify.GetClassifys();
       if (result.StatusCode == 200)
       {
+        var data = result.Data ?? [];
+        var totalResults = data.Count;
+        var totalPages = (int)Math.Ceiling((double)totalResults / queryObject.PageSize);
+        var paginatedData = data.Skip((queryObject.PageNumber - 1) * queryObject.PageSize).Take(queryObject.PageSize);
         return Ok(new
         {
           statusCode = result.StatusCode,
-          data = result.Data
+          message = result.Message,
+          data = result.Data,
+          pagination = new
+          {
+            queryObject.PageNumber,
+            queryObject.PageSize,
+            totalPages,
+            totalResults
+          }
         });
       }
 
-      return StatusCode(500, result);
+      if (result.StatusCode == 409)
+      {
+        return StatusCode(409, new
+        {
+          statusCode = result.StatusCode,
+          message = result.Message
+        });
+      }
+
+      if (result.StatusCode == 400)
+      {
+        return BadRequest(new
+        {
+          statusCode = result.StatusCode,
+          message = result.Message
+        });
+      }
+
+      return StatusCode(500, new
+      {
+        statusCode = result.StatusCode,
+        message = result.Message
+      });
     }
 
     // GET api/<ClassificationsController>/5
@@ -40,12 +75,28 @@ namespace server.Controllers
     {
       var result = await _classify.GetClassify(id);
 
-      if (result.StatusCode != 200)
+      if (result.StatusCode == 200)
       {
-        return BadRequest();
+        return Ok(new
+        {
+          statusCode = result.StatusCode,
+          message = result.Message,
+          data = result.Data
+        });
       }
-
-      return Ok(result);
+      if (result.StatusCode == 404)
+      {
+        return NotFound(new
+        {
+          statusCode = result.StatusCode,
+          message = result.Message
+        });
+      }
+      return StatusCode(500, new
+      {
+        statusCode = result.StatusCode,
+        message = result.Message
+      });
     }
 
     // POST api/<ClassificationsController>
@@ -54,13 +105,30 @@ namespace server.Controllers
     public async Task<IActionResult> Create(ClassifyDto model)
     {
       var result = await _classify.CreateClassify(model);
-
-      if (result.StatusCode != 200)
+      if (result.StatusCode == 200)
       {
-        return BadRequest();
+        return Ok(new
+        {
+          statusCode = result.StatusCode,
+          message = result.Message,
+          data = result.Data
+        });
       }
 
-      return Ok(result);
+      if (result.StatusCode == 409)
+      {
+        return StatusCode(409, new
+        {
+          statusCode = result.StatusCode,
+          message = result.Message
+        });
+      }
+
+      return StatusCode(500, new
+      {
+        statusCode = result.StatusCode,
+        message = result.Message
+      });
     }
 
     // PUT api/<ClassificationsController>/5
@@ -70,12 +138,30 @@ namespace server.Controllers
     {
       var result = await _classify.UpdateClassify(id, model);
 
-      if (result.StatusCode != 200)
+      if (result.StatusCode == 200)
       {
-        return BadRequest(result.Message);
+        return Ok(new
+        {
+          statusCode = result.StatusCode,
+          message = result.Message,
+          data = result.Data
+        });
       }
 
-      return Ok(result);
+      if (result.StatusCode == 404)
+      {
+        return NotFound(new
+        {
+          statusCode = result.StatusCode,
+          message = result.Message
+        });
+      }
+
+      return StatusCode(500, new
+      {
+        statusCode = result.StatusCode,
+        message = result.Message
+      });
     }
 
     // DELETE api/<ClassificationsController>/5
@@ -85,12 +171,30 @@ namespace server.Controllers
     {
       var result = await _classify.DeleteClassify(id);
 
-      if (result.StatusCode != 200)
+      if (result.StatusCode == 200)
       {
-        return BadRequest();
+        return Ok(new
+        {
+          statusCode = result.StatusCode,
+          message = result.Message,
+          data = result.Data
+        });
       }
 
-      return Ok(result);
+      if (result.StatusCode == 404)
+      {
+        return NotFound(new
+        {
+          statusCode = result.StatusCode,
+          message = result.Message
+        });
+      }
+
+      return StatusCode(500, new
+      {
+        statusCode = result.StatusCode,
+        message = result.Message
+      });
     }
 
     [Authorize(Policy = "SuperAdminAndAdmin")]
@@ -99,12 +203,37 @@ namespace server.Controllers
     {
       var result = await _classify.BulkDelete(ids);
 
-      if (result.StatusCode != 200)
+      if (result.StatusCode == 200)
       {
-        return BadRequest();
+        return Ok(new
+        {
+          statusCode = result.StatusCode,
+          message = result.Message,
+          data = result.Data
+        });
       }
 
-      return Ok(result);
+      if (result.StatusCode == 400)
+      {
+        return BadRequest(new
+        {
+          statusCode = result.StatusCode,
+          message = result.Message
+        });
+      }
+      if (result.StatusCode == 404)
+      {
+        return NotFound(new
+        {
+          statusCode = result.StatusCode,
+          message = result.Message
+        });
+      }
+      return StatusCode(500, new
+      {
+        statusCode = result.StatusCode,
+        message = result.Message
+      });
     }
 
     [Authorize(Policy = "SuperAdminAndAdmin")]
@@ -115,14 +244,26 @@ namespace server.Controllers
 
       if (result.StatusCode == 200)
       {
-        return Ok(result);
+        return Ok(new
+        {
+          statusCode = result.StatusCode,
+          message = result.Message
+        });
       }
       if (result.StatusCode == 400)
       {
-        return BadRequest(result);
+        return BadRequest(new
+        {
+          statusCode = result.StatusCode,
+          message = result.Message
+        });
       }
 
-      return StatusCode(500, result);
+      return StatusCode(500, new
+      {
+        statusCode = result.StatusCode,
+        message = result.Message
+      });
     }
   }
 }

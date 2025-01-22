@@ -40,8 +40,8 @@ namespace server.Repositories
           };
         }
 
-        var queryInsert = @"INSERT INTO SCHOOL (provinceId, districtId, NameSchool, address, phoneNumber, schoolType, description) 
-                            VALUES (@provinceId, @districtId, @NameSchool, @address, @phoneNumber, @schoolType, @description);
+        var queryInsert = @"INSERT INTO SCHOOL (provinceId, districtId, NameSchool, address, phoneNumber, schoolType, description, dateCreated, dateUpdated) 
+                            VALUES (@provinceId, @districtId, @NameSchool, @address, @phoneNumber, @schoolType, @description, @dateCreated, @dateUpdated)
                             SELECT CAST(SCOPE_IDENTITY() as int);";
 
         var schoolInsert = await _context.Database.ExecuteSqlRawAsync(queryInsert,
@@ -51,7 +51,10 @@ namespace server.Repositories
           new SqlParameter("@address", model.Address),
           new SqlParameter("@phoneNumber", model.PhoneNumber),
           new SqlParameter("@schoolType", model.SchoolType),
-          new SqlParameter("@description", model.Description));
+          new SqlParameter("@description", model.Description),
+          new SqlParameter("@dateCreated", DateTime.UtcNow),
+          new SqlParameter("@dateUpdated", DBNull.Value)
+          );
 
         var result = new SchoolDto
         {
@@ -115,6 +118,11 @@ namespace server.Repositories
     {
       try
       {
+        if (id == 0)
+        {
+          return new SchoolResType(400, "Vui lòng nhập mã số trường học");
+        }
+
         var query = "SELECT * FROM SCHOOL WHERE SchoolId = @id";
 
         var school = await _context.Schools
@@ -123,18 +131,10 @@ namespace server.Repositories
 
         if (school is null)
         {
-          return new SchoolResType
-          {
-            StatusCode = 404,
-            Message = "Lỗi xảy ra khi xác thực dữ liệu...",
-            Errors =
-            [
-              new ("SchoolId", "Không tìm thấy")
-            ]
-          };
+          return new SchoolResType(404, "Không tìm thấy thông tin trường học, trường học không tồn tại");
         }
 
-        var result = new SchoolDto
+        var result = new SchoolDetail
         {
           SchoolId = school.SchoolId,
           ProvinceId = school.ProvinceId,
@@ -143,7 +143,9 @@ namespace server.Repositories
           PhoneNumber = school.PhoneNumber,
           Address = school.Address,
           SchoolType = school.SchoolType,
-          Description = school.Description
+          Description = school.Description,
+          DateCreated = school.DateCreated,
+          DateUpdated = school.DateUpdated
         };
 
         return new SchoolResType(200, "Thành công", result);
@@ -185,7 +187,7 @@ namespace server.Repositories
           .AsNoTracking()
           .ToListAsync();
 
-        var result = schoolList.Select(x => new SchoolDto
+        var result = schoolList.Select(x => new SchoolDetail
         {
           SchoolId = x.SchoolId,
           ProvinceId = x.ProvinceId,
@@ -194,7 +196,9 @@ namespace server.Repositories
           PhoneNumber = x.PhoneNumber,
           Address = x.Address,
           SchoolType = x.SchoolType,
-          Description = x.Description
+          Description = x.Description,
+          DateCreated = x.DateCreated,
+          DateUpdated = x.DateUpdated
         }).ToList();
 
         return new SchoolResType(200, "Thành công", result);
@@ -236,8 +240,9 @@ namespace server.Repositories
       }
     }
 
-    public async Task<SchoolResType> UpdateSchool(int id, SchoolDto model)
+    public async Task<SchoolResType> UpdateSchool(int id, SchoolDetail model)
     {
+      using var transactiion = await _context.Database.BeginTransactionAsync();
       try
       {
         var findSchool = "SELECT * FROM SCHOOL WHERE SchoolId = @id";
@@ -251,11 +256,7 @@ namespace server.Repositories
           return new SchoolResType
           {
             StatusCode = 404,
-            Message = "Lỗi xảy ra khi xác thực dữ liệu...",
-            Errors =
-             [
-               new("SchoolId", "Không tìm thấy trường học")
-             ]
+            Message = "Không tìm thấy trường học",
           };
         }
 
@@ -299,17 +300,30 @@ namespace server.Repositories
           hasChanges = true;
         }
 
-        if (!string.IsNullOrEmpty(model.PhoneNumber) && model.PhoneNumber != existingSchool.PhoneNumber)
+        if (model.PhoneNumber != existingSchool.PhoneNumber)
         {
-
           queryBuilder.Append("phoneNumber = @phoneNumber, ");
           parameters.Add(new SqlParameter("@phoneNumber", model.PhoneNumber));
+          hasChanges = true;
         }
 
         if (model.SchoolType != existingSchool.SchoolType)
         {
           queryBuilder.Append("schoolType = @schoolType, ");
           parameters.Add(new SqlParameter("@schoolType", model.SchoolType));
+          hasChanges = true;
+        }
+
+        if (model.DateCreated.HasValue)
+        {
+          queryBuilder.Append("DateCreated = @DateCreated, ");
+          parameters.Add(new SqlParameter("@DateCreate", model.DateCreated.Value));
+        }
+
+        if (existingSchool.DateUpdated != DateTime.UtcNow)
+        {
+          queryBuilder.Append("DateUpdated = @DateUpdated, ");
+          parameters.Add(new SqlParameter("@DateUpdated", DateTime.UtcNow));
           hasChanges = true;
         }
 
@@ -324,22 +338,25 @@ namespace server.Repositories
           parameters.Add(new SqlParameter("@id", id));
 
           var updateQuery = queryBuilder.ToString();
-          await _context.Database.ExecuteSqlRawAsync(updateQuery, parameters.ToArray());
+          await _context.Database.ExecuteSqlRawAsync(updateQuery, [.. parameters]);
 
+          await transactiion.CommitAsync();
           return new SchoolResType(200, "Cập nhật thành công");
         }
         else
         {
-          return new SchoolResType(200, "No changes detected");
+          return new SchoolResType(200, "Không có sự thay đổi");
         }
       }
       catch (Exception ex)
       {
-        return new SchoolResType(500, $"Server Error: {ex.Message}");
+        await transactiion.RollbackAsync();
+        return new SchoolResType(500, "Có lỗi xảy ra tại máy chủ. Vui lòng liên hệ quản trị viên để sớm khắc phục.");
+        throw new Exception($"Server Error: {ex.Message}");
       }
     }
 
-    public async Task<string> ImportExcelFile(IFormFile file)
+    public async Task<ResponseData<string>> ImportExcelFile(IFormFile file)
     {
       try
       {
@@ -347,7 +364,7 @@ namespace server.Repositories
 
         if (file == null || file.Length == 0)
         {
-          return "No file uploaded";
+          return new ResponseData<string>(400, "Không có tệp nào được tải lên");
         }
 
 
@@ -407,10 +424,10 @@ namespace server.Repositories
                   NameSchool = reader.GetValue(3).ToString()! ?? "Default School Name",
                   Address = reader.GetValue(4).ToString()!.Trim() ?? "Default Address",
                   PhoneNumber = reader.GetValue(5).ToString()!.Trim() ?? "Default Phone",
-                  SchoolType = reader.GetValue(6) != null ? Convert.ToBoolean(reader.GetValue(6)) : false,
+                  SchoolType = reader.GetValue(6).ToString() ?? "",
                   Description = reader.GetValue(7).ToString()?.Trim() ?? "Default Description",
+                  DateUpdated = DateTime.UtcNow,
                 };
-
 
                 await _context.Schools.AddAsync(mySchool);
                 await _context.SaveChangesAsync();
@@ -418,12 +435,13 @@ namespace server.Repositories
             } while (reader.NextResult());
           }
 
-          return "Thành côngy.";
+          return new ResponseData<string>(200, "Tải lên thành công");
         }
-        return "No file uploaded";
+        return new ResponseData<string>(200, "Không phát hiện sự thay đổi");
       }
       catch (Exception ex)
       {
+        return new ResponseData<string>(500, "Có lỗi xảy ra tại máy chủ. Vui lòng liên hệ quản trị viên để sớm khắc phục.");
         throw new Exception($"Error while uploading file: {ex.Message}, Inner Exception: {ex.InnerException?.Message}");
       }
     }
@@ -436,7 +454,7 @@ namespace server.Repositories
       {
         if (ids is null || ids.Count == 0)
         {
-          return new ResponseData<string>(400, "No IDs provided.");
+          return new ResponseData<string>(400, "Không có mã nào được cung cấp");
         }
 
         var idList = string.Join(",", ids);
@@ -447,17 +465,18 @@ namespace server.Repositories
 
         if (delete == 0)
         {
-          return new ResponseData<string>(404, "No SCHOOLID found to delete");
+          return new ResponseData<string>(404, "Trường học không tồn tại");
         }
 
         await transaction.CommitAsync();
 
-        return new ResponseData<string>(200, "Deleted");
+        return new ResponseData<string>(200, "Xóa trường học thành công");
       }
       catch (Exception ex)
       {
         await transaction.RollbackAsync();
-        return new ResponseData<string>(500, $"Server error: {ex.Message}");
+        return new ResponseData<string>(500, "Có lỗi xảy ra tại máy chủ. Vui lòng liên hệ quản trị viên để sớm khắc phục.");
+        throw new Exception($"Server Error: {ex.Message}");
       }
     }
 

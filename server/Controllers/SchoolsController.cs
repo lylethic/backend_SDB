@@ -24,7 +24,7 @@ namespace server.Controllers
 
       if (result.StatusCode == 200)
       {
-        var data = result.SchoolData ?? [];
+        var data = result.SchoolDetails ?? [];
         var totalResults = data.Count;
         var totalPages = (int)Math.Ceiling((double)totalResults / queryObject.PageSize);
         var paginagedData = data
@@ -77,11 +77,38 @@ namespace server.Controllers
     {
       var result = await _school.GetSchool(id);
 
-      if (result.StatusCode != 200)
+      if (result.StatusCode == 200)
       {
-        return BadRequest(result);
+        return Ok(new
+        {
+          status = result.StatusCode,
+          message = result.Message,
+          data = result.SchoolDetail
+        });
       }
-      return Ok(result);
+
+      if (result.StatusCode == 400)
+      {
+        return BadRequest(new
+        {
+          status = result.StatusCode,
+          message = result.Message,
+        });
+      }
+
+      if (result.StatusCode == 404)
+      {
+        return NotFound(new
+        {
+          status = result.StatusCode,
+          message = result.Message,
+        });
+      }
+      return StatusCode(500, new
+      {
+        statusCode = result.StatusCode,
+        message = result.Message,
+      });
     }
 
     [HttpGet, Route("get-name-of-school/{id}")]
@@ -103,23 +130,55 @@ namespace server.Controllers
     public async Task<IActionResult> CreateSchool(SchoolDto model)
     {
       var result = await _school.CreateSchool(model);
-      if (result.StatusCode != 200)
+      if (result.StatusCode == 200)
       {
-        return BadRequest(result);
+        return Ok(new
+        {
+          status = 200,
+          message = result.Message
+        });
       }
-      return Ok(result);
+
+      if (result.StatusCode == 400)
+        return StatusCode(500, new
+        {
+          statusCode = result.StatusCode,
+          message = result.Message,
+        });
+
+      return StatusCode(500, new
+      {
+        statusCode = result.StatusCode,
+        message = result.Message,
+      });
     }
 
     [Authorize(Policy = "SuperAdmin")]
     [HttpPut("{id}")]
-    public async Task<IActionResult> Update(int id, SchoolDto model)
+    public async Task<IActionResult> Update(int id, SchoolDetail model)
     {
       var result = await _school.UpdateSchool(id, model);
-      if (result.StatusCode != 200)
+      if (result.StatusCode == 200)
       {
-        return BadRequest(result);
+        return Ok(new
+        {
+          status = 200,
+          message = result.Message
+        });
       }
-      return Ok(result);
+
+      if (result.StatusCode == 400)
+        return StatusCode(500, new
+        {
+          statusCode = result.StatusCode,
+          message = result.Message,
+        });
+
+      return StatusCode(500, new
+      {
+        statusCode = result.StatusCode,
+        message = result.Message,
+      });
     }
 
     [Authorize(Policy = "SuperAdmin")]
@@ -127,11 +186,27 @@ namespace server.Controllers
     public async Task<IActionResult> Delete(int id)
     {
       var result = await _school.DeleteSchool(id);
-      if (result.StatusCode != 200)
+      if (result.StatusCode == 200)
       {
-        return BadRequest(result);
+        return Ok(new
+        {
+          status = 200,
+          message = result.Message
+        });
       }
-      return Ok(result);
+
+      if (result.StatusCode == 400)
+        return StatusCode(500, new
+        {
+          statusCode = result.StatusCode,
+          message = result.Message,
+        });
+
+      return StatusCode(500, new
+      {
+        statusCode = result.StatusCode,
+        message = result.Message,
+      });
     }
 
     [Authorize(Policy = "SuperAdmin")]
@@ -140,33 +215,55 @@ namespace server.Controllers
     {
       var result = await _school.BulkDelete(ids);
 
-      if (result.StatusCode != 200)
+      if (result.StatusCode == 200)
       {
-        return BadRequest(result);
+        return Ok(new
+        {
+          status = 200,
+          message = result.Message
+        });
       }
 
-      return Ok(result);
+      if (result.StatusCode == 400)
+        return StatusCode(500, new
+        {
+          statusCode = result.StatusCode,
+          message = result.Message,
+        });
+
+      return StatusCode(500, new
+      {
+        statusCode = result.StatusCode,
+        message = result.Message,
+      });
     }
 
     [Authorize(Policy = "SuperAdmin")]
     [HttpPost("upload")]
     public async Task<IActionResult> ImportExcelFile(IFormFile file)
     {
-      try
+      var result = await _school.ImportExcelFile(file);
+      if (result.StatusCode == 200)
       {
-        var result = await _school.ImportExcelFile(file);
-
-        if (result.Contains("Thành côngy"))
+        return Ok(new
         {
-          return Ok(result);
-        }
+          status = 200,
+          message = result.Message
+        });
+      }
 
-        return BadRequest(result);
-      }
-      catch (Exception ex)
+      if (result.StatusCode == 400)
+        return StatusCode(500, new
+        {
+          statusCode = result.StatusCode,
+          message = result.Message,
+        });
+
+      return StatusCode(500, new
       {
-        throw new Exception($"Server Error: {ex.Message}");
-      }
+        statusCode = result.StatusCode,
+        message = result.Message,
+      });
     }
 
     [Authorize(Policy = "SuperAdmin")]

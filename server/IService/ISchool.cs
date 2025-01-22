@@ -17,11 +17,11 @@ namespace server.IService
 
     Task<SchoolResType> DeleteSchool(int id);
 
-    Task<SchoolResType> UpdateSchool(int id, SchoolDto model);
+    Task<SchoolResType> UpdateSchool(int id, SchoolDetail model);
 
     Task<ResponseData<string>> BulkDelete(List<int> ids);
 
-    Task<string> ImportExcelFile(IFormFile file);
+    Task<ResponseData<string>> ImportExcelFile(IFormFile file);
 
     Task<ResponseData<string>> ExportSchoolsExcel(List<int> ids, string filePath);
   }

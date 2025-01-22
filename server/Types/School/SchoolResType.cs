@@ -9,6 +9,10 @@ namespace server.Types.School
     public SchoolDto? SchoolById { get; set; }
     public List<Error>? Errors { get; set; }
 
+    public List<SchoolDetail>? SchoolDetails { get; set; }
+
+    public SchoolDetail? SchoolDetail { get; set; }
+
     public SchoolResType() { }
 
     public SchoolResType(int statusCode, string message)
@@ -36,6 +40,20 @@ namespace server.Types.School
       this.StatusCode = statusCode;
       this.Message = message;
       this.Errors = error;
+    }
+
+    public SchoolResType(int statusCode, string message, SchoolDetail data)
+    {
+      this.StatusCode = statusCode;
+      this.Message = message;
+      this.SchoolDetail = data;
+    }
+
+    public SchoolResType(int statusCode, string message, List<SchoolDetail> data)
+    {
+      this.StatusCode = statusCode;
+      this.Message = message;
+      this.SchoolDetails = data;
     }
   }
 }

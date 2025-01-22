@@ -14,8 +14,15 @@
 
     public string PhoneNumber { get; set; } = null!;
 
-    public bool SchoolType { get; set; }
+    public string SchoolType { get; set; } = "công lập";
 
     public string? Description { get; set; }
+  }
+
+  public class SchoolDetail : SchoolDto
+  {
+    public DateTime? DateCreated { get; set; }
+
+    public DateTime? DateUpdated { get; set; }
   }
 }

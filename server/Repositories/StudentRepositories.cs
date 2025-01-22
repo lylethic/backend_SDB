@@ -295,7 +295,7 @@ namespace server.Repositories
         }
         else
         {
-          return new ResponseData<StudentDto>(400, "Không phát hiện sự thay đổi");
+          return new ResponseData<StudentDto>(200, "Không phát hiện sự thay đổi");
         }
       }
       catch (Exception ex)

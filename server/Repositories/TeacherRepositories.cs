@@ -73,7 +73,7 @@ namespace server.Repositories
           Status = teacher.Status,
           SchoolId = teacher.SchoolId,
           NameSchool = teacher.School.NameSchool,
-          SchoolType = teacher.School.SchoolType ? "Công lập" : "Dân lập",
+          SchoolType = teacher.School.SchoolType,
           DateCreate = teacher.DateCreate?.ToString("dd/MM/yyyy HH:mm:ss") ?? string.Empty,
           DateUpdate = teacher.DateUpdate?.ToString("dd/MM/yyyy HH:mm:ss") ?? string.Empty,
           PhotoPath = teacher.PhotoPath,
@@ -202,7 +202,7 @@ namespace server.Repositories
           Status = x.Status,
           DateCreate = x.DateCreate?.ToString("dd/MM/yyyy HH:mm:ss") ?? string.Empty,
           DateUpdate = x.DateUpdate?.ToString("dd/MM/yyyy HH:mm:ss") ?? string.Empty,
-          SchoolType = x.School.SchoolType ? "Công lập" : "Dân lập",
+          SchoolType = x.School.SchoolType,
           PhotoPath = x.PhotoPath
         }).ToList();
 
@@ -255,7 +255,7 @@ namespace server.Repositories
           Status = x.Status,
           DateCreate = x.DateCreate?.ToString("dd/MM/yyyy HH:mm:ss") ?? string.Empty,
           DateUpdate = x.DateUpdate?.ToString("dd/MM/yyyy HH:mm:ss") ?? string.Empty,
-          SchoolType = x.School.SchoolType ? "Công lập" : "Dân lập",
+          SchoolType = x.School.SchoolType,
           PhotoPath = x.PhotoPath
         }).ToList();
 
@@ -302,7 +302,7 @@ namespace server.Repositories
           Status = x.Status,
           DateCreate = x.DateCreate?.ToString("dd/MM/yyyy HH:mm:ss") ?? string.Empty,
           DateUpdate = x.DateUpdate?.ToString("dd/MM/yyyy HH:mm:ss") ?? string.Empty,
-          SchoolType = x.School.SchoolType ? "Công lập" : "Dân lập",
+          SchoolType = x.School.SchoolType,
           PhotoPath = x.PhotoPath,
         }).ToList();
 

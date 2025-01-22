@@ -422,7 +422,7 @@ public partial class SoDauBaiContext : DbContext
                 .HasColumnName("phoneNumber");
             entity.Property(e => e.ProvinceId).HasColumnName("provinceId");
             entity.Property(e => e.SchoolType)
-                .HasDefaultValue(true)
+                .HasMaxLength(40)
                 .HasColumnName("schoolType");
         });
 
