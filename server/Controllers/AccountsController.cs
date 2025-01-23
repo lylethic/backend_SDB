@@ -240,13 +240,28 @@ namespace server.Controllers
           message = results.Message,
         });
       }
+
       if (results.StatusCode == 200)
+      {
+        var data = results.Data ?? [];
+        var totalResults = data.Count;
+        var totalPages = (int)Math.Ceiling((double)totalResults / queryObject.PageSize);
+        var paginatedData = data.Skip((queryObject.PageNumber - 1) * queryObject.PageSize).Take(queryObject.PageSize);
+
         return Ok(new
         {
           statusCode = results.StatusCode,
           message = results.Message,
-          data = results.Data
+          data = paginatedData,
+          pagination = new
+          {
+            queryObject.PageNumber,
+            queryObject.PageSize,
+            totalPages,
+            totalResults,
+          }
         });
+      }
 
       return StatusCode(500, new
       {

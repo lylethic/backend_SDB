@@ -20,6 +20,9 @@ namespace server.Repositories
 
     public async Task<ResponseData<SubjectDto>> CreateSubject(SubjectDto model)
     {
+      if (model is null)
+        return new ResponseData<SubjectDto>(400, "Vui lòng cung cấp thông tin môn học hợp lệ");
+
       try
       {
         var find = "SELECT * FROM Subject WHERE subjectId = @id";
@@ -30,11 +33,11 @@ namespace server.Repositories
 
         if (subject is not null)
         {
-          return new ResponseData<SubjectDto>(409, "Subject already exists");
+          return new ResponseData<SubjectDto>(409, "Môn học này đã tồn tại");
         }
 
         var sqlInsert = @"INSERT INTO SUBJECT (gradeId, subjectName, status)
-                     VALUES (@academicYearId, @subjectName, @status);
+                     VALUES (@gradeId, @subjectName, @status);
                      SELECT CAST(SCOPE_IDENTITY() as int);";
 
         var insert = await _context.Database.ExecuteSqlRawAsync(sqlInsert,
@@ -51,42 +54,21 @@ namespace server.Repositories
           Status = model.Status,
         };
 
-        return new ResponseData<SubjectDto>(200, result);
+        return new ResponseData<SubjectDto>(200, "Thành công", result);
       }
       catch (Exception ex)
       {
-        return new ResponseData<SubjectDto>(500, $"Server error: {ex.Message}");
-      }
-    }
-
-    public async Task<ResponseData<SubjectDto>> DeleteSubject(int id)
-    {
-      try
-      {
-        var find = "SELECT * FROM Subject WHERE subjectId = @id";
-
-        var subject = await _context.Subjects
-          .FromSqlRaw(find, new SqlParameter("@id", id))
-          .FirstOrDefaultAsync();
-
-        if (subject is null)
-        {
-          return new ResponseData<SubjectDto>(409, "Subject not found");
-        }
-
-        var deleteQuery = "DELETE FROM SUBJECT WHERE subjectId = @id";
-        await _context.Database.ExecuteSqlRawAsync(deleteQuery, new SqlParameter("@id", id));
-
-        return new ResponseData<SubjectDto>(200, "Deleted");
-      }
-      catch (Exception ex)
-      {
-        return new ResponseData<SubjectDto>(500, $"Server error: {ex.Message}");
+        return new ResponseData<SubjectDto>(500, "Có lỗi xảy ra. Vui lòng liên hệ quản trị viên để sớm khắc phục");
+        throw new Exception($"Server error: {ex.Message}");
       }
     }
 
     public async Task<ResponseData<SubjectRes>> GetSubject(int id)
     {
+      if (id == 0)
+      {
+        return new ResponseData<SubjectRes>(400, "Vui lòng cung cấp mã môn học hợp lệ");
+      }
       try
       {
         var querySubject = from sub in _context.Subjects
@@ -94,10 +76,12 @@ namespace server.Repositories
                            from grade in gradeGroup.DefaultIfEmpty()
                            join acad in _context.AcademicYears on grade.AcademicYearId equals acad.AcademicYearId into acadGroup
                            from acad in acadGroup.DefaultIfEmpty()
+                           where sub.SubjectId == id
                            select new SubjectRes
                            {
                              SubjectId = id,
                              SubjectName = sub.SubjectName,
+                             Status = sub.Status,
                              GradeId = grade.GradeId,
                              GradeName = grade.GradeName,
                              DisplayAcademicYear_Name = acad.DisplayAcademicYearName,
@@ -105,28 +89,26 @@ namespace server.Repositories
                              YearEnd = acad.YearEnd.HasValue ? acad.YearEnd.Value.ToString("dd/MM/yyyy") : ""
                            };
 
-        var result = await querySubject.FirstOrDefaultAsync();
+        var result = await querySubject.AsNoTracking().FirstOrDefaultAsync();
 
         if (result is null)
         {
           return new ResponseData<SubjectRes>(404, "Môn học không tồn tại");
         }
 
-        return new ResponseData<SubjectRes>(200, result);
+        return new ResponseData<SubjectRes>(200, "Thành công", result);
       }
       catch (Exception ex)
       {
-        return new ResponseData<SubjectRes>(500, $"Server error: {ex.Message}");
+        return new ResponseData<SubjectRes>(500, "Có lỗi xảy ra. Vui lòng liên hệ quản trị viên để sớm khắc phục");
+        throw new Exception($"Server error: {ex.Message}");
       }
     }
 
-    public async Task<ResponseData<List<SubjectRes>>> GetSubjects(QueryObject? query)
+    public async Task<ResponseData<List<SubjectRes>>> GetSubjects()
     {
       try
       {
-        query ??= new QueryObject();
-        var skip = (query.PageNumber - 1) * query.PageSize;
-
         var querySubject = from sub in _context.Subjects
                            join grade in _context.Grades on sub.GradeId equals grade.GradeId into gradeGroup
                            from grade in gradeGroup.DefaultIfEmpty()
@@ -136,6 +118,7 @@ namespace server.Repositories
                            {
                              SubjectId = sub.SubjectId,
                              SubjectName = sub.SubjectName,
+                             Status = sub.Status,
                              GradeId = grade.GradeId,
                              GradeName = grade.GradeName,
                              DisplayAcademicYear_Name = acad.DisplayAcademicYearName,
@@ -144,18 +127,22 @@ namespace server.Repositories
                            };
 
         var result = await querySubject
-           .AsNoTracking()
-            .OrderBy(x => x.GradeId)
-            .ThenBy(x => x.GradeName)
-            .Skip(skip)
-            .Take(query.PageSize)
+          .AsNoTracking()
+          .OrderBy(x => x.GradeId)
+          .ThenBy(x => x.GradeName)
           .ToListAsync();
 
-        return new ResponseData<List<SubjectRes>>(200, result);
+        if (result is null || result.Count == 0)
+        {
+          return new ResponseData<List<SubjectRes>>(400, "Không có dữ liệu");
+        }
+
+        return new ResponseData<List<SubjectRes>>(200, "Thành công", result);
       }
       catch (Exception ex)
       {
-        return new ResponseData<List<SubjectRes>>(500, $"{ex.Message}");
+        return new ResponseData<List<SubjectRes>>(500, "Có lỗi xảy ra. Vui lòng liên hệ quản trị viên để sớm khắc phục");
+        throw new Exception($"Server error: {ex.Message}");
       }
     }
 
@@ -171,9 +158,9 @@ namespace server.Repositories
           .FirstOrDefaultAsync();
 
         if (subject is null)
-        {
           return new ResponseData<SubjectDto>(404, "Không tìm thấy môn học");
-        }
+
+
         bool hasChanges = false;
 
         var queryBuilder = new StringBuilder("UPDATE Subject SET ");
@@ -221,7 +208,72 @@ namespace server.Repositories
       }
       catch (Exception ex)
       {
-        return new ResponseData<SubjectDto>(500, $"Server error: {ex.Message}");
+        return new ResponseData<SubjectDto>(500, "Có lỗi xảy ra. Vui lòng liên hệ quản trị viên để sớm khắc phục");
+        throw new Exception($"Server error: {ex.Message}");
+      }
+    }
+
+    public async Task<ResponseData<SubjectDto>> DeleteSubject(int id)
+    {
+      if (id == 0)
+        return new ResponseData<SubjectDto>(400, "Vui lòng cung cấp mã môn học");
+
+      try
+      {
+        var find = "SELECT * FROM Subject WHERE subjectId = @id";
+
+        var subject = await _context.Subjects
+          .FromSqlRaw(find, new SqlParameter("@id", id))
+          .FirstOrDefaultAsync();
+
+        if (subject is null)
+        {
+          return new ResponseData<SubjectDto>(404, "Môn học không tồn tại");
+        }
+
+        var deleteQuery = "DELETE FROM SUBJECT WHERE subjectId = @id";
+        await _context.Database.ExecuteSqlRawAsync(deleteQuery, new SqlParameter("@id", id));
+
+        return new ResponseData<SubjectDto>(200, "Xóa thành công");
+      }
+      catch (Exception ex)
+      {
+        return new ResponseData<SubjectDto>(500, "Có lỗi xảy ra. Vui lòng liên hệ quản trị viên để sớm khắc phục");
+        throw new Exception($"Server error: {ex.Message}");
+      }
+    }
+
+    public async Task<ResponseData<string>> BulkDelete(List<int> ids)
+    {
+      await using var transaction = await _context.Database.BeginTransactionAsync();
+
+      try
+      {
+        if (ids is null || ids.Count == 0)
+        {
+          return new ResponseData<string>(400, "Không có mã môn học nào được cung cấp");
+        }
+
+        var idList = string.Join(",", ids);
+
+        var deleteQuery = $"DELETE FROM Subject WHERE SubjectId IN ({idList})";
+
+        var delete = await _context.Database.ExecuteSqlRawAsync(deleteQuery);
+
+        if (delete == 0)
+        {
+          return new ResponseData<string>(404, "Môn học không tồn tại");
+        }
+
+        await transaction.CommitAsync();
+
+        return new ResponseData<string>(200, "Xóa thành công");
+      }
+      catch (Exception ex)
+      {
+        await transaction.RollbackAsync();
+        return new ResponseData<string>(500, "Có lỗi xảy ra. Vui lòng liên hệ quản trị viên để sớm khắc phục");
+        throw new Exception($"Server error: {ex.Message}");
       }
     }
 
@@ -263,22 +315,28 @@ namespace server.Repositories
                 }
 
                 // Check if there are no more rows or empty rows
-                if (reader.GetValue(1) == null && reader.GetValue(2) == null && reader.GetValue(3) == null)
+                if (reader.GetValue(1) == null && reader.GetValue(2) == null
+                && reader.GetValue(3) == null)
                 {
                   // Stop processing when an empty row is encountered
                   break;
                 }
 
+                var gradeId = Convert.ToInt16(reader.GetValue(1));
+                var gradeExists = await _context.Grades.AnyAsync(g => g.GradeId == gradeId);
+
+                if (!gradeExists)
+                  return new ResponseData<string>(404, $"Mã khối học {gradeId} không tồn tại");
+
                 var mySubjects = new Models.Subject
                 {
-                  GradeId = Convert.ToInt16(reader.GetValue(1)),
+                  GradeId = gradeId,
                   SubjectName = reader.GetValue(2).ToString() ?? "null",
                   Status = Convert.ToBoolean(reader.GetValue(3))
                 };
-
                 await _context.Subjects.AddAsync(mySubjects);
-                await _context.SaveChangesAsync();
               }
+              await _context.SaveChangesAsync();
             } while (reader.NextResult());
           }
 
@@ -288,40 +346,8 @@ namespace server.Repositories
       }
       catch (Exception ex)
       {
-        return new ResponseData<string>(500, $"Server error: {ex.Message}");
-      }
-    }
-
-    public async Task<ResponseData<string>> BulkDelete(List<int> ids)
-    {
-      await using var transaction = await _context.Database.BeginTransactionAsync();
-
-      try
-      {
-        if (ids is null || ids.Count == 0)
-        {
-          return new ResponseData<string>(400, "Không có mã môn học nào được cung cấp");
-        }
-
-        var idList = string.Join(",", ids);
-
-        var deleteQuery = $"DELETE FROM Subject WHERE SubjectId IN ({idList})";
-
-        var delete = await _context.Database.ExecuteSqlRawAsync(deleteQuery);
-
-        if (delete == 0)
-        {
-          return new ResponseData<string>(404, "Môn học không tồn tại");
-        }
-
-        await transaction.CommitAsync();
-
-        return new ResponseData<string>(200, "Đã xóa");
-      }
-      catch (Exception ex)
-      {
-        await transaction.RollbackAsync();
-        return new ResponseData<string>(500, $"Server error: {ex.Message}");
+        return new ResponseData<string>(500, "Có lỗi xảy ra. Vui lòng liên hệ quản trị viên để sớm khắc phục");
+        throw new Exception($"Server error: {ex.Message}");
       }
     }
   }

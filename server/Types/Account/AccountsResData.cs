@@ -6,11 +6,11 @@
     public int? RoleId { get; set; }
     public int? SchoolId { get; set; }
 
-    public string? RoleName { get; set; }
+    public string? RoleName { get; set; } = string.Empty;
 
-    public string? SchoolName { get; set; }
+    public string? SchoolName { get; set; } = string.Empty;
 
-    public string? Email { get; set; }
+    public string? Email { get; set; } = string.Empty;
 
     public DateTime? DateCreated { get; set; }
 

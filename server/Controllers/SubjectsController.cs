@@ -23,17 +23,44 @@ namespace server.Controllers
     [HttpGet]
     public async Task<IActionResult> GetAllSubject([FromQuery] QueryObject? query)
     {
-      var result = await _subjectRepo.GetSubjects(query);
+      query ??= new QueryObject();
+      var result = await _subjectRepo.GetSubjects();
       if (result.StatusCode == 200)
       {
+        var data = result.Data ?? [];
+        var totalResults = data.Count;
+        var totalPages = (int)Math.Ceiling((double)totalResults / query.PageSize);
+        var paginatedData = data.Skip((query.PageNumber - 1) * query.PageSize).Take(query.PageSize);
+
         return Ok(new
         {
           status = result.StatusCode,
-          data = result.Data
+          message = result.Message,
+          data = paginatedData,
+          pagination = new
+          {
+            query.PageNumber,
+            query.PageSize,
+            totalResults,
+            totalPages
+          }
         });
       }
 
-      return StatusCode(500, result);
+      if (result.StatusCode == 404)
+      {
+        return BadRequest(new
+        {
+          status = result.StatusCode,
+          message = result.Message,
+        });
+      }
+
+      return StatusCode(500, new
+      {
+        status = result.StatusCode,
+        message = result.Message,
+      });
     }
 
     // GET api/<SubjectsController>/5
@@ -47,16 +74,32 @@ namespace server.Controllers
         return Ok(new
         {
           status = result.StatusCode,
+          message = result.Message,
           data = result.Data
         });
       }
 
       if (result.StatusCode == 404)
       {
-        return NotFound(result);
+        return NotFound(new
+        {
+          status = result.StatusCode,
+          message = result.Message,
+        });
       }
-
-      return StatusCode(500, result);
+      if (result.StatusCode == 400)
+      {
+        return NotFound(new
+        {
+          status = result.StatusCode,
+          message = result.Message,
+        });
+      }
+      return StatusCode(500, new
+      {
+        status = result.StatusCode,
+        message = result.Message,
+      });
     }
 
     // POST api/<SubjectsController>
@@ -64,14 +107,32 @@ namespace server.Controllers
     [HttpPost]
     public async Task<IActionResult> CreateSubject(SubjectDto model)
     {
-      var subject = await _subjectRepo.CreateSubject(model);
+      var result = await _subjectRepo.CreateSubject(model);
 
-      if (subject.StatusCode == 200)
+      if (result.StatusCode == 200)
       {
-        return Ok(subject);
+        return Ok(new
+        {
+          status = result.StatusCode,
+          message = result.Message,
+          data = result.Data
+        });
       }
 
-      return StatusCode(500, subject);
+      if (result.StatusCode == 409)
+      {
+        return StatusCode(409, new
+        {
+          status = result.StatusCode,
+          message = result.Message,
+        });
+      }
+
+      return StatusCode(500, new
+      {
+        status = result.StatusCode,
+        message = result.Message,
+      });
     }
 
     // PUT api/<SubjectsController>/5
@@ -83,14 +144,37 @@ namespace server.Controllers
 
       if (result.StatusCode == 200)
       {
-        return Ok(result);
+        return Ok(new
+        {
+          status = result.StatusCode,
+          message = result.Message,
+          data = result.Data
+        });
       }
 
       if (result.StatusCode == 404)
       {
-        return NotFound(result);
+        return NotFound(new
+        {
+          status = result.StatusCode,
+          message = result.Message,
+        });
       }
-      return StatusCode(500, result);
+
+      if (result.StatusCode == 400)
+      {
+        return NotFound(new
+        {
+          status = result.StatusCode,
+          message = result.Message,
+        });
+      }
+
+      return StatusCode(500, new
+      {
+        status = result.StatusCode,
+        message = result.Message,
+      });
     }
 
     // DELETE api/<SubjectsController>/5
@@ -98,14 +182,32 @@ namespace server.Controllers
     [HttpDelete("{id}")]
     public async Task<IActionResult> Delete(int id)
     {
-      var subject = await _subjectRepo.DeleteSubject(id);
+      var result = await _subjectRepo.DeleteSubject(id);
 
-      if (subject.StatusCode == 200)
+      if (result.StatusCode == 200)
       {
-        return Ok(subject);
+        return Ok(new
+        {
+          status = result.StatusCode,
+          message = result.Message,
+          data = result.Data
+        });
       }
 
-      return StatusCode(500, subject);
+      if (result.StatusCode == 404)
+      {
+        return NotFound(new
+        {
+          status = result.StatusCode,
+          message = result.Message,
+        });
+      }
+
+      return StatusCode(500, new
+      {
+        status = result.StatusCode,
+        message = result.Message,
+      });
     }
 
     [Authorize(Policy = "SuperAdminAndAdmin")]
@@ -116,19 +218,36 @@ namespace server.Controllers
 
       if (result.StatusCode == 200)
       {
-        return Ok(result);
+        return Ok(new
+        {
+          status = result.StatusCode,
+          message = result.Message,
+          data = result.Data
+        });
       }
 
       if (result.StatusCode == 400)
       {
-        return BadRequest(result);
+        return BadRequest(new
+        {
+          status = result.StatusCode,
+          message = result.Message,
+        });
       }
 
       if (result.StatusCode == 404)
       {
-        return NotFound(result);
+        return NotFound(new
+        {
+          status = result.StatusCode,
+          message = result.Message,
+        });
       }
-      return StatusCode(500, result);
+      return StatusCode(500, new
+      {
+        status = result.StatusCode,
+        message = result.Message,
+      });
     }
 
     [Authorize(Policy = "SuperAdminAndAdmin")]
@@ -139,10 +258,37 @@ namespace server.Controllers
 
       if (result.StatusCode == 200)
       {
-        return Ok(result);
+        return Ok(new
+        {
+          status = result.StatusCode,
+          message = result.Message,
+          data = result.Data
+        });
       }
 
-      return StatusCode(500, result);
+      if (result.StatusCode == 404)
+      {
+        return NotFound(new
+        {
+          status = result.StatusCode,
+          message = result.Message,
+        });
+      }
+
+      if (result.StatusCode == 400)
+      {
+        return NotFound(new
+        {
+          status = result.StatusCode,
+          message = result.Message,
+        });
+      }
+
+      return StatusCode(500, new
+      {
+        status = result.StatusCode,
+        message = result.Message,
+      });
     }
   }
 }

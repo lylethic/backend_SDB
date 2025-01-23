@@ -19,6 +19,8 @@ namespace server.Repositories
 
     public async Task<ResponseData<GradeDto>> CreateGrade(GradeDto model)
     {
+      if (model is null) return new ResponseData<GradeDto>(400, "Vui lòng cung cấp mã khối lớp hợp lệ");
+
       try
       {
         // check academic
@@ -29,7 +31,7 @@ namespace server.Repositories
 
         if (acaExists is null)
         {
-          return new ResponseData<GradeDto>(404, "Academic-year not found");
+          return new ResponseData<GradeDto>(404, "Năm học không tồn tại");
         }
 
         //check grade
@@ -40,7 +42,7 @@ namespace server.Repositories
 
         if (grade is not null)
         {
-          return new ResponseData<GradeDto>(409, "Grade already exists");
+          return new ResponseData<GradeDto>(409, "Khối lớp này đã tồn tại");
         }
 
         var sqlInsert = @"INSERT INTO Grade (academicYearId, gradeName, description, dateCreated, dateUpdated)
@@ -64,19 +66,21 @@ namespace server.Repositories
           DateUpdated = model.DateUpdated,
         };
 
-        return new ResponseData<GradeDto>(200, result);
+        return new ResponseData<GradeDto>(200, "Thành công", result);
       }
       catch (Exception ex)
       {
-        return new ResponseData<GradeDto>(500, $"Server error: {ex.Message}");
+        return new ResponseData<GradeDto>(500, "Có lỗi xảy ra. Vui lòng liên hệ quản trị viên để sớm khắc phục");
+        throw new Exception($"Server error: {ex.Message}");
       }
     }
 
     public async Task<ResponseData<GradeDetail>> GetGrade(int id)
     {
+      if (id == 0) return new ResponseData<GradeDetail>(400, "Vui lòng cung cấp mã khối lớp hợp lệ");
       try
       {
-        var find = @"SELECT g.gradeId, g.gradeName, 
+        var find = @"SELECT g.gradeId, g.gradeName, g.description, g.dateCreated, g.dateUpdated,
                             a.academicYearId, a.displayAcademicYear_Name, a.yearStart, a.yearEnd
                      FROM GRADE as g inner join AcademicYear as a on g.academicYearId = a.academicYearId
                      WHERE GradeId = @id";
@@ -87,22 +91,29 @@ namespace server.Repositories
           {
             x.GradeId,
             x.GradeName,
+            x.Description,
+            x.DateCreated,
+            x.DateUpdated,
             x.AcademicYearId,
             displayName = x.AcademicYear.DisplayAcademicYearName,
             yearStart = x.AcademicYear.YearStart,
             yearEnd = x.AcademicYear.YearEnd,
           })
+          .AsNoTracking()
           .FirstOrDefaultAsync();
 
         if (grade is null)
         {
-          return new ResponseData<GradeDetail>(404, "Khối lớp không tồn tại");
+          return new ResponseData<GradeDetail>(404, "Khối lớp này không tồn tại");
         }
 
         var result = new GradeDetail
         {
           GradeId = id,
           GradeName = grade.GradeName,
+          Description = grade.Description,
+          DateCreated = grade.DateCreated,
+          DateUpdated = grade.DateUpdated,
           AcademicYearId = grade.AcademicYearId,
           DisplayAcademicYearName = grade.displayName,
           YearStart = grade.yearStart,
@@ -110,11 +121,11 @@ namespace server.Repositories
         };
 
         return new ResponseData<GradeDetail>(200, "Thành công", result);
-
       }
       catch (Exception ex)
       {
-        return new ResponseData<GradeDetail>(500, $"Server error: {ex.Message}");
+        return new ResponseData<GradeDetail>(500, "Có lỗi xảy ra. Vui lòng liên hệ quản trị viên để sớm khắc phục");
+        throw new Exception($"Server error: {ex.Message}");
       }
     }
 
@@ -122,7 +133,7 @@ namespace server.Repositories
     {
       try
       {
-        var find = @"SELECT g.*, a.displayAcademicYear_Name
+        var find = @"SELECT g.*, a.displayAcademicYear_Name, a.yearStart, a.yearEnd
                      FROM GRADE as g LEFT JOIN AcademicYear as a on g.academicYearId = a.academicYearId";
 
         var grade = await _context.Grades
@@ -212,7 +223,7 @@ namespace server.Repositories
           parameters.Add(new SqlParameter("@DateCreated", model.DateCreated.Value));
         }
 
-        if (model.DateUpdated != existingGrade.DateUpdated)
+        if (existingGrade.DateUpdated != DateTime.UtcNow)
         {
           queryBuilder.Append("DateUpdated = @DateUpdated, ");
           parameters.Add(new SqlParameter("@DateUpdated", DateTime.UtcNow));
@@ -221,7 +232,7 @@ namespace server.Repositories
 
         if (hasChanges)
         {
-          if (queryBuilder[queryBuilder.Length - 2] == ',')
+          if (queryBuilder[^2] == ',')
           {
             queryBuilder.Length -= 2;
           }
@@ -233,19 +244,18 @@ namespace server.Repositories
           await _context.Database.ExecuteSqlRawAsync(updateQuery, [.. parameters]);
 
           await transaction.CommitAsync();
-          return new ResponseData<GradeDto>(200, "Updated");
+          return new ResponseData<GradeDto>(200, "Cập nhật thành công");
         }
         else
         {
-          return new ResponseData<GradeDto>(200, "No changes detected");
+          return new ResponseData<GradeDto>(200, "Không có sự thay đổi");
         }
-
       }
       catch (Exception ex)
       {
         await transaction.RollbackAsync();
-
-        return new ResponseData<GradeDto>(500, $"Server error: {ex.Message}");
+        return new ResponseData<GradeDto>(500, "Có lỗi xảy ra. Vui lòng liên hệ quản trị viên để sớm khắc phục");
+        throw new Exception($"Server error: {ex.Message}");
       }
     }
 
@@ -261,17 +271,18 @@ namespace server.Repositories
 
         if (grade is null)
         {
-          return new ResponseData<GradeDto>(404, "Grade not found");
+          return new ResponseData<GradeDto>(404, "Khối lớp không tồn tại");
         }
 
         var deleteQuery = "DELETE FROM Grade WHERE GradeId = @id";
         await _context.Database.ExecuteSqlRawAsync(deleteQuery, new SqlParameter("@id", id));
 
-        return new ResponseData<GradeDto>(200, "Deleted");
+        return new ResponseData<GradeDto>(200, "Xóa thành công");
       }
       catch (Exception ex)
       {
-        return new ResponseData<GradeDto>(500, $"Server error: {ex.Message}");
+        return new ResponseData<GradeDto>(500, "Có lỗi xảy ra. Vui lòng liên hệ quản trị viên để sớm khắc phục");
+        throw new Exception($"Server error: {ex.Message}");
       }
     }
 
@@ -282,7 +293,7 @@ namespace server.Repositories
       {
         if (ids == null || ids.Count == 0)
         {
-          return new ResponseData<string>(400, "No IDs provided");
+          return new ResponseData<string>(400, "Vui lòng cung cấp mã khối lớp hợp lệ");
         }
 
         // Create a comma-separated list of IDs for the SQL query
@@ -296,18 +307,18 @@ namespace server.Repositories
 
         if (affectedRows == 0)
         {
-          return new ResponseData<string>(404, "No ids found to delete");
+          return new ResponseData<string>(404, "Mã khối lớp không tồn tại");
         }
 
         await transaction.CommitAsync();
 
-        return new ResponseData<string>(200, "Deleted Thành côngy");
+        return new ResponseData<string>(200, "Xóa thành công");
       }
       catch (Exception ex)
       {
         await transaction.RollbackAsync();
-
-        return new ResponseData<string>(500, $"Server error: {ex.Message}");
+        return new ResponseData<string>(500, "Có lỗi xảy ra. Vui lòng liên hệ quản trị viên để sớm khắc phục");
+        throw new Exception($"Server error: {ex.Message}");
       }
     }
 
@@ -355,10 +366,12 @@ namespace server.Repositories
                   // Stop processing when an empty row is encountered
                   break;
                 }
+                var acaId = Convert.ToInt16(reader.GetValue(1));
+                var acadExisting = await _context.AcademicYears.AnyAsync(x => x.AcademicYearId == acaId);
 
                 var myGrades = new Models.Grade
                 {
-                  AcademicYearId = Convert.ToInt16(reader.GetValue(1)),
+                  AcademicYearId = acaId,
                   GradeName = reader.GetValue(2).ToString()?.Trim() ?? "Khoi lop",
                   Description = reader.GetValue(3).ToString()?.Trim() ?? "Mo Ta",
                   DateCreated = DateTime.UtcNow,
@@ -366,15 +379,13 @@ namespace server.Repositories
                 };
 
                 await _context.Grades.AddAsync(myGrades);
-                await _context.SaveChangesAsync();
               }
+              await _context.SaveChangesAsync();
             } while (reader.NextResult());
           }
-
           return new ResponseData<string>(200, "Tải lên thành công.");
         }
-
-        return new ResponseData<string>(200, "Không có tệp nào được tải lên");
+        return new ResponseData<string>(400, "Không có tệp nào được tải lên");
       }
       catch (Exception ex)
       {

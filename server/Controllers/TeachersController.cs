@@ -371,12 +371,30 @@ namespace server.Controllers
     {
 
       queryObject ??= new QueryObjects();
-      if (queryObject.PageNumber < 1 || queryObject.PageSize < 1)
-      {
-        return BadRequest("Page number and page size must be positive integers.");
-      }
+
       var results = await _teacherRepo.SearchTeacher(queryObject);
 
+      if (results.StatusCode == 200)
+      {
+        var data = results.TeacherListDetails ?? [];
+        var totalResults = data.Count;
+        var totalPages = (int)Math.Ceiling((double)totalResults / queryObject.PageSize);
+        var paginatedData = data.Skip((queryObject.PageNumber - 1) * queryObject.PageSize).Take(queryObject.PageSize);
+
+        return Ok(new
+        {
+          statusCode = results.StatusCode,
+          message = results.Message,
+          data = paginatedData,
+          pagination = new
+          {
+            queryObject.PageNumber,
+            queryObject.PageSize,
+            totalPages,
+            totalResults,
+          }
+        });
+      }
       if (results.StatusCode == 404)
       {
         return NotFound(new
@@ -385,14 +403,6 @@ namespace server.Controllers
           message = results.Message,
         });
       }
-      if (results.StatusCode == 200)
-        return Ok(new
-        {
-          statusCode = results.StatusCode,
-          message = results.Message,
-          totalResults = results.TotalCount,
-          data = results.TeacherListDetails
-        });
 
       return StatusCode(500, new
       {

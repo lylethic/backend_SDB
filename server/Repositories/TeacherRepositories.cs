@@ -624,7 +624,6 @@ namespace server.Repositories
       try
       {
         queryObject ??= new QueryObjects();
-        var skip = (queryObject.PageNumber - 1) * queryObject.PageSize;
 
         var query = _context.Teachers
           .Include(x => x.School)
@@ -648,16 +647,13 @@ namespace server.Repositories
           query = query.Where(x =>
               EF.Functions.Like(x.Fullname.ToLower(), $"%{searchTerm}%"));
         }
-        query = query.Skip(skip).Take(queryObject.PageSize);
-
-        int totalResults = await query.CountAsync();
 
         var rawResults = await query.Select(x => new
         {
           x.TeacherId,
           x.AccountId,
           x.SchoolId,
-          NameSchool = x.School.NameSchool,
+          x.School.NameSchool,
           x.Fullname,
           x.DateOfBirth,
           x.Gender,
@@ -687,7 +683,7 @@ namespace server.Repositories
           return new TeacherResType(404, "Không có kết quả");
         }
 
-        return new TeacherResType(200, "Thành công", results, totalResults);
+        return new TeacherResType(200, "Thành công", results);
       }
       catch (Exception ex)
       {

@@ -595,7 +595,6 @@ namespace server.Repositories
       try
       {
         queryObject ??= new QueryObjects();
-        var skip = (queryObject.PageNumber - 1) * queryObject.PageSize;
 
         var query = _context.Accounts
           .AsNoTracking()
@@ -623,8 +622,6 @@ namespace server.Repositories
               x.Teachers.Any(t => EF.Functions.Like(t.Fullname.ToLower(), $"%{searchTerm}%")));
         }
 
-        query = query.Skip(skip).Take(queryObject.PageSize);
-
         var results = await query
           .Select(account => new AccountsResData
           {
@@ -639,7 +636,7 @@ namespace server.Repositories
           })
           .ToListAsync();
 
-        if (!results.Any())
+        if (results.Count == 0)
         {
           return new AccountsResType(404, "Không có kết quả");
         }

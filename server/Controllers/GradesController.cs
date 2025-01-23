@@ -53,6 +53,7 @@ namespace server.Controllers
           }
         });
       }
+
       if (result.StatusCode == 404)
       {
         return NotFound(new
@@ -61,7 +62,8 @@ namespace server.Controllers
           message = result.Message
         });
       }
-      return StatusCode(result.StatusCode, new
+
+      return StatusCode(500, new
       {
         status = result.StatusCode,
         message = result.Message
