@@ -265,15 +265,6 @@ namespace server.Controllers
     {
       var result = await _teacherRepo.CreateTeacher(model);
 
-      if (result.StatusCode == 409)
-      {
-        return StatusCode(409, new
-        {
-          statusCode = result.StatusCode,
-          message = result.Message,
-        });
-      }
-
       if (result.StatusCode == 200)
       {
         return Ok(new
@@ -284,7 +275,7 @@ namespace server.Controllers
         });
       }
 
-      return StatusCode(500, new
+      return StatusCode(result.StatusCode, new
       {
         statusCode = result.StatusCode,
         message = result.Message,
@@ -326,14 +317,22 @@ namespace server.Controllers
     [HttpDelete("bulkdelete")]
     public async Task<IActionResult> BulkDelete(List<int> ids)
     {
-      var teacher = await _teacherRepo.BulkDelete(ids);
+      var result = await _teacherRepo.BulkDelete(ids);
 
-      if (teacher.StatusCode != 200)
+      if (result.StatusCode == 200)
       {
-        return BadRequest(teacher);
+        return Ok(new
+        {
+          status = result.StatusCode,
+          message = result.Message,
+        });
       }
 
-      return Ok(teacher);
+      return StatusCode(result.StatusCode, new
+      {
+        status = result.StatusCode,
+        message = result.Message,
+      });
     }
 
     [Authorize(Policy = "SuperAdminAndAdmin")]
