@@ -4,8 +4,6 @@ using Microsoft.EntityFrameworkCore;
 using server.Data;
 using server.Dtos;
 using server.IService;
-using server.Models;
-using server.Types;
 using System.Text;
 
 namespace server.Repositories
@@ -467,7 +465,7 @@ namespace server.Repositories
 
         if (query.Count == 0 || query is null)
         {
-          return new ResponseData<List<ClassDetails>>(204, "Trường học này chưa có lớp học hoặc mã trường học không tồn tại", []);
+          return new ResponseData<List<ClassDetails>>(204, "Trường học này chưa có lớp học hoặc mã trường học không tồn tại");
         }
 
         return new ResponseData<List<ClassDetails>>(200, "Thành công", query);

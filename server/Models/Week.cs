@@ -22,4 +22,6 @@ public partial class Week
     public virtual ICollection<RollCall> RollCalls { get; set; } = new List<RollCall>();
 
     public virtual Semester Semester { get; set; } = null!;
+
+    public virtual ICollection<WeeklyEvaluation> WeeklyEvaluations { get; set; } = new List<WeeklyEvaluation>();
 }

@@ -5,7 +5,7 @@ namespace server.IService
 {
   public interface IRollCall
   {
-    Task<RollCallResType> Create(RollCallDto model, List<AbsenceDto> absenceDto);
+    Task<RollCallResType> Create(RollCallDto model, List<RollCallDetailDto> absenceDto);
 
     Task<RollCallResType> Update(int rollCallId, RollCallDto model);
 

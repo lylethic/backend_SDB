@@ -1,6 +1,6 @@
 ﻿namespace server.Dtos
 {
-  public class WeekDto
+  public partial class WeekDto
   {
     public int WeekId { get; set; }
 

@@ -59,7 +59,9 @@ builder.Services.AddScoped<IWeek, WeekRepositories>();
 builder.Services.AddScoped<IChiTietSoDauBai, ChiTietSoDauBaiRepositories>();
 builder.Services.AddScoped<IPC_ChuNhiem, PCChuNhiemRepositories>();
 builder.Services.AddScoped<IRollCall, RollCallRepositories>();
-builder.Services.AddScoped<IAbsence, AbsencesRepositories>();
+builder.Services.AddScoped<IRollCallDetail, RollCallDetailRepositories>();
+builder.Services.AddScoped<IWeeklyEvaluation, WeeklyEvaluationRepositories>();
+builder.Services.AddScoped<IMonthlyEvaluation, MonthlyEvaluationRepositories>();
 
 // Load configuration from appsettings.json
 var configuration = new ConfigurationBuilder()

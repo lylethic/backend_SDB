@@ -38,4 +38,6 @@ public partial class Teacher
     public virtual School School { get; set; } = null!;
 
     public virtual ICollection<SubjectAssignment> SubjectAssignments { get; set; } = new List<SubjectAssignment>();
+
+    public virtual ICollection<WeeklyEvaluation> WeeklyEvaluations { get; set; } = new List<WeeklyEvaluation>();
 }

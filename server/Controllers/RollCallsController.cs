@@ -37,32 +37,45 @@ namespace server.Controllers
 
     // GET api/<RollCallsController>/5
     [HttpGet("{id}")]
-    public string Get(int id)
+    public async Task<IActionResult> Get(int id)
     {
-      return "value";
+      var result = await _rollCall.RollCall(id);
+      if (result.StatusCode == 200)
+      {
+        return Ok(new
+        {
+          message = result.Message,
+          data = result.RollCall
+        });
+      }
+      return StatusCode(result.StatusCode, new
+      {
+        message = result.Message
+      });
     }
 
     // POST api/<RollCallsController>
     /*
-     {
-      "rollCall": {
-        "callRollId": 1,
-        "classId": 21,
-        "weekId": 4,
-        "dayOfTheWeek": "Monday",
-        "dateAt": "2025-02-04",
-        "numberOfAttendants": 38
-      },
-      "absences": [
-        {
-          "studentId": 156,
-          "description": "Sick"
+      {
+        "rollCall": {
+          "callRollId": 0,
+          "classId": 21,
+          "weekId": 4,
+          "dayOfTheWeek": "thứ 2",
+          "numberOfAttendants": 39,
+          "dateAt": "2025-02-10",
+          "dateCreated": "2025-02-04T07:53:34.839Z",
+          "dateUpdated": null
         },
-        {
-          "studentId": 157,
-          "description": "Late"
-        }
-      ]
+        "absences": [
+          {
+            "callRollId": 0,
+            "studentId": 156,
+            "isExecute": true,
+            "description": "Sốt xuất huyết"
+          }
+        ]
+      }
      */
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] RollCallCreateRequest request)
@@ -88,20 +101,64 @@ namespace server.Controllers
 
     // PUT api/<RollCallsController>/5
     [HttpPut("{id}")]
-    public void Put(int id, [FromBody] string value)
+    public async Task<IActionResult> Put(int id, [FromBody] RollCallDto model)
     {
-
+      var result = await _rollCall.Update(id, model);
+      if (result.StatusCode == 200)
+      {
+        return Ok(new
+        {
+          message = result.Message,
+          data = result.RollCall
+        });
+      }
+      return StatusCode(result.StatusCode, new
+      {
+        message = result.Message,
+        data = result.RollCall
+      });
     }
 
     // DELETE api/<RollCallsController>/5
     [HttpDelete("{id}")]
-    public void Delete(int id)
+    public async Task<IActionResult> Delete(int id)
     {
+      var result = await _rollCall.Delete(id);
+      if (result.StatusCode == 200)
+      {
+        return Ok(new
+        {
+          message = result.Message,
+        });
+      }
+      return StatusCode(result.StatusCode, new
+      {
+        message = result.Message,
+      });
+    }
+
+    [HttpDelete("bulk-delete/{id}")]
+    public async Task<IActionResult> BulkDelete(List<int> ids)
+    {
+      var result = await _rollCall.BulkDelete(ids);
+      if (result.StatusCode == 200)
+      {
+        return Ok(new
+        {
+          message = result.Message,
+        });
+      }
+      return StatusCode(result.StatusCode, new
+      {
+        message = result.Message,
+      });
     }
   }
+
   public class RollCallCreateRequest
   {
     public RollCallDto RollCall { get; set; }
-    public List<AbsenceDto> Absences { get; set; }
+    public List<RollCallDetailDto> Absences { get; set; }
   }
 }
+

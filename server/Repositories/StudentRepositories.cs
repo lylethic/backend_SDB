@@ -178,7 +178,7 @@ namespace server.Repositories
           .ToListAsync();
 
         if (students is null || students.Count == 0)
-          return new ResponseData<List<StudentDetail>>(404, "Không có kết quả", []);
+          return new ResponseData<List<StudentDetail>>(404, "Không có kết quả");
 
         return new ResponseData<List<StudentDetail>>(200, "Thành công", students);
       }

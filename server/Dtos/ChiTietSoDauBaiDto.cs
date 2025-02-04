@@ -1,6 +1,6 @@
 ﻿namespace server.Dtos
 {
-  public class ChiTietSoDauBaiDto
+  public partial class ChiTietSoDauBaiDto
   {
     public int ChiTietSoDauBaiId { get; set; }
 
