@@ -236,8 +236,8 @@ namespace server.Repositories
                                         .Where(teacher => teacher.TeacherId == ct.CreatedBy)
                                         .Select(teacher => teacher.Fullname)
                                         .FirstOrDefault(),
-                       CreatedAt = ct.CreatedAt.ToString(),
-                       UpdatedAt = ct.UpdatedAt.ToString(),
+                       CreatedAt = ct.CreatedAt,
+                       UpdatedAt = ct.UpdatedAt,
                      };
 
         var chitietSoDauBai = await result.AsNoTracking().ToListAsync();
@@ -437,12 +437,12 @@ namespace server.Repositories
           hasChanges = true;
         }
 
-        if (model.ThoiGian != existingChiTietSoDauBai.ThoiGian)
-        {
-          queryBuilder.Append("ThoiGian = @ThoiGian, ");
-          parameters.Add(new SqlParameter("@ThoiGian", model.ThoiGian));
-          hasChanges = true;
-        }
+        // if (model.ThoiGian != existingChiTietSoDauBai.ThoiGian)
+        // {
+        //   queryBuilder.Append("ThoiGian = @ThoiGian, ");
+        //   parameters.Add(new SqlParameter("@ThoiGian", model.ThoiGian));
+        //   hasChanges = true;
+        // }
 
         if (!String.IsNullOrEmpty(model.BuoiHoc) && model.BuoiHoc != existingChiTietSoDauBai.BuoiHoc)
         {
@@ -458,7 +458,7 @@ namespace server.Repositories
           hasChanges = true;
         }
 
-        if (!String.IsNullOrEmpty(model.LessonContent) && model.LessonContent != existingChiTietSoDauBai.LessonContent)
+        if (!string.IsNullOrEmpty(model.LessonContent) && model.LessonContent != existingChiTietSoDauBai.LessonContent)
         {
           queryBuilder.Append("LessonContent = @LessonContent, ");
           parameters.Add(new SqlParameter("@LessonContent", model.LessonContent));
@@ -667,8 +667,8 @@ namespace server.Repositories
                                         .Where(teacher => teacher.TeacherId == ct.CreatedBy)
                                         .Select(teacher => teacher.Fullname)
                                         .FirstOrDefault(),
-                       CreatedAt = ct.CreatedAt.ToString(),
-                       UpdatedAt = ct.UpdatedAt.ToString(),
+                       CreatedAt = ct.CreatedAt,
+                       UpdatedAt = ct.UpdatedAt,
                      };
 
         var chitietSoDauBai = await result.ToListAsync();

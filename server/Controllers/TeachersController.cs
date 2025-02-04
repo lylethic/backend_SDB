@@ -211,6 +211,36 @@ namespace server.Controllers
       });
     }
 
+    [HttpGet("teacher-by-account/{id}")]
+    public async Task<IActionResult> GetTeacherByAccount(int id)
+    {
+      var result = await _teacherRepo.GetTeacherIdByAccountId(id);
+
+      if (result.StatusCode == 404)
+      {
+        return NotFound(new
+        {
+          statusCode = result.StatusCode,
+          message = result.Message,
+        });
+      }
+
+      if (result.StatusCode == 200)
+      {
+        return Ok(new
+        {
+          statusCode = result.StatusCode,
+          message = result.Message,
+          data = result.TeacherToUpdate
+        });
+      }
+
+      return StatusCode(500, new
+      {
+        statusCode = result.StatusCode,
+        message = result.Message,
+      });
+    }
 
     // amount of teacher by schoolId is optional
     [HttpGet("count-amount-of-teachers")]

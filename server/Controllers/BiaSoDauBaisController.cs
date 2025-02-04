@@ -213,17 +213,34 @@ namespace server.Controllers
       });
     }
 
+    // This api is provided to teacher. sodaubai still active.
     [HttpGet("get-by-school")]
     public async Task<IActionResult> GetBiaSoDauBaisBySchool([FromQuery] QueryObject? queryObject, int schoolId)
     {
-      var result = await _biaSodaubai.GetBiaSoDauBaisBySchool_Active(queryObject, schoolId);
+      queryObject ??= new QueryObject();
+      var result = await _biaSodaubai.GetBiaSoDauBaisBySchool_Active(schoolId);
       if (result.StatusCode == 200)
       {
+        var data = result.ListBiaSoDauBaiRes ?? [];
+        var totalResults = data.Count;
+        var totalPages = (int)Math.Ceiling((double)totalResults / queryObject.PageSize);
+        var paginatedData = data
+        .Skip((queryObject.PageNumber - 1) * queryObject.PageSize)
+        .Take(queryObject.PageSize)
+        .ToList();
+
         return Ok(new
         {
-          status = 200,
+          status = result.StatusCode,
           message = result.Message,
-          data = result.ListBiaSoDauBaiRes
+          data = paginatedData,
+          pagination = new
+          {
+            queryObject.PageNumber,
+            queryObject.PageSize,
+            totalResults,
+            totalPages
+          }
         });
       }
 

@@ -8,9 +8,13 @@
 
   <ItemGroup>
     <Compile Remove="sqlFile\**" />
+    <Compile Remove="Uploads\**" />
     <Content Remove="sqlFile\**" />
+    <Content Remove="Uploads\**" />
     <EmbeddedResource Remove="sqlFile\**" />
+    <EmbeddedResource Remove="Uploads\**" />
     <None Remove="sqlFile\**" />
+    <None Remove="Uploads\**" />
   </ItemGroup>
 
   <ItemGroup>
@@ -31,12 +35,8 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
-    <PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="8.0.5" />
+    <PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="8.0.7" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.4.0" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="Uploads\" />
   </ItemGroup>
 
 </Project>

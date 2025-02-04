@@ -20,6 +20,7 @@ namespace server.Repositories
       this._context = context;
       this._photo = photo;
     }
+
     public async Task<TeacherResType> GetTeacher(int id)
     {
       try
@@ -129,6 +130,68 @@ namespace server.Repositories
         var result = new TeacherToUpdate
         {
           TeacherId = id,
+          AccountId = teacher.AccountId,
+          Fullname = teacher.Fullname,
+          DateOfBirth = teacher.DateOfBirth,
+          Gender = teacher.Gender,
+          Address = teacher.Address,
+          Status = teacher.Status,
+          SchoolId = teacher.SchoolId,
+          DateCreate = teacher.DateCreate,
+          DateUpdate = teacher.DateUpdate,
+          PhotoPath = teacher.PhotoPath,
+        };
+
+        return new TeacherResType(200, "Thành công", result);
+      }
+      catch (Exception ex)
+      {
+        return new TeacherResType(500, "Có lỗi xảy ra tại máy chủ. Vui lòng liên hệ quản trị viên để sớm khắc phục");
+        throw new Exception($"Server error: {ex.Message}");
+      }
+    }
+
+    public async Task<TeacherResType> GetTeacherIdByAccountId(int accountId)
+    {
+      try
+      {
+        var findTeacher = @"SELECT t.teacherId, t.accountId, 
+			                            s.schoolId, t.fullname, 
+                                  t.dateOfBirth, t.gender, 
+                                  t.address, t.status,
+                                  t.dateCreate, t.dateUpdate, t.photoPath
+                            FROM TEACHER t
+                            LEFT JOIN SCHOOL s
+                            ON t.schoolId = s.schoolId
+                            WHERE t.accountId = @accountId";
+
+        var teacher = await _context.Teachers
+          .FromSqlRaw(findTeacher, new SqlParameter("@accountId", accountId))
+          .Select(static x => new Teacher
+          {
+            TeacherId = x.TeacherId,
+            AccountId = x.AccountId,
+            SchoolId = x.SchoolId,
+            Fullname = x.Fullname,
+            DateOfBirth = x.DateOfBirth,
+            Gender = x.Gender,
+            Address = x.Address,
+            Status = x.Status,
+            DateCreate = x.DateCreate,
+            DateUpdate = x.DateUpdate,
+            PhotoPath = x.PhotoPath,
+          })
+          .AsNoTracking()
+          .FirstOrDefaultAsync();
+
+        if (teacher is null)
+        {
+          return new TeacherResType(404, "Không tìm thấy giáo viên");
+        }
+
+        var result = new TeacherToUpdate
+        {
+          TeacherId = teacher.TeacherId,
           AccountId = teacher.AccountId,
           Fullname = teacher.Fullname,
           DateOfBirth = teacher.DateOfBirth,

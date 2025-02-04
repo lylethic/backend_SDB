@@ -189,11 +189,6 @@ namespace server.Repositories
     {
       try
       {
-        var query = @"SELECT w.*, a.semesterName, a.dateStart, a.dateEnd 
-                      FROM Week as w
-                      INNER JOIN Semester as a ON w.semesterId = a.semesterId 
-                      ORDER BY CASE WHEN w.Status = 1 THEN 1 ELSE 0 END desc, weekId";
-
         var weekQuery = from week in _context.Weeks
                         join hocKy in _context.Semesters on week.SemesterId equals hocKy.SemesterId into hocKyGroup
                         from hocKy in hocKyGroup.DefaultIfEmpty()
@@ -205,14 +200,14 @@ namespace server.Repositories
                           week.WeekStart,
                           week.WeekEnd,
                           week.Status,
-                          SemesterName = hocKy.SemesterName,
-                          DateStart = hocKy.DateStart,
-                          DateEnd = hocKy.DateEnd,
+                          hocKy.SemesterName,
+                          hocKy.DateStart,
+                          hocKy.DateEnd,
                         };
 
         var weeks = await weekQuery
           .AsNoTracking()
-          .OrderByDescending(x => x.Status == true)
+          .OrderByDescending(x => x.WeekStart)
           .ToListAsync();
 
         var result = weeks.Select(week => new WeekData

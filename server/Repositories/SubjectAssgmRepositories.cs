@@ -133,6 +133,55 @@ namespace server.Repositories
       }
     }
 
+    public async Task<ResponseData<SubjectAssgmDetail>> GetTeacherBySubjectAssgm(int id)
+    {
+      try
+      {
+        var find = @"SELECT SA.subjectAssignmentId, SA.teacherId, T.fullname, SA.subjectId, S.subjectName, SA.dateCreated, SA.dateUpdated
+                    FROM SUBJECTASSIGNMENT AS SA 
+                    LEFT JOIN Subject AS S ON SA.subjectId = S.subjectId
+                    LEFT JOIN Teacher AS T ON T.teacherId = SA.teacherId
+                    WHERE T.teacherId = @id";
+
+        var subjectAssgmt = await _context.SubjectAssignments
+          .FromSqlRaw(find, new SqlParameter("@id", id))
+          .AsNoTracking()
+          .Select(static x => new SubjectAssgmDetail
+          {
+            SubjectAssignmentId = x.SubjectAssignmentId,
+            SubjectId = x.SubjectId,
+            TeacherId = x.TeacherId,
+            Fullname = x.Teacher.Fullname,
+            SubjectName = x.Subject.SubjectName,
+            DateCreated = x.DateCreated,
+            DateUpdated = x.DateUpdated
+          })
+          .FirstOrDefaultAsync();
+
+        if (subjectAssgmt is null)
+        {
+          return new ResponseData<SubjectAssgmDetail>(404, "Nội dung phân công môn học không tồn tại");
+        }
+
+        var result = new SubjectAssgmDetail
+        {
+          SubjectAssignmentId = subjectAssgmt.SubjectAssignmentId,
+          SubjectId = subjectAssgmt.SubjectId,
+          TeacherId = subjectAssgmt.TeacherId,
+          Fullname = subjectAssgmt.Fullname,
+          SubjectName = subjectAssgmt.SubjectName,
+          DateCreated = subjectAssgmt.DateCreated,
+          DateUpdated = subjectAssgmt.DateUpdated
+        };
+
+        return new ResponseData<SubjectAssgmDetail>(200, "Thành công", result);
+      }
+      catch (Exception ex)
+      {
+        return new ResponseData<SubjectAssgmDetail>(500, $"Server error: {ex.Message}");
+      }
+    }
+
     public async Task<ResponseData<SubjectAssgmDto>> GetSubjectAssgmToUpdate(int id)
     {
       try

@@ -92,6 +92,33 @@ namespace server.Controllers
       });
     }
 
+    [HttpGet("teacher-by-subject-assign/{id}")]
+    public async Task<IActionResult> GetTeacherBySubjcetAssign(int id)
+    {
+      var result = await _subject_Assgm.GetTeacherBySubjectAssgm(id);
+      if (result.StatusCode == 200)
+      {
+        return Ok(new
+        {
+          message = result.Message,
+          data = result.Data
+        });
+      }
+
+      if (result.StatusCode == 404)
+      {
+        return NotFound(new
+        {
+          message = result.Message
+        });
+      }
+
+      return StatusCode(500, new
+      {
+        message = result.Message
+      });
+    }
+
     [HttpGet("get-to-update/{id}")]
     public async Task<IActionResult> GetByIdSubjectAssignmentToUpdate(int id)
     {

@@ -19,7 +19,7 @@ namespace server.IService
 
     Task<BiaSoDauBaiResType> GetBiaSoDauBais_Active(QueryObject? queryObject);
 
-    Task<BiaSoDauBaiResType> GetBiaSoDauBaisBySchool_Active(QueryObject? queryObject, int schoolId);
+    Task<BiaSoDauBaiResType> GetBiaSoDauBaisBySchool_Active(int schoolId);
 
     // status true && false
     Task<BiaSoDauBaiResType> GetBiaSoDauBais(QueryObject? queryObject);

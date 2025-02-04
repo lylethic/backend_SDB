@@ -42,8 +42,8 @@ namespace server.Types.ChiTietSoDauBai
 
     public string? CreatedBy { get; set; } = string.Empty;
 
-    public string? CreatedAt { get; set; }
+    public DateTime? CreatedAt { get; set; }
 
-    public string? UpdatedAt { get; set; }
+    public DateTime? UpdatedAt { get; set; }
   }
 }

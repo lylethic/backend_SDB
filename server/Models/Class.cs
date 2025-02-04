@@ -25,6 +25,8 @@ public partial class Class
 
     public DateTime? DateUpdated { get; set; }
 
+    public int? NumberOfAttendants { get; set; }
+
     public virtual AcademicYear AcademicYear { get; set; } = null!;
 
     public virtual ICollection<BiaSoDauBai> BiaSoDauBais { get; set; } = new List<BiaSoDauBai>();
@@ -32,6 +34,8 @@ public partial class Class
     public virtual Grade Grade { get; set; } = null!;
 
     public virtual ICollection<PhanCongChuNhiem> PhanCongChuNhiems { get; set; } = new List<PhanCongChuNhiem>();
+
+    public virtual ICollection<RollCall> RollCalls { get; set; } = new List<RollCall>();
 
     public virtual School School { get; set; } = null!;
 

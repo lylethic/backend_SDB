@@ -16,6 +16,8 @@ public partial class SoDauBaiContext : DbContext
     {
     }
 
+    public virtual DbSet<Absence> Absences { get; set; }
+
     public virtual DbSet<AcademicYear> AcademicYears { get; set; }
 
     public virtual DbSet<Account> Accounts { get; set; }
@@ -35,6 +37,8 @@ public partial class SoDauBaiContext : DbContext
     public virtual DbSet<PhanCongGiangDay> PhanCongGiangDays { get; set; }
 
     public virtual DbSet<Role> Roles { get; set; }
+
+    public virtual DbSet<RollCall> RollCalls { get; set; }
 
     public virtual DbSet<School> Schools { get; set; }
 
@@ -57,6 +61,27 @@ public partial class SoDauBaiContext : DbContext
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        modelBuilder.Entity<Absence>(entity =>
+        {
+            entity.HasKey(e => e.AbsenceId).HasName("PK__Absence__067E7F37EE8948A6");
+
+            entity.ToTable("Absence");
+
+            entity.Property(e => e.AbsenceId).HasColumnName("absenceId");
+            entity.Property(e => e.CallRollId).HasColumnName("callRollId");
+            entity.Property(e => e.Description).HasColumnName("description");
+            entity.Property(e => e.StudentId).HasColumnName("studentId");
+
+            entity.HasOne(d => d.CallRoll).WithMany(p => p.Absences)
+                .HasForeignKey(d => d.CallRollId)
+                .OnDelete(DeleteBehavior.Cascade)
+                .HasConstraintName("FK__Absence__callRol__13F1F5EB");
+
+            entity.HasOne(d => d.Student).WithMany(p => p.Absences)
+                .HasForeignKey(d => d.StudentId)
+                .HasConstraintName("FK__Absence__student__14E61A24");
+        });
+
         modelBuilder.Entity<AcademicYear>(entity =>
         {
             entity.HasKey(e => e.AcademicYearId).HasName("PK__Academic__F8DBC284F22A4AB7");
@@ -233,6 +258,7 @@ public partial class SoDauBaiContext : DbContext
                 .HasMaxLength(100)
                 .HasColumnName("description");
             entity.Property(e => e.GradeId).HasColumnName("gradeId");
+            entity.Property(e => e.NumberOfAttendants).HasColumnName("numberOfAttendants");
             entity.Property(e => e.SchoolId).HasColumnName("schoolId");
             entity.Property(e => e.Status)
                 .HasDefaultValue(true)
@@ -388,6 +414,38 @@ public partial class SoDauBaiContext : DbContext
                 .HasMaxLength(20)
                 .IsUnicode(false)
                 .HasColumnName("nameRole");
+        });
+
+        modelBuilder.Entity<RollCall>(entity =>
+        {
+            entity.HasKey(e => e.CallRollId).HasName("PK__RollCall__8A3C36491E2C5DA8");
+
+            entity.ToTable("RollCall");
+
+            entity.Property(e => e.CallRollId).HasColumnName("callRollId");
+            entity.Property(e => e.ClassId).HasColumnName("classId");
+            entity.Property(e => e.DateAt)
+                .HasColumnType("datetime")
+                .HasColumnName("date_At");
+            entity.Property(e => e.DateCreated)
+                .HasColumnType("datetime")
+                .HasColumnName("dateCreated");
+            entity.Property(e => e.DateUpdated)
+                .HasColumnType("datetime")
+                .HasColumnName("dateUpdated");
+            entity.Property(e => e.DayOfTheWeek)
+                .HasMaxLength(20)
+                .HasColumnName("dayOfTheWeek");
+            entity.Property(e => e.NumberOfAttendants).HasColumnName("numberOfAttendants");
+            entity.Property(e => e.WeekId).HasColumnName("weekId");
+
+            entity.HasOne(d => d.Class).WithMany(p => p.RollCalls)
+                .HasForeignKey(d => d.ClassId)
+                .HasConstraintName("FK__RollCall__classI__10216507");
+
+            entity.HasOne(d => d.Week).WithMany(p => p.RollCalls)
+                .HasForeignKey(d => d.WeekId)
+                .HasConstraintName("FK__RollCall__weekId__11158940");
         });
 
         modelBuilder.Entity<School>(entity =>

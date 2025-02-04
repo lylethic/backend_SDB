@@ -15,6 +15,8 @@ namespace server.IService
 
     Task<TeacherResType> GetTeachers(QueryObject? queryObject);
 
+    Task<TeacherResType> GetTeacherIdByAccountId(int accountId);
+
     Task<TeacherResType> GetTeachersBySchool(QueryObject? queryObject, int schoolId);
 
     Task<TeacherResType> GetTeachersBySchool(int? schoolId);

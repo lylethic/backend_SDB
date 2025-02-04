@@ -299,17 +299,12 @@ namespace server.Repositories
       }
     }
 
-    public async Task<BiaSoDauBaiResType> GetBiaSoDauBaisBySchool_Active(QueryObject? queryObject, int schoolId)
+    public async Task<BiaSoDauBaiResType> GetBiaSoDauBaisBySchool_Active(int schoolId)
     {
       try
       {
         if (schoolId is 0)
-        {
           return new BiaSoDauBaiResType(400, "Vui lòng nhập mã trường học");
-        }
-
-        queryObject ??= new QueryObject();
-        var skip = (queryObject.PageNumber - 1) * queryObject.PageSize;
 
         var baiSoDauBaiQuery = from biaSo in _context.BiaSoDauBais
                                join lop in _context.Classes on biaSo.ClassId equals lop.ClassId into lopHocGroup
@@ -337,8 +332,6 @@ namespace server.Repositories
         var biaSoDauBai = await baiSoDauBaiQuery
             .Where(x => x.SchoolId.Equals(schoolId) && x.Status == true)
             .AsNoTracking()
-            .Skip(skip)     // Skip the first (pageNumber - 1) * pageSize records
-            .Take(queryObject.PageSize) // Take pageSize records
             .ToListAsync();
 
         if (biaSoDauBai is null || biaSoDauBai.Count == 0)
@@ -473,9 +466,7 @@ namespace server.Repositories
       try
       {
         if (schoolId == 0)
-        {
           return new BiaSoDauBaiResType(400, "Vui lòng cung cấp ít nhất mã trường học");
-        }
 
         var baiSoDauBaiQuery = from biaSo in _context.BiaSoDauBais
                                join lop in _context.Classes on biaSo.ClassId equals lop.ClassId into lopHocGroup
@@ -502,12 +493,12 @@ namespace server.Repositories
                                };
 
         var biaSoDauBai = await baiSoDauBaiQuery
-            .AsNoTracking()
             .OrderBy(x => x.ClassName)
+            .AsNoTracking()
             .ToListAsync();
 
         if (biaSoDauBai is null || biaSoDauBai.Count == 0)
-          return new BiaSoDauBaiResType(404, "Không có kết quả");
+          return new BiaSoDauBaiResType(200, "Không có kết quả");
 
         return new BiaSoDauBaiResType(200, "Thành công", biaSoDauBai);
       }
@@ -516,6 +507,7 @@ namespace server.Repositories
         return new BiaSoDauBaiResType(500, $"Server error: {ex.Message}");
       }
     }
+
     public async Task<BiaSoDauBaiResType> UpdateBiaSoDauBai(int id, BiaSoDauBaiDto model)
     {
       using var transaction = await _context.Database.BeginTransactionAsync();

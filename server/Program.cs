@@ -7,14 +7,15 @@ using server.Dtos;
 using server.IService;
 using server.Repositories;
 using System.Text;
+using System.Text.Json.Serialization;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Logging.ClearProviders();
 builder.Logging.AddConsole();
 
 // Add services to the container.
-
-builder.Services.AddControllers();
+builder.Services.AddControllers().AddJsonOptions(options =>
+   options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles);
 
 //Connection DB Local
 builder.Services.AddDbContext<server.Data.SoDauBaiContext>(options =>
@@ -57,6 +58,8 @@ builder.Services.AddScoped<IBiaSoDauBai, BiaSoDauBaiRepositories>();
 builder.Services.AddScoped<IWeek, WeekRepositories>();
 builder.Services.AddScoped<IChiTietSoDauBai, ChiTietSoDauBaiRepositories>();
 builder.Services.AddScoped<IPC_ChuNhiem, PCChuNhiemRepositories>();
+builder.Services.AddScoped<IRollCall, RollCallRepositories>();
+builder.Services.AddScoped<IAbsence, AbsencesRepositories>();
 
 // Load configuration from appsettings.json
 var configuration = new ConfigurationBuilder()

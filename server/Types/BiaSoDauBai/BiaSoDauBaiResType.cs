@@ -11,7 +11,7 @@ namespace server.Types.BiaSoDauBai
     public Models.BiaSoDauBai? BiaSoDauBai { get; set; }
     public List<Models.BiaSoDauBai>? BiaSoDauBaiList { get; set; }
     public BiaSoDauBaiRes? BiaSoDauBaiRes { get; set; }
-    public List<BiaSoDauBaiRes>? ListBiaSoDauBaiRes { get; set; }
+    public List<BiaSoDauBaiRes> ListBiaSoDauBaiRes { get; set; } = [];
 
 
     public BiaSoDauBaiResType() { }

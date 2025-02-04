@@ -19,5 +19,7 @@ public partial class Week
 
     public virtual ICollection<ChiTietSoDauBai> ChiTietSoDauBais { get; set; } = new List<ChiTietSoDauBai>();
 
+    public virtual ICollection<RollCall> RollCalls { get; set; } = new List<RollCall>();
+
     public virtual Semester Semester { get; set; } = null!;
 }
