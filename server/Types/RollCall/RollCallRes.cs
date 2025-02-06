@@ -2,7 +2,7 @@
 {
   public class RollCallRes
   {
-    public int CallRollId { get; set; }
+    public int RollCallId { get; set; }
 
     public int ClassId { get; set; }
 
@@ -19,5 +19,6 @@
     public DateTime? DateCreated { get; set; }
 
     public DateTime? DateUpdated { get; set; }
+    public int NumberOfAttendants { get; set; }
   }
 }

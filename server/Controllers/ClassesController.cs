@@ -137,6 +137,34 @@ namespace server.Controllers
       });
     }
 
+    [HttpGet("get-class-by-school-no-limit")]
+    public async Task<IActionResult> GetClassesBySchool([FromQuery] int schoolId)
+    {
+      var result = await _func.GetClassesBySchool(schoolId);
+      if (result.StatusCode == 200)
+      {
+        var data = result.Data ?? [];
+        var totalResults = data.Count;
+        return Ok(new
+        {
+          status = result.StatusCode,
+          message = result.Message,
+          data = result.Data,
+          pagination = new
+          {
+            totalResults,
+          }
+        });
+      }
+
+      return StatusCode(result.StatusCode, new
+      {
+        status = result.StatusCode,
+        message = result.Message
+      });
+    }
+
+
     // GET api/<ClassesController>/5
     [HttpGet("{id}")]
     public async Task<IActionResult> GetById(int id)

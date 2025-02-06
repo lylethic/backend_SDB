@@ -1,9 +1,11 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using server.Dtos;
 using server.IService;
 
 namespace server.Controllers
 {
+  [Authorize]
   [Route("api/[controller]")]
   [ApiController]
   public class WeeklyEvaluationsController : ControllerBase

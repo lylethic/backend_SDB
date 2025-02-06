@@ -114,6 +114,29 @@ namespace server.Repositories
       }
     }
 
+    public async Task<ResponseData<RollCallDetail>> GetAllAsync(int rollCallId)
+    {
+      try
+      {
+        var result = await _context.RollCallDetails
+          .AsNoTracking()
+          .Where(x => x.RollCallId == rollCallId)
+          .ToListAsync();
+
+        if (!result.Any())
+        {
+          return new ResponseData<RollCallDetail>(404, "Không tìm thấy dữ liệu");
+        }
+
+        return new ResponseData<RollCallDetail>(200, "Thành công", result);
+      }
+      catch (Exception ex)
+      {
+        return new ResponseData<RollCallDetail>(500, "Có lỗi xảy ra tại server...");
+        throw new Exception(ex.Message);
+      }
+    }
+
     public async Task<ResponseData<RollCallDetail>> GetByIdAsync(int id)
     {
       try

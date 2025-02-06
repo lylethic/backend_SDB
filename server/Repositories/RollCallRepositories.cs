@@ -16,15 +16,18 @@ namespace server.Repositories
       this._context = context;
     }
 
-    public async Task<RollCallResType> Create(RollCallDto model, List<RollCallDetailDto> absenceDtos)
+    public async Task<RollCallResType> Create(RollCallDto model, List<RollCallDetailDto>? absenceDtos)
     {
       using var transaction = await _context.Database.BeginTransactionAsync();
       try
       {
-        if (model is null || absenceDtos is null || !absenceDtos.Any())
+        if (model is null)
         {
-          return new RollCallResType(400, "Vui lòng cung cấp thông tin!");
+          return new RollCallResType(400, "Vui lòng cung cấp thông tin điểm danh!");
         }
+
+        // Ensure absenceDtos is not null
+        absenceDtos ??= new List<RollCallDetailDto>();
 
         var newRollCall = new RollCall
         {
@@ -40,22 +43,25 @@ namespace server.Repositories
         await _context.RollCalls.AddAsync(newRollCall);
         await _context.SaveChangesAsync();
 
-        foreach (var absenceDto in absenceDtos)
+        if (absenceDtos.Any()) // Only add absence details if there are absentees
         {
-          var newAbsence = new RollCallDetail
+          foreach (var absenceDto in absenceDtos)
           {
-            RollCallId = newRollCall.RollCallId,
-            Description = absenceDto.Description,
-            StudentId = absenceDto.StudentId,
-            IsExcused = absenceDto.IsExecute,
-          };
-          await _context.RollCallDetails.AddAsync(newAbsence);
+            var newAbsence = new RollCallDetail
+            {
+              RollCallId = newRollCall.RollCallId,
+              Description = absenceDto.Description,
+              StudentId = absenceDto.StudentId,
+              IsExcused = absenceDto.IsExecute,
+            };
+            await _context.RollCallDetails.AddAsync(newAbsence);
+          }
+          await _context.SaveChangesAsync();
         }
 
-        await _context.SaveChangesAsync();
         await transaction.CommitAsync();
 
-        return new RollCallResType(200, $"Tạo điểm danh thành công.", newRollCall);
+        return new RollCallResType(200, "Tạo điểm danh thành công.", newRollCall);
       }
       catch (Exception ex)
       {
@@ -225,6 +231,48 @@ namespace server.Repositories
       }
     }
 
+    public async Task<RollCallResType> RollCalls(int weekId, int? classId)
+    {
+      try
+      {
+        var queryObject = from rollcall in _context.RollCalls
+                          join w in _context.Weeks on rollcall.WeekId equals w.WeekId into weekGroup
+                          from w in weekGroup.DefaultIfEmpty()
+                          join cl in _context.Classes on rollcall.ClassId equals cl.ClassId into classGroup
+                          from cl in classGroup.DefaultIfEmpty()
+                          where rollcall.WeekId == weekId && (classId == null || rollcall.ClassId == classId)
+                          select new RollCallRes()
+                          {
+                            RollCallId = rollcall.RollCallId,
+                            WeekId = rollcall.WeekId,
+                            WeekName = w.WeekName,
+                            ClassId = rollcall.ClassId,
+                            ClassName = cl.ClassName,
+                            DayOfTheWeek = rollcall.DayOfTheWeek,
+                            DateAt = rollcall.DateAt,
+                            DateCreated = rollcall.DateCreated,
+                            DateUpdated = rollcall.DateUpdated,
+                            NumberOfAttendants = rollcall.NumberOfAttendants ?? 0
+                          };
+
+        var rollCalls = await queryObject
+          .AsNoTracking()
+          .ToListAsync();
+
+        if (rollCalls is null || rollCalls.Count == 0)
+        {
+          return new RollCallResType(200, "Không tìm thấy dữ liệu");
+        }
+
+        return new RollCallResType(200, $"Thành công", rollCalls);
+      }
+      catch (Exception ex)
+      {
+        return new RollCallResType(500, "Đang xảy ra lỗi tại server...");
+        throw new Exception(ex.Message);
+      }
+    }
+
     public Task<RollCallResType> Export(int weekId, int classId)
     {
       throw new NotImplementedException();
@@ -233,6 +281,75 @@ namespace server.Repositories
     public Task<RollCallResType> Import(int weekId, int classId)
     {
       throw new NotImplementedException();
+    }
+
+    public async Task<RollCallResType> Update(int rollCallId, RollCallDto model, List<RollCallDetailDto> absenceDtos)
+    {
+      using var transaction = await _context.Database.BeginTransactionAsync();
+      try
+      {
+        // Check if RollCall exists
+        var existingRollCall = await _context.RollCalls.FindAsync(rollCallId);
+        if (existingRollCall == null)
+        {
+          return new RollCallResType(404, "Không tìm thấy điểm danh!");
+        }
+
+        // Update RollCall fields
+        existingRollCall.ClassId = model.ClassId;
+        existingRollCall.WeekId = model.WeekId;
+        existingRollCall.DayOfTheWeek = model.DayOfTheWeek;
+        existingRollCall.DateAt = model.DateAt;
+        existingRollCall.NumberOfAttendants = model.NumberOfAttendants;
+        existingRollCall.DateUpdated = DateTime.UtcNow;
+
+        _context.RollCalls.Update(existingRollCall);
+        await _context.SaveChangesAsync();
+
+        // Get existing absences for this roll call
+        var existingAbsences = _context.RollCallDetails.Where(d => d.RollCallId == rollCallId).ToList();
+
+        // Remove absences that are not in the new list
+        var absencesToRemove = existingAbsences.Where(e => !absenceDtos.Any(a => a.StudentId == e.StudentId)).ToList();
+        _context.RollCallDetails.RemoveRange(absencesToRemove);
+
+        // Update or add new absences
+        foreach (var absenceDto in absenceDtos)
+        {
+          var existingAbsence = existingAbsences.FirstOrDefault(e => e.StudentId == absenceDto.StudentId);
+
+          if (existingAbsence != null)
+          {
+            // Update existing absence
+            existingAbsence.Description = absenceDto.Description;
+            existingAbsence.IsExcused = absenceDto.IsExecute;
+            _context.RollCallDetails.Update(existingAbsence);
+          }
+          else
+          {
+            // Add new absence
+            var newAbsence = new RollCallDetail
+            {
+              RollCallId = rollCallId,
+              StudentId = absenceDto.StudentId,
+              Description = absenceDto.Description,
+              IsExcused = absenceDto.IsExecute
+            };
+            await _context.RollCallDetails.AddAsync(newAbsence);
+          }
+        }
+
+        await _context.SaveChangesAsync();
+        await transaction.CommitAsync();
+
+        return new RollCallResType(200, "Cập nhật điểm danh thành công.", existingRollCall);
+      }
+      catch (Exception ex)
+      {
+        await transaction.RollbackAsync();
+        return new RollCallResType(500, "Đang xảy ra lỗi tại server...");
+        throw new Exception(ex.Message);
+      }
     }
 
   }

@@ -268,7 +268,7 @@ namespace server.Repositories
           x.AcademicYearId,
           SchoolName = x.School.NameSchool,
           TeacherName = x.Teacher.Fullname,
-          GradeName = x.Grade.GradeName,
+          x.Grade.GradeName,
           NienKhoa = x.AcademicYear.DisplayAcademicYearName,
           x.Description,
           x.Status,

@@ -1,9 +1,11 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using server.Dtos;
 using server.IService;
 
 namespace server.Controllers
 {
+  [Authorize]
   [Route("api/[controller]")]
   [ApiController]
   public class RollCallDetailsController : ControllerBase
@@ -20,6 +22,27 @@ namespace server.Controllers
     public async Task<IActionResult> GetAll()
     {
       var result = await _rollCallDetail.GetAllAsync();
+      if (result.StatusCode == 200)
+      {
+        return Ok(new
+        {
+          status = result.StatusCode,
+          message = result.Message,
+          data = result.ListData
+        });
+      }
+
+      return StatusCode(result.StatusCode, new
+      {
+        status = result.StatusCode,
+        message = result.Message
+      });
+    }
+
+    [HttpGet("get-detail-by-rollCallId")]
+    public async Task<IActionResult> GetAll(int rollCallId)
+    {
+      var result = await _rollCallDetail.GetAllAsync(rollCallId);
       if (result.StatusCode == 200)
       {
         return Ok(new
