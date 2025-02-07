@@ -472,7 +472,51 @@ namespace server.Repositories
       }
       catch (Exception ex)
       {
-        return new ResponseData<List<ClassDetails>>(500, $"Server error: {ex.Message}");
+        return new ResponseData<List<ClassDetails>>(500, "Có lỗi xảy ra tại server...");
+        throw new Exception(ex.Message);
+      }
+    }
+
+    public async Task<ResponseData<ClassDetails>> GetLopChuNhiemByTeacherID(int teacherId)
+    {
+      try
+      {
+        if (teacherId == 0)
+        {
+          return new ResponseData<ClassDetails>(400, "Vui lòng nhập mã trường học");
+        }
+
+        var query = await _context.Classes
+                  .Where(c => c.TeacherId == teacherId && c.Status == true)
+                  .Select(c => new ClassDetails
+                  {
+                    ClassId = c.ClassId,
+                    GradeId = c.GradeId,
+                    GradeName = c.Grade.GradeName,
+                    TeacherId = c.Teacher.TeacherId,
+                    TeacherName = c.Teacher.Fullname,
+                    AcademicYearId = c.AcademicYearId,
+                    SchoolId = c.SchoolId,
+                    NienKhoa = c.AcademicYear.DisplayAcademicYearName,
+                    ClassName = c.ClassName,
+                    SchoolName = c.School.NameSchool,
+                    Status = c.Status,
+                    Description = c.Description,
+                    DateCreated = c.DateCreated.HasValue ? c.DateCreated.Value.ToString("dd/MM/yyyy") : string.Empty,
+                    DateUpdated = c.DateUpdated.HasValue ? c.DateUpdated.Value.ToString("dd/MM/yyyy") : string.Empty,
+                  })
+                  .SingleOrDefaultAsync();
+
+        if (query is null)
+        {
+          return new ResponseData<ClassDetails>(200, "Không tìm thấy lớp chủ nhiệm");
+        }
+        return new ResponseData<ClassDetails>(200, "Thành công", query);
+      }
+      catch (Exception ex)
+      {
+        return new ResponseData<ClassDetails>(500, "Có lỗi xảy ra tại server...");
+        throw new Exception(ex.Message);
       }
     }
 

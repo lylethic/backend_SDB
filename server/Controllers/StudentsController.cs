@@ -66,6 +66,44 @@ namespace server.Controllers
       });
     }
 
+    [HttpGet("get-student-by-class")]
+    public async Task<IActionResult> GetStudents([FromQuery] QueryObject? queryObject, [FromQuery] int schoolId, int classId)
+    {
+      queryObject ??= new QueryObject();
+      var result = await _studentRepo.GetStudents(schoolId, classId);
+      if (result.StatusCode == 200)
+      {
+        var data = result.Data ?? [];
+        var totalResults = data.Count;
+        var totalPages = (int)Math.Ceiling((double)totalResults / queryObject.PageSize);
+        var paginagedData = data
+        .Skip((queryObject.PageNumber - 1) * queryObject.PageSize)
+        .Take(queryObject.PageSize)
+        .ToList();
+
+        return StatusCode(200, new
+        {
+          status = result.StatusCode,
+          message = result.Message,
+          data = result.Data,
+          pagination = new
+          {
+            queryObject.PageNumber,
+            queryObject.PageSize,
+            totalResults,
+            totalPages
+          }
+        });
+      }
+
+      return StatusCode(result.StatusCode, new
+      {
+        status = result.StatusCode,
+        message = result.Message
+      });
+    }
+
+
     // GET: api/Students/5
     [HttpGet("{id}")]
     public async Task<IActionResult> GetStudent(int id)

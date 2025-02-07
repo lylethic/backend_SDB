@@ -204,12 +204,14 @@ namespace server.Repositories
       }
     }
 
-    public async Task<RollCallResType> RollCalls()
+    public async Task<RollCallResType> RollCalls(int weekId, int classId)
     {
       try
       {
         var rollCalls = await _context.RollCalls
+          .Where(x => x.WeekId == weekId && x.ClassId == classId)
           .Include(x => x.RollCallDetails)
+          .ThenInclude(x => x.Student)
           .AsNoTracking()
           .ToListAsync();
 

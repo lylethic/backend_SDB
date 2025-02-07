@@ -196,6 +196,28 @@ namespace server.Controllers
       });
     }
 
+    [HttpGet("lop-chu-nhiem/{id}")]
+    public async Task<IActionResult> GetLopChuNhiemByTeacherId(int id)
+    {
+      var result = await _func.GetLopChuNhiemByTeacherID(id);
+
+      if (result.StatusCode == 200)
+      {
+        return Ok(new
+        {
+          status = result.StatusCode,
+          message = result.Message,
+          data = result.Data
+        });
+      }
+
+      return StatusCode(result.StatusCode, new
+      {
+        status = result.StatusCode,
+        message = result.Message
+      });
+    }
+
     // GET api/<ClassesController>/5
     [HttpGet("get-detail/{id}")]
     public async Task<IActionResult> GetDetail(int id)

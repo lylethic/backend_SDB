@@ -119,6 +119,7 @@ namespace server.Repositories
       try
       {
         var result = await _context.RollCallDetails
+          .Include(x => x.Student)
           .AsNoTracking()
           .Where(x => x.RollCallId == rollCallId)
           .ToListAsync();

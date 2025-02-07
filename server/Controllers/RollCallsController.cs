@@ -19,10 +19,10 @@ namespace server.Controllers
 
     // GET: api/<RollCallsController>
     [HttpGet]
-    public async Task<IActionResult> GetAll([FromQuery] QueryObject? queryObject)
+    public async Task<IActionResult> GetAll([FromQuery] QueryObject? queryObject, int weekId, int classId)
     {
       queryObject ??= new QueryObject();
-      var result = await _rollCall.RollCalls();
+      var result = await _rollCall.RollCalls(weekId, classId);
       if (result.StatusCode == 200)
       {
         var data = result.ListRollCallRes ?? [];
@@ -85,40 +85,40 @@ namespace server.Controllers
     ///  }
     /// }
     /// </returns>
-    [HttpGet("get-by-week-class")]
-    public async Task<IActionResult> GetAll([FromQuery] QueryObject? queryObject, [FromQuery] int weekId, [FromQuery] int? classId)
-    {
-      queryObject ??= new QueryObject();
-      var result = await _rollCall.RollCalls(weekId, classId);
-      if (result.StatusCode == 200)
-      {
-        var data = result.ListRollCallDetailRes ?? [];
-        var totalResults = data.Count;
-        var totalPages = (int)Math.Ceiling((double)totalResults / queryObject.PageSize);
-        var paginatedData = data
-        .Skip((queryObject.PageNumber - 1) * queryObject.PageSize)
-        .Take(queryObject.PageSize)
-        .ToList();
+    // [HttpGet("get-by-week-class")]
+    // public async Task<IActionResult> GetAll([FromQuery] QueryObject? queryObject, [FromQuery] int weekId, [FromQuery] int? classId)
+    // {
+    //   queryObject ??= new QueryObject();
+    //   var result = await _rollCall.RollCalls(weekId, classId);
+    //   if (result.StatusCode == 200)
+    //   {
+    //     var data = result.ListRollCallDetailRes ?? [];
+    //     var totalResults = data.Count;
+    //     var totalPages = (int)Math.Ceiling((double)totalResults / queryObject.PageSize);
+    //     var paginatedData = data
+    //     .Skip((queryObject.PageNumber - 1) * queryObject.PageSize)
+    //     .Take(queryObject.PageSize)
+    //     .ToList();
 
-        return Ok(new
-        {
-          message = result.Message,
-          data = paginatedData,
-          pagination = new
-          {
-            queryObject.PageNumber,
-            queryObject.PageSize,
-            totalResults,
-            totalPages
-          }
-        });
-      }
-      return StatusCode(result.StatusCode, new
-      {
-        message = result.Message,
-        data = result.ListRollCallRes
-      });
-    }
+    //     return Ok(new
+    //     {
+    //       message = result.Message,
+    //       data = paginatedData,
+    //       pagination = new
+    //       {
+    //         queryObject.PageNumber,
+    //         queryObject.PageSize,
+    //         totalResults,
+    //         totalPages
+    //       }
+    //     });
+    //   }
+    //   return StatusCode(result.StatusCode, new
+    //   {
+    //     message = result.Message,
+    //     data = result.ListRollCallRes
+    //   });
+    // }
 
     // GET api/<RollCallsController>/5
     [HttpGet("{id}")]
@@ -240,7 +240,7 @@ namespace server.Controllers
       });
     }
 
-    [HttpDelete("bulk-delete/{id}")]
+    [HttpDelete("bulk-delete")]
     public async Task<IActionResult> BulkDelete(List<int> ids)
     {
       var result = await _rollCall.BulkDelete(ids);

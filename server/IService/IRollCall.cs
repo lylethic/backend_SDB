@@ -15,8 +15,8 @@ namespace server.IService
 
     Task<RollCallResType> RollCall(int rollCallIds);
 
-    Task<RollCallResType> RollCalls();
-    Task<RollCallResType> RollCalls(int weekId, int? classId);
+    Task<RollCallResType> RollCalls(int weekId, int classId);
+    // Task<RollCallResType> RollCalls(int weekId, int? classId);
 
     Task<RollCallResType> Import(int weekId, int classId);
 

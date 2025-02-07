@@ -188,6 +188,51 @@ namespace server.Repositories
       }
     }
 
+    public async Task<ResponseData<List<StudentDetail>>> GetStudents(int schoolId, int classId)
+    {
+      try
+      {
+        if (schoolId == 0) return new ResponseData<List<StudentDetail>>(400, "Vui lòng nhập mã trường học");
+
+        var queryStudentBySchool = from student in _context.Students
+                                   join account in _context.Accounts on student.AccountId equals account.AccountId into accountGroup
+                                   from account in accountGroup.DefaultIfEmpty()
+                                   where account.SchoolId == schoolId && student.ClassId == classId
+                                   select new StudentDetail
+                                   {
+                                     StudentId = student.StudentId,
+                                     ClassId = student.ClassId,
+                                     GradeId = student.GradeId,
+                                     AccountId = student.AccountId,
+                                     Fullname = student.Fullname,
+                                     Status = student.Status,
+                                     Description = student.Description,
+                                     DateCreated = student.DateCreated,
+                                     DateUpdated = student.DateUpdated,
+                                     Email = account.Email,
+                                     SchoolId = account.SchoolId,
+                                     SchoolName = account.School.NameSchool,
+                                     ClassName = student.Class.ClassName,
+                                     Address = student.Address,
+                                     DateOfBirth = student.DateOfBirth,
+                                   };
+
+        var students = await queryStudentBySchool
+          .AsNoTracking()
+          .OrderBy(x => x.Fullname)
+          .ToListAsync();
+
+        if (students is null || students.Count == 0)
+          return new ResponseData<List<StudentDetail>>(404, "Không có kết quả");
+
+        return new ResponseData<List<StudentDetail>>(200, "Thành công", students);
+      }
+      catch (Exception ex)
+      {
+        return new ResponseData<List<StudentDetail>>(500, $"Error: {ex.Message}");
+      }
+    }
+
     public async Task<ResponseData<StudentDto>> UpdateStudent(int id, StudentDto model)
     {
       using var transaction = await _context.Database.BeginTransactionAsync();
