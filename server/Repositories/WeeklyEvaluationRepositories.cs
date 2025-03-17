@@ -29,7 +29,7 @@ namespace server.Repositories
           ClassId = model.ClassId,
           TeacherId = model.TeacherId,
           WeekId = model.WeekId,
-          MonthEvaluation = model.MonthEvaluation,
+          WeekNameEvaluation = model.WeekNameEvaluation,
           TotalScore = await GetTotalScoreByWeekId(model.WeekId),
           Description = model.Description,
           CreatedAt = DateTime.UtcNow,
@@ -53,8 +53,11 @@ namespace server.Repositories
       try
       {
         var result = await _context.WeeklyEvaluations
-          .AsNoTracking()
-          .ToListAsync();
+            .Include(x => x.Teacher)
+            .Include(x => x.Class)
+            .AsNoTracking()
+            .ToListAsync();
+
 
         return new ResponseData<WeeklyEvaluation>(200, "Thành công", result);
       }
@@ -71,6 +74,8 @@ namespace server.Repositories
       {
         var result = await _context.WeeklyEvaluations
           .Where(x => x.WeeklyEvaluationId == id)
+          .Include(x => x.Teacher)
+          .Include(x => x.Class)
           .AsNoTracking()
           .FirstOrDefaultAsync();
 
@@ -104,7 +109,7 @@ namespace server.Repositories
         data.WeekId = model.WeekId;
         data.TeacherId = model.TeacherId;
         data.Description = model.Description;
-        data.MonthEvaluation = model.MonthEvaluation;
+        data.WeekNameEvaluation = model.WeekNameEvaluation;
         data.TotalScore = model.TotalScore;
         data.UpdatedAt = DateTime.UtcNow;
 

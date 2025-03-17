@@ -10,7 +10,7 @@
 
     public int WeekId { get; set; }
 
-    public int MonthEvaluation { get; set; }
+    public string WeekNameEvaluation { get; set; }
 
     public double TotalScore { get; set; }
 

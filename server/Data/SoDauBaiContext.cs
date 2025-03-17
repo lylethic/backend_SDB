@@ -763,13 +763,15 @@ public partial class SoDauBaiContext : DbContext
             entity.Property(e => e.Description)
                 .HasMaxLength(255)
                 .HasColumnName("description");
-            entity.Property(e => e.MonthEvaluation).HasColumnName("monthEvaluation");
             entity.Property(e => e.TeacherId).HasColumnName("teacherId");
             entity.Property(e => e.TotalScore).HasColumnName("totalScore");
             entity.Property(e => e.UpdatedAt)
                 .HasColumnType("datetime")
                 .HasColumnName("updatedAt");
             entity.Property(e => e.WeekId).HasColumnName("weekId");
+            entity.Property(e => e.WeekNameEvaluation)
+                .HasMaxLength(50)
+                .HasColumnName("weekNameEvaluation");
 
             entity.HasOne(d => d.Class).WithMany(p => p.WeeklyEvaluations)
                 .HasForeignKey(d => d.ClassId)

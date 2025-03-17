@@ -4,11 +4,11 @@
   {
     public int MonthlyEvaluationId { get; set; }
 
-    public int? MonthEvaluation { get; set; }
+    public int WeeklyEvaluationId { get; set; }
 
-    public int? WeeklyEvaluationId { get; set; }
+    public int MonthEvaluation { get; set; }
 
-    public decimal? AvgScore { get; set; }
+    public decimal AvgScore { get; set; }
 
     public string? Description { get; set; }
 

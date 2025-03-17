@@ -126,7 +126,7 @@ namespace server.Controllers
       });
     }
 
-    [HttpDelete("bulk-delete/{id}")]
+    [HttpDelete("bulk-delete")]
     public async Task<IActionResult> BulkDelete(List<int> ids)
     {
       var result = await _weeklyEvaluation.BulkDelete(ids);

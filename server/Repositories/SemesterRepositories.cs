@@ -121,7 +121,7 @@ namespace server.Repositories
           AcademicYearId = semester.AcademicYearId,
           DisplayAcademicYearName = semester.AcademicYear.DisplayAcademicYearName,
           YearStart = semester.AcademicYear.YearStart,
-          YearEnd = semester.AcademicYear.YearEnd
+          YearEnd = semester.AcademicYear.YearEnd,
         };
 
         return new ResponseData<SemesterResData>(200, "Thành công", result);
@@ -165,7 +165,7 @@ namespace server.Repositories
           AcademicYearId = x.AcademicYearId,
           DisplayAcademicYearName = x.AcademicYear.DisplayAcademicYearName,
           YearStart = x.AcademicYear.YearStart,
-          YearEnd = x.AcademicYear.YearEnd
+          YearEnd = x.AcademicYear.YearEnd,
         }).ToList();
 
         return new ResponseData<List<SemesterResData>>(200, "Thành công", result);

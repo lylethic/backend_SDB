@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using server.IService;
 
 namespace server.Controllers
 {
@@ -8,18 +9,54 @@ namespace server.Controllers
   [ApiController]
   public class MonthlyEvaluationsController : ControllerBase
   {
+    private readonly IMonthlyEvaluation _monthlyEva;
+    public MonthlyEvaluationsController(IMonthlyEvaluation monthlyEva)
+    {
+
+      this._monthlyEva = monthlyEva;
+    }
     // GET: api/<MonthlyEvaluationsController>
     [HttpGet]
-    public IEnumerable<string> Get()
+    public async Task<IActionResult> GetAll()
     {
-      return new string[] { "value1", "value2" };
+      var result = await _monthlyEva.GetAll();
+      if (result.StatusCode == 200)
+      {
+
+        return Ok(new
+        {
+          status = result.StatusCode,
+          message = result.StatusCode,
+          data = result.ListData
+        });
+      }
+      return StatusCode(result.StatusCode, new
+      {
+        status = result.StatusCode,
+        message = result.StatusCode,
+      });
     }
 
     // GET api/<MonthlyEvaluationsController>/5
     [HttpGet("{id}")]
-    public string Get(int id)
+    public async Task<IActionResult> GetById(int id)
     {
-      return "value";
+      var result = await _monthlyEva.GetById(id);
+      if (result.StatusCode == 200)
+      {
+
+        return Ok(new
+        {
+          status = result.StatusCode,
+          message = result.StatusCode,
+          data = result.Data
+        });
+      }
+      return StatusCode(result.StatusCode, new
+      {
+        status = result.StatusCode,
+        message = result.StatusCode,
+      });
     }
 
     // POST api/<MonthlyEvaluationsController>
